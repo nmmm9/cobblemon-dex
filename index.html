@@ -140,6 +140,12 @@ details[open] summary:before{content:"−"}
 .ico{width:22px;height:22px;object-fit:cover;object-position:top;image-rendering:pixelated;vertical-align:middle;margin-right:5px;flex:none}
 .grid3 .ico{width:26px;height:26px;margin:0}
 .recipe .ri .ico{width:16px;height:16px;margin-right:3px}
+.clk{cursor:pointer}
+.grid3 .clk:hover,.ri .clk:hover{outline:1px solid var(--fg);outline-offset:1px}
+.srcbox{display:inline-block;vertical-align:top;border:1px solid var(--fg);border-radius:4px;padding:10px 12px;margin:6px 8px 6px 0;max-width:440px;background:var(--bg);font-size:13px}
+.srcbox > b{display:block;margin-bottom:4px}
+.srcbox .x{float:right;cursor:pointer;color:var(--muted);font-size:12px;margin-left:10px}
+.srcbox .sub{margin-top:10px}
 .recipe .ri{font-size:12px}
 .sp-row td{vertical-align:top}
 .sp-row .bi .t{background:#eee;color:var(--fg)}
@@ -528,6 +534,14 @@ function render(k) {
   window.scrollTo(0, 0);
 }
 $view.addEventListener('click', e => { const d = e.target.closest('[data-go]'); if (d) go(d.dataset.go); });
+$view.addEventListener('click', e => {
+  if (e.target.closest('.srcbox .x')) return e.target.closest('.srcbox').remove();
+  const c = e.target.closest('[data-it]');
+  if (!c) return;
+  const at = c.closest('.recipe') || c.parentElement, nx = at.nextElementSibling;
+  if (nx?.classList.contains('srcbox')) { nx.remove(); if (nx.dataset.for === c.dataset.it) return; }
+  at.insertAdjacentHTML('afterend', srcHtml(c.dataset.it, c.dataset.nm));
+});
 // =================== 공통 ===================
 const sprite = n => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${n}.png`;
 const monChip = k => `<span class="mon-chip" data-go="${k}"><img loading="lazy" src="${sprite(M[k].n)}" alt="" onerror="this.style.visibility='hidden'">${esc(fullKo(M[k]))}</span>`;
@@ -565,13 +579,27 @@ function whereHtml(s) {
   return (dims.length ? dims.map(d => `<span class="dim dim-${d}">${DIMS[d]}</span>`).join('') : '<span class="dim">모드 바이옴 전용</span>') + chips;
 }
 // 아이템 그림 (build.js가 img/<ns>/<id>.png 로 복사해 둠)
-const ico = k => k ? `<img class="ico" src="img/${k}.png" alt="" loading="lazy">` : '';
+const IC = new Set(D.ic);
+const ico = k => k && IC.has(k) ? `<img class="ico" src="img/${k.includes(':') ? k.replace(':', '/') : 'cobblemon/' + k}.png" alt="" loading="lazy">` : '';
+// 누르면 "얻는 법" 상자를 여는 재료 표시
+const itAttr = (k, nm) => k ? ` class="clk" data-it="${esc(k)}" data-nm="${esc(nm.replace(/ ×\d+$/, ''))}" title="눌러서 얻는 법 보기"` : '';
 function recipeHtml(r) {
-  const gi = (r.gi || []).flat();
-  const grid = r.g ? `<div class="grid3">${r.g.flat().map((c, j) => c ? `<div title="${esc(c)}">${ico(gi[j])}${esc(c)}</div>` : '<div></div>').join('')}</div>` : '';
-  return `<div class="recipe"><div class="rw">${ico(r.o)}${esc(r.w)}${r.n > 1 ? ` · ${r.n}개 제작` : ''}</div>${grid}<div class="ri">${r.i.map((x, j) => ico(r.ii?.[j]) + esc(x)).join(' + ')}</div></div>`;
+  const gk = (r.gk || []).flat();
+  const grid = r.g ? `<div class="grid3">${r.g.flat().map((c, j) => c ? `<div${itAttr(gk[j], c)}>${ico(gk[j])}${esc(c)}</div>` : '<div></div>').join('')}</div>` : '';
+  return `<div class="recipe"><div class="rw">${ico(r.o)}${esc(r.w)}${r.n > 1 ? ` · ${r.n}개 제작` : ''}</div>${grid}<div class="ri">${r.i.map((x, j) => `<span${itAttr(r.ik?.[j], x)}>${ico(r.ik?.[j])}${esc(x)}</span>`).join(' + ')}</div></div>`;
 }
-const recipesOf = id => (D.recipes[id] || []).map(recipeHtml).join('') || '<span class="muted">제작법 없음 (드롭·채집·구조물 등에서 획득)</span>';
+// 아이템 얻는 법: 제작 + 포켓몬 드롭 + 블록 캐기 + 몹 처치 + 상자·보상
+const SRC_T = [['d', '포켓몬 드롭'], ['b', '블록 캐기·수확'], ['e', '몹 처치'], ['l', '상자·보상']];
+const srcParts = k => { const s = D.src[k] || {}; return SRC_T.filter(([t]) => s[t]).map(([t, h]) => `<div class="sub">${h}</div>` + (t === 'd'
+  ? `<div class="mon-chips">${s.d.map(x => Array.isArray(x) ? monChip(x[0]).replace('</span>', ` <span class="muted">${esc(x[1])}</span></span>`) : `<span class="muted">${esc(x)}</span>`).join('')}</div>`
+  : `<p class="cond">${s[t].map(esc).join(', ')}</p>`)).join(''); };
+function srcHtml(k, nm) {
+  const it = D.items[k], none = !D.recipes[k] && !D.src[k];
+  return `<div class="srcbox" data-for="${esc(k)}"><span class="x">닫기</span><b>${ico(k)}${esc(it?.[0] || nm || k)}</b>${it?.[2] ? `<p class="muted">${esc(it[2])}</p>` : ''}
+    ${D.recipes[k] ? `<div class="sub">제작</div>${D.recipes[k].map(recipeHtml).join('')}` : ''}${srcParts(k)}
+    ${none ? `<p class="muted">${k.startsWith('minecraft:') ? '마인크래프트 기본 아이템. 제작법·드롭 데이터 없음 (양동이로 뜨기, 주민 거래 등)' : '얻는 방법 데이터 없음 (이벤트·상점·명령어 등)'}</p>` : ''}</div>`;
+}
+const recipesOf = id => (D.recipes[id] || []).map(recipeHtml).join('') || '<span class="muted">제작법 없음</span>';
 // 리스트 행 토글
 function bindList(root, detail) {
   root.addEventListener('click', e => {
@@ -589,7 +617,7 @@ function gimmickSection(m) {
   const ks = D.order.filter(x => M[x].en === m.en && M[x].gm);
   if (!ks.length) return '';
   const IT = D.items, nm = id => IT[id]?.[0] ?? id;
-  const rows = ks.flatMap(x => M[x].gm.map(([t, how, need]) => `<tr><td style="width:220px">${monChip(x)}</td><td><span class="badge" style="margin:0 6px 0 0">${esc(t)}</span>${esc(how)}<div class="muted">필요: ${need.map(id => ico(IT[id]?.[3]) + esc(nm(id))).join(' + ')}</div></td></tr>`)).join('');
+  const rows = ks.flatMap(x => M[x].gm.map(([t, how, need]) => `<tr><td style="width:220px">${monChip(x)}</td><td><span class="badge" style="margin:0 6px 0 0">${esc(t)}</span>${esc(how)}<div class="muted">필요: ${need.map(id => `<span${itAttr(id, nm(id))}>${ico(id)}${esc(nm(id))}</span>`).join(' + ')}</div></td></tr>`)).join('');
   const need = [...new Set(ks.flatMap(x => M[x].gm.flatMap(g => g[2])))];
   const addon = Object.keys(IT).filter(x => x.includes(':'));
   for (const id of [...need]) for (const r of D.recipes[id] || []) for (const s of r.i) {
@@ -597,7 +625,7 @@ function gimmickSection(m) {
     if (sub && !need.includes(sub)) need.push(sub);
   }
   return `<section><h2>변신 · 기믹</h2><table><tbody>${rows}</tbody></table>
-    <div class="sub" style="margin-top:14px">필요 아이템 제작법</div>${need.map(id => `<div style="display:inline-block;vertical-align:top;margin:0 18px 14px 0;max-width:300px"><b>${ico(IT[id]?.[3])}${esc(nm(id))}</b> <span class="muted">${esc(IT[id]?.[2] || '')}</span><div>${recipesOf(id)}</div></div>`).join('')}</section>`;
+    <div class="sub" style="margin-top:14px">필요 아이템 제작법</div>${need.map(id => `<div style="display:inline-block;vertical-align:top;margin:0 18px 14px 0;max-width:300px"><b>${ico(id)}${esc(nm(id))}</b> <span class="muted">${esc(IT[id]?.[2] || '')}</span><div>${recipesOf(id)}</div></div>`).join('')}</section>`;
 }
 
 // 도감 페이지의 출현 섹션
@@ -729,7 +757,7 @@ TABS.items = () => {
   const draw = () => {
     const q = norm(document.getElementById('iq').value);
     const rows = ids.filter(id => (cat === '전체' || IT[id][1] === cat) && qmatch(q, IT[id][0], IT[id][2]));
-    document.getElementById('il').innerHTML = rows.map(id => `<div class="it" data-id="${id}"><div class="it-h" style="${cols}"><span>${ico(IT[id][3])}${esc(IT[id][0])}</span><span class="muted">${esc(IT[id][1])}</span><span class="muted">${esc(IT[id][2])}</span></div><div class="it-b"></div></div>`).join('') || '<p class="empty">없음</p>';
+    document.getElementById('il').innerHTML = rows.map(id => `<div class="it" data-id="${id}"><div class="it-h" style="${cols}"><span>${ico(id)}${esc(IT[id][0])}</span><span class="muted">${esc(IT[id][1])}</span><span class="muted">${esc(IT[id][2])}</span></div><div class="it-b"></div></div>`).join('') || '<p class="empty">없음</p>';
   };
   document.getElementById('ic').addEventListener('click', e => { const c = e.target.closest('[data-c]'); if (!c) return; cat = c.dataset.c; document.querySelectorAll('#ic .chip').forEach(x => x.classList.toggle('cur', x === c)); draw(); });
   bindList(document.getElementById('il'), id => {
@@ -740,7 +768,7 @@ TABS.items = () => {
     return `${evo.length ? `<div class="sub">이 아이템으로 진화</div><div class="mon-chips">${[...new Map(evo.map(x => [x.join(), x])).values()].map(([a, b]) => `<span style="display:inline-flex;gap:4px;align-items:center;margin-right:14px">${monChip(a)}<span class="muted">→</span>${monChip(b)}</span>`).join('')}</div>` : ''}
       ${fos.length ? `<div class="sub">복원되는 포켓몬</div><div class="mon-chips">${fos.map(monChip).join('')}</div>` : ''}
       ${gmf.length ? `<div class="sub">이 아이템으로 변신·기믹을 쓰는 포켓몬</div><div class="mon-chips">${gmf.map(monChip).join('')}</div>` : ''}
-      <div class="sub">제작법</div>${recipesOf(id)}`;
+      <div class="sub">제작법</div>${recipesOf(id)}${srcParts(id)}`;
   });
   document.getElementById('iq').addEventListener('input', draw);
   draw();

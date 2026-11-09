@@ -255,7 +255,7 @@ function texOf(ref, depth = 0) {
   for (const k of ['layer0', 'all', 'side', 'front', 'top', 'texture', 'cross', 'plant', 'particle', ...Object.keys(t)]) { const v = res(t[k]); if (v) return v; }
   return j.parent && !/generated|handheld|builtin/.test(j.parent) ? texOf(j.parent, depth + 1) : null;
 }
-const iconCache = {};
+const iconCache = {}, ICONS = new Set(); // ICONS: 그림 있는 아이템 키
 function icon(id) { // 'ns:name' (접두어 없으면 cobblemon) -> 'ns/name' (img/ 아래 경로) | null
   const full = id.includes(':') ? id : 'cobblemon:' + id;
   if (full in iconCache) return iconCache[full];
@@ -264,6 +264,7 @@ function icon(id) { // 'ns:name' (접두어 없으면 cobblemon) -> 'ns/name' (i
   if (!src) return (iconCache[full] = null);
   const key = ns + '/' + n, dst = path.join(IMG, key + '.png');
   fs.mkdirSync(path.dirname(dst), { recursive: true }); fs.copyFileSync(src, dst);
+  ICONS.add(ikey(full));
   return (iconCache[full] = key);
 }
 const tagItems = (tag, seen = new Set()) => {
@@ -277,49 +278,62 @@ const tagItems = (tag, seen = new Set()) => {
 const C_ONE = { glass_blocks: 'glass', concretes: 'white_concrete', fertilizers: 'bone_meal', seeds: 'wheat_seeds', chains: 'chain' };
 const C_KIND = { ingots: m => m + '_ingot', nuggets: m => m + '_nugget', storage_blocks: m => m + '_block', raw_materials: m => 'raw_' + m, dyes: m => m + '_dye', rods: () => 'stick', chests: () => 'chest', barrels: () => 'barrel', drinks: m => m + '_bucket', foods: m => m === 'milk' ? 'milk_bucket' : m, buckets: m => m === 'empty' ? 'bucket' : m + '_bucket', gems: m => ({ amethyst: 'amethyst_shard', lapis: 'lapis_lazuli' })[m] ?? m };
 const cTagItem = t => { const [k, m] = t.slice(2).split('/'); return 'minecraft:' + (m ? (C_KIND[k] ?? (x => x))(m) : C_ONE[k] ?? k.replace(/s$/, '')); };
-const ingIcon = ing => {
+// 재료 -> 대표 아이템 id (태그면 그림 있는 첫 아이템)
+const ingId = ing => {
   if (!ing) return null;
-  if (Array.isArray(ing)) { for (const x of ing) { const k = ingIcon(x); if (k) return k; } return null; }
-  if (ing.item) return icon(ing.item);
-  if (!ing.tag) return null;
-  for (const id of tagItems(ing.tag)) { const k = icon(id); if (k) return k; }
-  return null;
+  const ids = (Array.isArray(ing) ? ing.map(ingId) : ing.item ? [ing.item] : ing.tag ? tagItems(ing.tag) : []).filter(Boolean);
+  return ids.find(x => icon(x)) ?? ids[0] ?? null;
 };
+const ingKey = ing => { const id = ingId(ing); return id ? ikey(id) : null; };
 
-const recipes = {}; // item key -> [{w: 작업대, g: 3x3 grid | null, gi: 칸별 그림, i: 재료 목록, ii: 재료별 그림, n: 개수, o: 결과물 그림}]
+const recipes = {}; // item key -> [{w: 작업대, g: 3x3 이름 | null, gk: 칸별 아이템 키, i: 재료 목록, ik: 재료별 아이템 키, n: 개수, o: 결과물 키}]
 function recipeOf(r) {
   const w = RTYPE[r.type];
   if (!w || !r.result) return null;
-  let g = null, gi, i = [], ii;
+  let g = null, gk, i = [], ik = [];
   if (r.pattern) {
     const rows = r.pattern.map(row => [...row.padEnd(3)]);
     g = rows.map(row => row.map(ch => ch === ' ' ? '' : ingKo(r.key[ch])));
-    gi = rows.map(row => row.map(ch => ch === ' ' ? null : ingIcon(r.key[ch])));
+    gk = rows.map(row => row.map(ch => ch === ' ' ? null : ingKey(r.key[ch])));
     // 같은 재료를 다른 글자로 적은 레시피도 있어서 이름으로 셈
     const cnt = {}, ch1 = {}; r.pattern.join('').split('').filter(c => c !== ' ').forEach(c => { const k = ingKo(r.key[c]); cnt[k] = (cnt[k] || 0) + 1; ch1[k] ??= c; });
     i = Object.entries(cnt).map(([k, n]) => `${k} ×${n}`);
-    ii = Object.keys(cnt).map(k => ingIcon(r.key[ch1[k]]));
+    ik = Object.keys(cnt).map(k => ingKey(r.key[ch1[k]]));
   } else if (r.ingredients) {
     const cnt = {}, first = {}; r.ingredients.forEach(x => { const k = ingKo(x); cnt[k] = (cnt[k] || 0) + 1; first[k] ??= x; });
     i = Object.entries(cnt).map(([k, n]) => `${k} ×${n}`);
-    ii = Object.keys(cnt).map(k => ingIcon(first[k]));
-  } else if (r.type === 'cobblemon:brewing_stand') i = [`${ingKo(r.bottle)} (병)`, `${ingKo(r.input)} (재료)`];
-  else if (r.type === 'minecraft:smithing_transform') i = [ingKo(r.template), ingKo(r.base), ingKo(r.addition)];
-  else if (r.ingredient) i = [ingKo(r.ingredient)];
-  return { w, g, gi, i, ii, n: r.result.count || 1, o: icon(r.result.id || r.result.item) };
+    ik = Object.keys(cnt).map(k => ingKey(first[k]));
+  } else if (r.type === 'cobblemon:brewing_stand') { i = [`${ingKo(r.bottle)} (병)`, `${ingKo(r.input)} (재료)`]; ik = [ingKey(r.bottle), ingKey(r.input)]; }
+  else if (r.type === 'minecraft:smithing_transform') { i = [ingKo(r.template), ingKo(r.base), ingKo(r.addition)]; ik = [r.template, r.base, r.addition].map(ingKey); }
+  else if (r.ingredient) { i = [ingKo(r.ingredient)]; ik = [ingKey(r.ingredient)]; }
+  const out = r.result.id || r.result.item;
+  icon(out);
+  return { w, g, gk, i, ik, n: r.result.count || 1, o: ikey(out) };
 }
-for (const { ns, f } of dataFiles('recipe')) {
-  if (!ITEM_NS.includes(ns)) continue;
-  const r = readJ(f), out = r.result?.id || r.result?.item || '';
-  if (!ITEM_NS.includes(out.split(':')[0])) continue; // 바닐라 결과물(염료 등)은 생략
-  const x = recipeOf(r);
-  if (x) (recipes[ikey(out)] ??= []).push(x);
+// 모든 레시피를 결과물별로 모아둠 (바닐라·TMCraft 포함)
+const allR = new Map();
+for (const { f } of dataFiles('recipe')) {
+  const r = readJ(f), out = r.result?.id || r.result?.item;
+  if (out && RTYPE[r.type]) { const k = ikey(out); if (!allR.has(k)) allR.set(k, []); allR.get(k).push(r); }
 }
 
 // ---------- TM (TMCraft: 조합대에서 빈 디스크 + 재료로 tm_<기술> 제작. 코블벌스 데이터팩이 레시피를 덮어씀) ----------
 for (const { rel, f } of dataFiles('recipe', 'tmcraft')) {
-  const id = rel.match(/^tm_([a-z0-9]+)\.json$/)?.[1];
+  const id = rel.match(/^tm_([a-z0-9]+).json$/)?.[1];
   if (id && moves[id]) moves[id][10] = recipeOf(readJ(f));
+}
+// 코블몬·애드온 아이템 레시피 + 거기 재료로 쓰인 아이템(바닐라·빈 디스크 등)의 레시피까지 따라가며 수집
+{
+  const nsOf = k => k.includes(':') ? k.split(':')[0] : 'cobblemon';
+  const queue = [...allR.keys()].filter(k => ITEM_NS.includes(nsOf(k)));
+  Object.values(moves).forEach(m => m[10]?.ik.forEach(k => k && queue.push(k)));
+  const done = new Set();
+  while (queue.length) {
+    const k = queue.pop();
+    if (done.has(k)) continue;
+    done.add(k);
+    for (const r of allR.get(k) || []) { const x = recipeOf(r); if (x) { (recipes[k] ??= []).push(x); x.ik.forEach(q => q && !done.has(q) && queue.push(q)); } }
+  }
 }
 
 // ---------- items (분류는 코블몬·메가 쇼다운 아이템 태그 기준) ----------
@@ -345,7 +359,8 @@ for (const key of Object.keys(lang)) {
     .filter(Boolean).join(' ').replace(/§./g, '');
   if (!tip && !recipes[id] && !catOf[id]) continue;
   if (items[id] && !tip) continue;
-  items[id] = [lang[key], catOf[id] || (/메가스톤의 일종/.test(tip) ? '메가스톤' : m[2] === 'legendarymonuments' ? '전설 모뉴먼트' : m[1] === 'block' ? '블록·장치' : '기타'), tip, icon(id)];
+  items[id] = [lang[key], catOf[id] || (/메가스톤의 일종/.test(tip) ? '메가스톤' : m[2] === 'legendarymonuments' ? '전설 모뉴먼트' : m[1] === 'block' ? '블록·장치' : '기타'), tip];
+  icon(id);
 }
 
 // ---------- fossils / berries ----------
@@ -501,6 +516,51 @@ const cfg = {
   biomes: MC_BIOMES.map(b => [b, biomeKo(b)]),
 };
 
+// ---------- 얻는 법: 포켓몬 드롭 · 블록 캐기 · 몹 처치 · 상자/보상 (루트 테이블) ----------
+const src = {}; // item key -> {d: [[포켓몬 키, 확률]], b: [블록], e: [몹], l: [상자·보상]}
+const addSrc = (k, t, v) => { const a = ((src[k] ??= {})[t] ??= []); if (!a.some(x => JSON.stringify(x) === JSON.stringify(v))) a.push(v); };
+for (const [sid, sp] of Object.entries(species)) if (mons[sid]) for (const e of sp.drops?.entries || [])
+  addSrc(ikey(e.item), 'd', [sid, e.percentage ? e.percentage + '%' : (e.quantityRange || 1) + '개']);
+// 루트 테이블: 아이템 항목과 다른 테이블 참조를 모음. 다른 테이블이 참조하지 않는 것(뿌리)만 출처로 표시
+const LT = {};
+for (const { ns, rel, f } of dataFiles('loot_table')) {
+  const t = LT[ns + ':' + rel.replace(/.json$/, '')] = { items: new Set(), refs: new Set() };
+  const walk = e => {
+    if (!e || typeof e !== 'object') return;
+    if (Array.isArray(e)) return e.forEach(walk);
+    const ty = String(e.type || '').replace('minecraft:', '');
+    if (ty === 'item' && e.name) t.items.add(e.name);
+    if (ty === 'tag' && e.name) tagItems(e.name).forEach(x => t.items.add(x));
+    if (ty === 'loot_table' && typeof (e.value ?? e.name) === 'string') t.refs.add(e.value ?? e.name);
+    ['pools', 'entries', 'children'].forEach(k => walk(e[k]));
+  };
+  try { walk(readJ(f)); } catch {}
+  t.crop = fs.readFileSync(f, 'utf8').includes('"age"'); // 자라는 블록(규토리·열매·작물)
+}
+const refd = new Set(Object.values(LT).flatMap(t => [...t.refs]));
+const ltItems = (id, seen = new Set()) => { if (seen.has(id) || !LT[id]) return []; seen.add(id); return [...LT[id].items, ...[...LT[id].refs].flatMap(r => ltItems(r, seen))]; };
+const LT_KO = { chests: '', village: '마을', villages: '마을', desert_pyramid: '사막 사원', jungle_temple: '정글 사원', simple_dungeon: '던전', abandoned_mineshaft: '폐광', shipwreck_treasure: '난파선 보물', shipwreck_supply: '난파선 보급품', shipwreck_map: '난파선 지도', buried_treasure: '묻힌 보물', ruined_portal: '파괴된 차원문', bastion_treasure: '보루 보물', bastion_other: '보루', bastion_bridge: '보루 다리', bastion_hoglin_stable: '호글린 우리', nether_bridge: '네더 요새', end_city_treasure: '엔드 시티', stronghold_corridor: '요새 복도', stronghold_crossing: '요새 교차로', stronghold_library: '요새 서재', ancient_city: '고대 도시', ancient_city_ice_box: '고대 도시 얼음 상자', trial_chambers: '시련의 회당', woodland_mansion: '삼림 대저택', pillager_outpost: '약탈자 전초기지', igloo_chest: '이글루', underwater_ruin_big: '큰 바다 폐허', underwater_ruin_small: '작은 바다 폐허', spawn_bonus_chest: '보너스 상자', archaeology: '고고학(붓질)', desert_well: '사막 우물', ocean_ruin_cold: '차가운 바다 폐허', ocean_ruin_warm: '따뜻한 바다 폐허', trail_ruins_common: '오솔길 폐허', trail_ruins_rare: '오솔길 폐허(희귀)', gameplay: '', fishing: '낚시', fish: '물고기', treasure: '보물', junk: '잡동사니', piglin_bartering: '피글린 물물교환', hero_of_the_village: '마을의 영웅 선물', cat_morning_gift: '고양이 아침 선물', sniffer_digging: '스니퍼 발굴', ruins: '폐허', shipwreck_coves: '난파선 만', fossils: '화석', injection: '', raid: '레이드', structures: '구조물', gilded_chests: '금빛 상자', village_weaponsmith: '무기 대장장이', village_toolsmith: '도구 대장장이', village_armorer: '갑옷 제조인', village_cartographer: '지도 제작자', village_mason: '석공', village_shepherd: '양치기', village_butcher: '도살업자', village_fletcher: '화살 제조인', village_fisher: '어부', village_tannery: '가죽 세공인', village_temple: '성직자', village_desert_house: '사막 집', village_plains_house: '평원 집', village_taiga_house: '타이가 집', village_snowy_house: '설원 집', village_savanna_house: '사바나 집', spawners: '시련의 생성기', general: '건물 상자', attic: '다락', bedroom: '침실', kitchen: '부엌', blacksmith: '대장간', sittingroom: '거실', workshop: '작업장', support_tables: '보조 상자', archaeological_site: '고고학 유적', reward: '보상', ominous: '불길한', vault: '금고' };
+const LT_MOD = { cobblemon: '', minecraft: '', bca: '', mega_showdown: '메가 쇼다운 ', cobbleverse: '코블벌스 ', cobblemonraiddens: '', legendarymonuments: '전설 모뉴먼트 ' };
+const ltLabel = id => { const [ns, p] = id.split(':'); return ((LT_MOD[ns] ?? ns + ' ') + p.split('/').map(w => LT_KO[w] ?? w.replace(/_/g, ' ')).filter(Boolean).join(' · ')).trim(); };
+for (const id of Object.keys(LT)) {
+  if (refd.has(id)) continue;
+  const [ns, p] = id.split(':'), its = new Set(ltItems(id).map(ikey));
+  if (p.startsWith('blocks/')) {
+    // 광석은 떨구는 다른 아이템만. 규토리·열매·작물처럼 자라는 블록은 자기 자신도 "다 자라면 수확"
+    const b = ikey(ns + ':' + p.slice(7)), nm = itemKo(b);
+    its.forEach(k => k !== b ? addSrc(k, 'b', nm) : LT[id].crop && addSrc(k, 'b', nm + ' (다 자라면 수확)'));
+  }
+  else if (p.startsWith('entities/')) { if (ns === 'minecraft') { const nm = mcLang['entity.minecraft.' + p.slice(9).split('/')[0]] ?? p.slice(9); its.forEach(k => addSrc(k, 'e', nm)); } }
+  else if (!/^(equipment|shearing|pots|dispensers|placeholder)/.test(p)) its.forEach(k => addSrc(k, 'l', ltLabel(id)));
+}
+// 도감에서 보여줄 아이템(아이템 탭·레시피 재료·결과물·기믹)만 남기고, 목록이 길면 자름
+const shown = new Set([...Object.keys(items), ...Object.keys(recipes), ...Object.values(recipes).flat().flatMap(r => [...r.ik, ...(r.gk || []).flat()]),
+  ...Object.values(moves).flatMap(m => m[10] ? [...m[10].ik, ...(m[10].gk || []).flat()] : [])].filter(Boolean));
+for (const k of Object.keys(src)) {
+  if (!shown.has(k)) { delete src[k]; continue; }
+  for (const t of Object.keys(src[k])) if (src[k][t].length > 14) src[k][t] = [...src[k][t].slice(0, 14), `외 ${src[k][t].length - 14}곳`];
+}
+
 // ---------- self-check ----------
 const ids = new Set(Object.keys(mons));
 let bad = 0;
@@ -513,7 +573,7 @@ if (bad) process.exit(1);
 
 const order = Object.keys(mons).sort((a, b) => mons[a].n - mons[b].n || (mons[a].form ? 1 : 0) - (mons[b].form ? 1 : 0) || a.localeCompare(b));
 const types = Object.fromEntries(TYPES.map(t => [t, typeKo(t)]));
-const out = `window.DEX=${JSON.stringify({ types, moves, mons, order, abilities, natures, items, recipes, spawns, cfg, blabel })};`;
+const out = `window.DEX=${JSON.stringify({ types, moves, mons, order, abilities, natures, items, recipes, src, ic: [...ICONS], spawns, cfg, blabel })};`;
 fs.writeFileSync(path.join(__dirname, 'data.js'), out);
 const cats = {}; Object.values(items).forEach(i => cats[i[1]] = (cats[i[1]] || 0) + 1);
 console.log(`Cobblemon ${VERSION}: mons ${order.length} (species ${Object.keys(species).length}), moves ${Object.keys(moves).length}, tm ${Object.values(moves).filter(m => m[10]).length}, items ${Object.keys(items).length}, recipes ${Object.keys(recipes).length}, spawns ${spawns.length}, data.js ${(out.length / 1048576).toFixed(1)} MB`);

@@ -169,7 +169,8 @@ details[open] summary:before{content:"−"}
 .guide h3{font-size:16px;font-weight:600;margin:32px 0 10px}
 .guide p,.guide li{line-height:1.7}
 .guide h4{font-size:14px;font-weight:600;margin:22px 0 4px}
-.guide .tl{padding:3px 0}
+.guide .tcard{display:inline-block;vertical-align:top;max-width:262px;margin:0 14px 16px 0}
+.guide .tcard > .muted{font-size:13px;margin:2px 0 4px}
 .guide table{max-width:560px}
 .kv{display:grid;grid-template-columns:140px 1fr;gap:6px 14px}
 .kv dt{color:var(--muted)}
@@ -601,7 +602,9 @@ function srcHtml(k, nm) {
     ${D.recipes[k] ? `<div class="sub">제작</div>${D.recipes[k].map(recipeHtml).join('')}` : ''}${srcParts(k)}
     ${none ? `<p class="muted">${k.startsWith('minecraft:') ? '마인크래프트 기본 아이템. 제작법·드롭 데이터 없음 (양동이로 뜨기, 주민 거래 등)' : '얻는 방법 데이터 없음 (이벤트·상점·명령어 등)'}</p>` : ''}</div>`;
 }
-const recipesOf = id => (D.recipes[id] || []).map(recipeHtml).join('') || '<span class="muted">제작법 없음</span>';
+// 대표 제작법: 모양 있는 레시피가 있으면 그것만(염색·변환용 무형 레시피 빼기), 재료가 같은 좌우반전판은 하나로
+const mainRecipes = k => { const rs = D.recipes[k] || [], g = rs.filter(r => r.g), seen = new Set(); return (g.length ? g : rs).filter(r => { const s = [...r.i].sort().join(); return !seen.has(s) && seen.add(s); }); };
+const recipesOf = id =>(D.recipes[id] || []).map(recipeHtml).join('') || '<span class="muted">제작법 없음</span>';
 // 리스트 행 토글
 function bindList(root, detail) {
   root.addEventListener('click', e => {
@@ -823,8 +826,8 @@ TABS.guide = () => {
   <h3>7. 몬스터볼</h3>
   <p>규토리(아프리코트) 열매를 따서 볼을 만듦. 볼별 포획 보정은 아이템 탭 "몬스터볼" 설명 끝의 (포획률: N배) 참고.</p>
   <h3>8. 가방 · 자주 쓰는 도구</h3>
-  <p>이름을 누르면 바로 아래에 만드는 법·얻는 곳이 열림. 칸 수·비용은 모드팩 기본 설정값.</p>
-  ${D.tools.map(([g, note, rows]) => `<h4>${esc(g)}</h4>${note ? `<p>${esc(note)}</p>` : ''}${rows.filter(([k]) => IT[k]).map(([k, d]) => `<div class="tl"><span${itAttr(k, IT[k][0])}>${ico(k)}${esc(IT[k][0])}</span> <span class="muted">${esc(d || IT[k][2])}</span></div>`).join('')}`).join('')}
+  <p>재료를 누르면 그 재료 얻는 법, 이름을 누르면 상자·보상 같은 다른 입수처와 염색 등 나머지 제작법. 칸 수·비용은 모드팩 기본 설정값.</p>
+  ${D.tools.map(([g, note, rows]) => `<h4>${esc(g)}</h4>${note ? `<p>${esc(note)}</p>` : ''}${rows.filter(([k]) => IT[k]).map(([k, d]) => `<div class="tcard"><div><b${itAttr(k, IT[k][0])}>${ico(k)}${esc(IT[k][0])}</b></div><div class="muted">${esc(d || IT[k][2])}</div>${mainRecipes(k).map(recipeHtml).join('')}</div>`).join('')}`).join('')}
   </div>`;
 };
 

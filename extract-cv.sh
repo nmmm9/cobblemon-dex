@@ -10,8 +10,10 @@ rm -rf "$OUT"
 7z x "$MC" -o"$OUT/00_minecraft" data/minecraft/tags/item data/minecraft/recipe data/minecraft/loot_table $ART -r- -y >/dev/null && echo "00_minecraft ok"
 n=0
 for f in "mods/Cobblemon-fabric-1.7.3+1.21.1.jar" "mods/cobblemon-additions-4.1.6.jar" "mods/cobblenav-fabric-2.3.3.jar" \
-  "mods/LegendaryMonuments-Cobbleverse.jar" "mods/LumyMon-0.6.6.jar" "mods/mega_showdown-fabric-1.8.4+1.7.3+1.21.1.jar" \
-  "mods/tmcraft-1.4.18+1.7.3.jar" "mods/zamega-fabric-1.7.3.jar" "datapacks/COBBLEVERSE-DP-v31.zip" "datapacks/COBBLEVERSE-Loot-DP-v11.zip"; do
+  "mods/comforts-fabric-9.0.5+1.21.1.jar" "mods/LegendaryMonuments-Cobbleverse.jar" "mods/LumyMon-0.6.6.jar" "mods/mega_showdown-fabric-1.8.4+1.7.3+1.21.1.jar" \
+  "mods/Only Bottle Caps-1.3.0.jar" "mods/rctmod-fabric-1.21.1-0.18.1-beta.jar" "mods/sophisticatedbackpacks-1.21.1-3.23.4.3.106.jar" \
+  "mods/tmcraft-1.4.18+1.7.3.jar" "mods/toms_storage_fabric-1.21-2.3.0.jar" "mods/waystones-fabric-1.21.1-21.1.37.jar" \
+  "mods/zamega-fabric-1.7.3.jar" "datapacks/COBBLEVERSE-DP-v31.zip" "datapacks/COBBLEVERSE-Loot-DP-v11.zip" "datapacks/COBBLEVERSE-RCT-DP-v20.zip"; do
   n=$((n+1)); name=$(printf "%02d_%s" $n "$(basename "$f" | sed -E 's/[-_+ ].*//')")
   7z x "$P/$f" -o"$OUT/$name" data "assets/*/lang/ko_kr.json" "assets/*/lang/en_us.json" $ART -r- -y >/dev/null && echo "$name ok"
 done

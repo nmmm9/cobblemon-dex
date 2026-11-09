@@ -168,6 +168,8 @@ details[open] summary:before{content:"−"}
 .tc-wrap{overflow-x:auto}
 .guide h3{font-size:16px;font-weight:600;margin:32px 0 10px}
 .guide p,.guide li{line-height:1.7}
+.guide h4{font-size:14px;font-weight:600;margin:22px 0 4px}
+.guide .tl{padding:3px 0}
 .guide table{max-width:560px}
 .kv{display:grid;grid-template-columns:140px 1fr;gap:6px 14px}
 .kv dt{color:var(--muted)}
@@ -820,6 +822,9 @@ TABS.guide = () => {
   <p>회복약은 양조기·모닥불 냄비로 만듦. 아이템 탭 "회복약"에서 제작법 확인.</p>
   <h3>7. 몬스터볼</h3>
   <p>규토리(아프리코트) 열매를 따서 볼을 만듦. 볼별 포획 보정은 아이템 탭 "몬스터볼" 설명 끝의 (포획률: N배) 참고.</p>
+  <h3>8. 가방 · 자주 쓰는 도구</h3>
+  <p>이름을 누르면 바로 아래에 만드는 법·얻는 곳이 열림. 칸 수·비용은 모드팩 기본 설정값.</p>
+  ${D.tools.map(([g, note, rows]) => `<h4>${esc(g)}</h4>${note ? `<p>${esc(note)}</p>` : ''}${rows.filter(([k]) => IT[k]).map(([k, d]) => `<div class="tl"><span${itAttr(k, IT[k][0])}>${ico(k)}${esc(IT[k][0])}</span> <span class="muted">${esc(d || IT[k][2])}</span></div>`).join('')}`).join('')}
   </div>`;
 };
 

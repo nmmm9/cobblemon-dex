@@ -94,7 +94,7 @@ const itemKo = id => {
   return lang[`item.${ns}.${bare}`] ?? lang[`block.${ns}.${bare}`] ?? mcLang['item.minecraft.' + bare] ?? mcLang['block.minecraft.' + bare] ?? bare;
 };
 // 레시피 재료: {item} | {tag} | [..] -> 한국어 표시
-const TAG_KO = { 'c:ingots/copper': '구리 주괴', 'c:ingots/iron': '철 주괴', 'c:ingots/gold': '금 주괴', 'c:ingots/netherite': '네더라이트 주괴', 'c:dusts/redstone': '레드스톤 가루', 'c:gems/diamond': '다이아몬드', 'c:gems/emerald': '에메랄드', 'c:gems/amethyst': '자수정 조각', 'c:gems/quartz': '네더 석영', 'c:crops/wheat': '밀', 'c:rods/wooden': '막대기', 'c:strings': '실', 'c:slime_balls': '슬라임 볼', 'c:eggs': '달걀', 'c:glass_blocks': '유리', 'c:chests': '상자', 'c:leathers': '가죽', 'c:feathers': '깃털', 'c:obsidians': '흑요석', 'c:storage_blocks/iron': '철 블록', 'c:storage_blocks/gold': '금 블록', 'c:storage_blocks/copper': '구리 블록', 'c:nuggets/gold': '금 조각', 'c:nuggets/iron': '철 조각', 'c:dyes': '염료', 'c:mushrooms': '버섯', 'c:seeds': '씨앗', 'c:bones': '뼈', 'c:gunpowders': '화약', 'c:ender_pearls': '엔더 진주', 'c:foods/milk': '우유', 'minecraft:planks': '판자', 'minecraft:logs': '원목', 'minecraft:wool': '양털', 'minecraft:coals': '석탄', 'minecraft:stone_crafting_materials': '조약돌', 'minecraft:wooden_slabs': '나무 반 블록', 'minecraft:leaves': '나뭇잎', 'minecraft:flowers': '꽃', 'minecraft:small_flowers': '꽃', 'minecraft:saplings': '묘목', 'minecraft:sand': '모래', 'minecraft:candles': '양초', 'cobblemon:berries': '열매', 'minecraft:chicken_food': '씨앗', 'cobblemon:held/terrain_seeds': '필드 시드' };
+const TAG_KO = { 'minecraft:trapdoors': '다락문', 'c:ingots/copper': '구리 주괴', 'c:ingots/iron': '철 주괴', 'c:ingots/gold': '금 주괴', 'c:ingots/netherite': '네더라이트 주괴', 'c:dusts/redstone': '레드스톤 가루', 'c:gems/diamond': '다이아몬드', 'c:gems/emerald': '에메랄드', 'c:gems/amethyst': '자수정 조각', 'c:gems/quartz': '네더 석영', 'c:crops/wheat': '밀', 'c:rods/wooden': '막대기', 'c:strings': '실', 'c:slime_balls': '슬라임 볼', 'c:eggs': '달걀', 'c:glass_blocks': '유리', 'c:chests': '상자', 'c:leathers': '가죽', 'c:feathers': '깃털', 'c:obsidians': '흑요석', 'c:storage_blocks/iron': '철 블록', 'c:storage_blocks/gold': '금 블록', 'c:storage_blocks/copper': '구리 블록', 'c:nuggets/gold': '금 조각', 'c:nuggets/iron': '철 조각', 'c:dyes': '염료', 'c:mushrooms': '버섯', 'c:seeds': '씨앗', 'c:bones': '뼈', 'c:gunpowders': '화약', 'c:ender_pearls': '엔더 진주', 'c:foods/milk': '우유', 'minecraft:planks': '판자', 'minecraft:logs': '원목', 'minecraft:wool': '양털', 'minecraft:coals': '석탄', 'minecraft:stone_crafting_materials': '조약돌', 'minecraft:wooden_slabs': '나무 반 블록', 'minecraft:leaves': '나뭇잎', 'minecraft:flowers': '꽃', 'minecraft:small_flowers': '꽃', 'minecraft:saplings': '묘목', 'minecraft:sand': '모래', 'minecraft:candles': '양초', 'cobblemon:berries': '열매', 'minecraft:chicken_food': '씨앗', 'cobblemon:held/terrain_seeds': '필드 시드' };
 const ingKo = ing => {
   if (!ing) return '';
   if (Array.isArray(ing)) return ing.map(ingKo).join(' / ');
@@ -238,7 +238,9 @@ for (const id of used) {
 }
 
 // ---------- recipes ----------
-const RTYPE = { 'minecraft:crafting_shaped': '조합대', 'minecraft:crafting_shapeless': '조합대', 'minecraft:smelting': '화로', 'minecraft:blasting': '용광로', 'minecraft:smoking': '훈연기', 'minecraft:campfire_cooking': '모닥불', 'minecraft:stonecutting': '석재 절단기', 'minecraft:smithing_transform': '대장장이 작업대', 'cobblemon:brewing_stand': '양조기', 'cobblemon:cooking_pot': '모닥불 냄비', 'cobblemon:cooking_pot_shapeless': '모닥불 냄비' };
+const RTYPE = { 'minecraft:crafting_shaped': '조합대', 'minecraft:crafting_shapeless': '조합대', 'minecraft:smelting': '화로', 'minecraft:blasting': '용광로', 'minecraft:smoking': '훈연기', 'minecraft:campfire_cooking': '모닥불', 'minecraft:stonecutting': '석재 절단기', 'minecraft:smithing_transform': '대장장이 작업대', 'cobblemon:brewing_stand': '양조기', 'cobblemon:cooking_pot': '모닥불 냄비', 'cobblemon:cooking_pot_shapeless': '모닥불 냄비',
+  // 배낭 모드: 모양은 일반 조합대 레시피와 같고, 이전 배낭의 내용물을 유지하는 것만 다름
+  'sophisticatedbackpacks:basic_backpack': '조합대', 'sophisticatedbackpacks:backpack_upgrade': '조합대', 'sophisticatedcore:upgrade_next_tier': '조합대', 'sophisticatedbackpacks:smithing_backpack_upgrade': '대장장이 작업대' };
 // 작업대 이름 -> 그 작업대 아이템 (레시피 머리글 그림용)
 const STATION = { 조합대: 'minecraft:crafting_table', 화로: 'minecraft:furnace', 용광로: 'minecraft:blast_furnace', 훈연기: 'minecraft:smoker', 모닥불: 'minecraft:campfire', '석재 절단기': 'minecraft:stonecutter', '대장장이 작업대': 'minecraft:smithing_table', 양조기: 'minecraft:brewing_stand', '모닥불 냄비': 'cobblemon:campfire_pot_red' };
 // 아이템 키: 코블몬 건 접두어 없이, 애드온 건 "ns:id"
@@ -258,7 +260,7 @@ function texOf(ref, depth = 0) {
   return j.parent && !/generated|handheld|builtin/.test(j.parent) ? texOf(j.parent, depth + 1) : null;
 }
 // 블록 그림이 알아보기 어려운 것만 면을 직접 지정 (조합대는 격자가 보이는 윗면)
-const ICON_TEX = { 'minecraft:crafting_table': 'minecraft:block/crafting_table_top' };
+const ICON_TEX = { 'minecraft:crafting_table': 'minecraft:block/crafting_table_top' }; // 배낭은 3D 모델뿐이라 그림 없음
 const iconCache = {}, ICONS = new Set(); // ICONS: 그림 있는 아이템 키
 function icon(id) { // 'ns:name' (접두어 없으면 cobblemon) -> 'ns/name' (img/ 아래 경로) | null
   const full = id.includes(':') ? id : 'cobblemon:' + id;
@@ -280,7 +282,7 @@ const tagItems = (tag, seen = new Set()) => {
 };
 // c: 태그(패브릭 공용)는 파일이 없어서 이름으로 바닐라 아이템을 추정: c:ingots/iron -> iron_ingot, c:strings -> string
 const C_ONE = { glass_blocks: 'glass', concretes: 'white_concrete', fertilizers: 'bone_meal', seeds: 'wheat_seeds', chains: 'chain' };
-const C_KIND = { ingots: m => m + '_ingot', nuggets: m => m + '_nugget', storage_blocks: m => m + '_block', raw_materials: m => 'raw_' + m, dyes: m => m + '_dye', rods: () => 'stick', chests: () => 'chest', barrels: () => 'barrel', drinks: m => m + '_bucket', foods: m => m === 'milk' ? 'milk_bucket' : m, buckets: m => m === 'empty' ? 'bucket' : m + '_bucket', gems: m => ({ amethyst: 'amethyst_shard', lapis: 'lapis_lazuli' })[m] ?? m };
+const C_KIND = { glass_blocks: () => 'glass', ingots: m => m + '_ingot', nuggets: m => m + '_nugget', storage_blocks: m => m + '_block', raw_materials: m => 'raw_' + m, dyes: m => m + '_dye', rods: () => 'stick', chests: () => 'chest', barrels: () => 'barrel', drinks: m => m + '_bucket', foods: m => m === 'milk' ? 'milk_bucket' : m, buckets: m => m === 'empty' ? 'bucket' : m + '_bucket', gems: m => ({ amethyst: 'amethyst_shard', lapis: 'lapis_lazuli' })[m] ?? m };
 const cTagItem = t => { const [k, m] = t.slice(2).split('/'); return 'minecraft:' + (m ? (C_KIND[k] ?? (x => x))(m) : C_ONE[k] ?? k.replace(/s$/, '')); };
 // 재료 -> 대표 아이템 id (태그면 그림 있는 첫 아이템)
 const ingId = ing => {
@@ -308,7 +310,7 @@ function recipeOf(r) {
     i = Object.entries(cnt).map(([k, n]) => `${k} ×${n}`);
     ik = Object.keys(cnt).map(k => ingKey(first[k]));
   } else if (r.type === 'cobblemon:brewing_stand') { i = [`${ingKo(r.bottle)} (병)`, `${ingKo(r.input)} (재료)`]; ik = [ingKey(r.bottle), ingKey(r.input)]; }
-  else if (r.type === 'minecraft:smithing_transform') { i = [ingKo(r.template), ingKo(r.base), ingKo(r.addition)]; ik = [r.template, r.base, r.addition].map(ingKey); }
+  else if (r.template) { i = [ingKo(r.template), ingKo(r.base), ingKo(r.addition)]; ik = [r.template, r.base, r.addition].map(ingKey); }
   else if (r.ingredient) { i = [ingKo(r.ingredient)]; ik = [ingKey(r.ingredient)]; }
   const out = r.result.id || r.result.item;
   icon(out);
@@ -322,6 +324,38 @@ for (const { f } of dataFiles('recipe')) {
   if (out && RTYPE[r.type]) { const k = ikey(out); if (!allR.has(k)) allR.set(k, []); allR.get(k).push(r); }
 }
 
+// ---------- 가이드 "가방·도구": [묶음, 설명, [[아이템 키, 한 줄 설명(비면 게임 툴팁)]]]. 칸 수·비용은 인스턴스 config 기본값 ----------
+const TOOLS = [
+  ['가방', '등에 메거나(기본 B키로 열기) 바닥에 놓고 우클릭. 다음 단계 배낭은 지금 배낭을 가운데 넣고 만들어서 안의 물건이 그대로 남음.', [
+    ['sophisticatedbackpacks:backpack', '27칸 · 기능 칸 1개'], ['sophisticatedbackpacks:copper_backpack', '45칸 · 기능 칸 1개'],
+    ['sophisticatedbackpacks:iron_backpack', '81칸 · 기능 칸 7개'], ['sophisticatedbackpacks:gold_backpack', '96칸 · 기능 칸 8개'],
+    ['sophisticatedbackpacks:diamond_backpack', '108칸 · 기능 칸 9개'], ['sophisticatedbackpacks:netherite_backpack', '120칸 · 기능 칸 10개 (대장장이 작업대)']]],
+  ['가방 기능', '배낭을 열면 왼쪽에 기능 칸이 있음. 끼우면 바로 작동. 전부 기능 틀이 재료.', [
+    ['sophisticatedbackpacks:upgrade_base', '모든 기능의 재료'], ['sophisticatedbackpacks:pickup_upgrade', '바닥 아이템을 주우면 배낭으로 바로 들어감'],
+    ['sophisticatedbackpacks:magnet_upgrade', '주변 아이템을 끌어당김'], ['sophisticatedbackpacks:crafting_upgrade', '배낭 안에서 3×3 조합'],
+    ['sophisticatedbackpacks:stack_upgrade_starter_tier', '한 칸에 1.5배 쌓임 (1단계는 2배)'], ['sophisticatedbackpacks:tool_swapper_upgrade', '캐는 블록에 맞는 도구로 자동 교체'],
+    ['sophisticatedbackpacks:void_upgrade', '고른 아이템을 자동으로 없앰 (잡템 정리)']]],
+  ['이동 (전송석)', '마을 등에 생성된 전송석을 우클릭하면 등록됨. 등록한 전송석끼리 순간이동. 비용은 경험치 레벨: 100블록마다 1레벨(최대 27), 다른 차원은 27레벨, 전역 전송석은 무료. 대기 시간 없음.', [
+    ['waystones:warp_stone', '들고 우클릭을 꾹 누르면 등록한 전송석 목록이 뜸. 계속 다시 씀'],
+    ['waystones:warp_scroll', '1회용. 등록한 전송석 하나로 이동'], ['waystones:waystone', '직접 설치하는 전송석. 남이 설치한 건 주인만 수정 가능']]],
+  ['포켓몬 찾기 (코블나브)', '', [
+    ['cobblenav:pokenav_item_base', '지금 있는 곳에서 나올 수 있는 포켓몬과 확률을 보여주고, 골라서 추적'],
+    ['cobblenav:pokefinder_item_red', '포켓내비에서 고른 종을 추적 (색만 다른 버전 여러 개)'], ['cobblenav:fishingnav_item', '낚시 중에 Shift+우클릭하면 그 물에서 낚이는 포켓몬 목록']]],
+  ['창고 (톰스 스토리지)', '상자들을 인벤토리 커넥터에 붙이거나 케이블로 잇고 터미널을 연결하면, 상자 전체를 한 화면에서 검색해서 꺼냄.', [
+    ['toms_storage:inventory_connector', '붙어 있는 상자들을 하나로 묶음'], ['toms_storage:inventory_cable', '떨어진 상자까지 연결'],
+    ['toms_storage:storage_terminal', '묶인 상자 전체 검색·꺼내기'], ['toms_storage:crafting_terminal', '저장 터미널 + 조합대'],
+    ['toms_storage:wireless_terminal', '떨어진 곳에서 터미널 열기 (범위 제한)']]],
+  ['잠자리 (컴포츠)', '둘 다 낮·밤 언제든 사용 가능. 색 16가지.', [
+    ['comforts:sleeping_bag_white', '휴대용 침대. 침대와 달리 리스폰 지점이 안 바뀜'], ['comforts:hammock_white', '밧줄과 못 2개 사이에 거는 해먹'],
+    ['comforts:rope_and_nail', '해먹 설치용']]],
+  ['트레이너 (RCT)', '체육관·사천왕 진행 모드. 트레이너 카드를 가지고 있어야 야생 트레이너가 나타나고, 16블록 안에서 눈에 띄면 대결이 걸림. 레벨 상한은 20에서 시작해 트레이너를 이길수록 오르고, 상한 위로는 레벨업 안 됨.', [
+    ['rctmod:trainer_card', '진행 상황·레벨 상한·남은 트레이너 확인. 이게 있어야 트레이너가 나옴'],
+    ['rctmod:trainer_repel_rod', '주변에 트레이너가 안 나오게 하는 블록 (집·농장용)']]],
+  ['개체값 (병뚜껑)', '능력치별 병뚜껑은 트레이너 대결 보상으로 나오고, 코블벌스 레시피로 만들 수도 있음.', [
+    ['obc:bottle_cap_hp', 'HP 개체값 최대. 공격·방어·특공·특방·스피드도 같은 방식'], ['obc:bottle_cap_gold', '6개 능력치 개체값 전부 최대'],
+    ['obc:bottle_cap_speed_withered', '스피드 개체값 0 (트릭룸용)']]],
+];
+
 // ---------- TM (TMCraft: 조합대에서 빈 디스크 + 재료로 tm_<기술> 제작. 코블벌스 데이터팩이 레시피를 덮어씀) ----------
 for (const { rel, f } of dataFiles('recipe', 'tmcraft')) {
   const id = rel.match(/^tm_([a-z0-9]+).json$/)?.[1];
@@ -332,6 +366,7 @@ for (const { rel, f } of dataFiles('recipe', 'tmcraft')) {
   const nsOf = k => k.includes(':') ? k.split(':')[0] : 'cobblemon';
   const queue = [...allR.keys()].filter(k => ITEM_NS.includes(nsOf(k)));
   Object.values(moves).forEach(m => m[10]?.ik.forEach(k => k && queue.push(k)));
+  TOOLS.forEach(([, , rows]) => rows.forEach(([id]) => queue.push(id)));
   const done = new Set();
   while (queue.length) {
     const k = queue.pop();
@@ -365,6 +400,13 @@ for (const key of Object.keys(lang)) {
   if (!tip && !recipes[id] && !catOf[id]) continue;
   if (items[id] && !tip) continue;
   items[id] = [lang[key], catOf[id] || (/메가스톤의 일종/.test(tip) ? '메가스톤' : m[2] === 'legendarymonuments' ? '전설 모뉴먼트' : m[1] === 'block' ? '블록·장치' : '기타'), tip];
+  icon(id);
+}
+// 가이드 도구: 다른 모드 아이템이라 위 목록에 안 잡힘
+for (const [, , rows] of TOOLS) for (const [id] of rows) {
+  const [ns, n] = id.split(':'), lk = lang[`item.${ns}.${n}`] ? `item.${ns}.${n}` : `block.${ns}.${n}`;
+  const nm = itemKo(id); // 색 버전(pokefinder_item_red)은 이름이 색 없는 키에 있음
+  items[id] ??= [nm === n ? itemKo(id.replace(/_[a-z]+$/, '')) : nm, '가방·도구', (lang[lk + '.tooltip'] ?? '').replace(/§./g, '')];
   icon(id);
 }
 
@@ -544,8 +586,8 @@ for (const { ns, rel, f } of dataFiles('loot_table')) {
 }
 const refd = new Set(Object.values(LT).flatMap(t => [...t.refs]));
 const ltItems = (id, seen = new Set()) => { if (seen.has(id) || !LT[id]) return []; seen.add(id); return [...LT[id].items, ...[...LT[id].refs].flatMap(r => ltItems(r, seen))]; };
-const LT_KO = { chests: '', village: '마을', villages: '마을', desert_pyramid: '사막 사원', jungle_temple: '정글 사원', simple_dungeon: '던전', abandoned_mineshaft: '폐광', shipwreck_treasure: '난파선 보물', shipwreck_supply: '난파선 보급품', shipwreck_map: '난파선 지도', buried_treasure: '묻힌 보물', ruined_portal: '파괴된 차원문', bastion_treasure: '보루 보물', bastion_other: '보루', bastion_bridge: '보루 다리', bastion_hoglin_stable: '호글린 우리', nether_bridge: '네더 요새', end_city_treasure: '엔드 시티', stronghold_corridor: '요새 복도', stronghold_crossing: '요새 교차로', stronghold_library: '요새 서재', ancient_city: '고대 도시', ancient_city_ice_box: '고대 도시 얼음 상자', trial_chambers: '시련의 회당', woodland_mansion: '삼림 대저택', pillager_outpost: '약탈자 전초기지', igloo_chest: '이글루', underwater_ruin_big: '큰 바다 폐허', underwater_ruin_small: '작은 바다 폐허', spawn_bonus_chest: '보너스 상자', archaeology: '고고학(붓질)', desert_well: '사막 우물', ocean_ruin_cold: '차가운 바다 폐허', ocean_ruin_warm: '따뜻한 바다 폐허', trail_ruins_common: '오솔길 폐허', trail_ruins_rare: '오솔길 폐허(희귀)', gameplay: '', fishing: '낚시', fish: '물고기', treasure: '보물', junk: '잡동사니', piglin_bartering: '피글린 물물교환', hero_of_the_village: '마을의 영웅 선물', cat_morning_gift: '고양이 아침 선물', sniffer_digging: '스니퍼 발굴', ruins: '폐허', shipwreck_coves: '난파선 만', fossils: '화석', injection: '', raid: '레이드', structures: '구조물', gilded_chests: '금빛 상자', village_weaponsmith: '무기 대장장이', village_toolsmith: '도구 대장장이', village_armorer: '갑옷 제조인', village_cartographer: '지도 제작자', village_mason: '석공', village_shepherd: '양치기', village_butcher: '도살업자', village_fletcher: '화살 제조인', village_fisher: '어부', village_tannery: '가죽 세공인', village_temple: '성직자', village_desert_house: '사막 집', village_plains_house: '평원 집', village_taiga_house: '타이가 집', village_snowy_house: '설원 집', village_savanna_house: '사바나 집', spawners: '시련의 생성기', general: '건물 상자', attic: '다락', bedroom: '침실', kitchen: '부엌', blacksmith: '대장간', sittingroom: '거실', workshop: '작업장', support_tables: '보조 상자', archaeological_site: '고고학 유적', reward: '보상', ominous: '불길한', vault: '금고' };
-const LT_MOD = { cobblemon: '', minecraft: '', bca: '', mega_showdown: '메가 쇼다운 ', cobbleverse: '코블벌스 ', cobblemonraiddens: '', legendarymonuments: '전설 모뉴먼트 ' };
+const LT_KO = { chests: '', village: '마을', villages: '마을', desert_pyramid: '사막 사원', jungle_temple: '정글 사원', simple_dungeon: '던전', abandoned_mineshaft: '폐광', shipwreck_treasure: '난파선 보물', shipwreck_supply: '난파선 보급품', shipwreck_map: '난파선 지도', buried_treasure: '묻힌 보물', ruined_portal: '파괴된 차원문', bastion_treasure: '보루 보물', bastion_other: '보루', bastion_bridge: '보루 다리', bastion_hoglin_stable: '호글린 우리', nether_bridge: '네더 요새', end_city_treasure: '엔드 시티', stronghold_corridor: '요새 복도', stronghold_crossing: '요새 교차로', stronghold_library: '요새 서재', ancient_city: '고대 도시', ancient_city_ice_box: '고대 도시 얼음 상자', trial_chambers: '시련의 회당', woodland_mansion: '삼림 대저택', pillager_outpost: '약탈자 전초기지', igloo_chest: '이글루', underwater_ruin_big: '큰 바다 폐허', underwater_ruin_small: '작은 바다 폐허', spawn_bonus_chest: '보너스 상자', archaeology: '고고학(붓질)', desert_well: '사막 우물', ocean_ruin_cold: '차가운 바다 폐허', ocean_ruin_warm: '따뜻한 바다 폐허', trail_ruins_common: '오솔길 폐허', trail_ruins_rare: '오솔길 폐허(희귀)', gameplay: '', inject: '', fishing: '낚시', fish: '물고기', treasure: '보물', junk: '잡동사니', piglin_bartering: '피글린 물물교환', hero_of_the_village: '마을의 영웅 선물', cat_morning_gift: '고양이 아침 선물', sniffer_digging: '스니퍼 발굴', ruins: '폐허', shipwreck_coves: '난파선 만', fossils: '화석', injection: '', raid: '레이드', structures: '구조물', gilded_chests: '금빛 상자', village_weaponsmith: '무기 대장장이', village_toolsmith: '도구 대장장이', village_armorer: '갑옷 제조인', village_cartographer: '지도 제작자', village_mason: '석공', village_shepherd: '양치기', village_butcher: '도살업자', village_fletcher: '화살 제조인', village_fisher: '어부', village_tannery: '가죽 세공인', village_temple: '성직자', village_desert_house: '사막 집', village_plains_house: '평원 집', village_taiga_house: '타이가 집', village_snowy_house: '설원 집', village_savanna_house: '사바나 집', spawners: '시련의 생성기', general: '건물 상자', attic: '다락', bedroom: '침실', kitchen: '부엌', blacksmith: '대장간', sittingroom: '거실', workshop: '작업장', support_tables: '보조 상자', archaeological_site: '고고학 유적', reward: '보상', ominous: '불길한', vault: '금고' };
+const LT_MOD = { cobblemon: '', sophisticatedbackpacks: '', minecraft: '', bca: '', mega_showdown: '메가 쇼다운 ', cobbleverse: '코블벌스 ', cobblemonraiddens: '', legendarymonuments: '전설 모뉴먼트 ' };
 const ltLabel = id => { const [ns, p] = id.split(':'); return ((LT_MOD[ns] ?? ns + ' ') + p.split('/').map(w => LT_KO[w] ?? w.replace(/_/g, ' ')).filter(Boolean).join(' · ')).trim(); };
 for (const id of Object.keys(LT)) {
   if (refd.has(id)) continue;
@@ -556,6 +598,7 @@ for (const id of Object.keys(LT)) {
     its.forEach(k => k !== b ? addSrc(k, 'b', nm) : LT[id].crop && addSrc(k, 'b', nm + ' (다 자라면 수확)'));
   }
   else if (p.startsWith('entities/')) { if (ns === 'minecraft') { const nm = mcLang['entity.minecraft.' + p.slice(9).split('/')[0]] ?? p.slice(9); its.forEach(k => addSrc(k, 'e', nm)); } }
+  else if (ns === 'rctmod') its.forEach(k => addSrc(k, 'l', '트레이너 대결 보상')); // 트레이너별 표가 수백 개라 하나로
   else if (!/^(equipment|shearing|pots|dispensers|placeholder)/.test(p)) its.forEach(k => addSrc(k, 'l', ltLabel(id)));
 }
 // 도감에서 보여줄 아이템(아이템 탭·레시피 재료·결과물·기믹)만 남기고, 목록이 길면 자름
@@ -578,7 +621,7 @@ if (bad) process.exit(1);
 
 const order = Object.keys(mons).sort((a, b) => mons[a].n - mons[b].n || (mons[a].form ? 1 : 0) - (mons[b].form ? 1 : 0) || a.localeCompare(b));
 const types = Object.fromEntries(TYPES.map(t => [t, typeKo(t)]));
-const out = `window.DEX=${JSON.stringify({ types, moves, mons, order, abilities, natures, items, recipes, src, ic: [...ICONS], st: Object.fromEntries(Object.entries(STATION).map(([w, id]) => [w, ikey(id)])), spawns, cfg, blabel })};`;
+const out = `window.DEX=${JSON.stringify({ types, moves, mons, order, abilities, natures, items, recipes, src, tools: TOOLS, ic: [...ICONS], st: Object.fromEntries(Object.entries(STATION).map(([w, id]) => [w, ikey(id)])), spawns, cfg, blabel })};`;
 fs.writeFileSync(path.join(__dirname, 'data.js'), out);
 const cats = {}; Object.values(items).forEach(i => cats[i[1]] = (cats[i[1]] || 0) + 1);
 console.log(`Cobblemon ${VERSION}: mons ${order.length} (species ${Object.keys(species).length}), moves ${Object.keys(moves).length}, tm ${Object.values(moves).filter(m => m[10]).length}, items ${Object.keys(items).length}, recipes ${Object.keys(recipes).length}, spawns ${spawns.length}, data.js ${(out.length / 1048576).toFixed(1)} MB`);

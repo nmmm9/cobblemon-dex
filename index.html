@@ -1,0 +1,802 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>코블몬 도감</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+:root{--fg:#111;--bg:#fff;--line:#e6e6e6;--muted:#777;--soft:#f5f5f5}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:Pretendard,-apple-system,"Malgun Gothic",sans-serif;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:960px;margin:0 auto;padding:40px 16px 80px}
+.search{position:relative;margin-bottom:40px}
+.search input{width:100%;font:inherit;font-size:20px;padding:12px 0;border:0;border-bottom:1px solid var(--fg);outline:0;background:transparent;color:var(--fg)}
+.search input::placeholder{color:#bbb}
+.drop{position:absolute;left:0;right:0;top:100%;background:var(--bg);border:1px solid var(--line);border-top:0;z-index:10;max-height:360px;overflow:auto;display:none}
+.drop.on{display:block}
+.drop div{padding:9px 12px;cursor:pointer;display:flex;gap:10px;align-items:baseline}
+.drop div.sel,.drop div:hover{background:var(--soft)}
+.drop .n{color:var(--muted);font-variant-numeric:tabular-nums;min-width:44px}
+.drop .en{color:var(--muted);font-size:12px}
+.hint{color:var(--muted)}
+.head{display:flex;gap:28px;align-items:flex-start;margin-bottom:40px}
+.head img{width:140px;height:140px;object-fit:contain;flex:none;image-rendering:auto}
+.head h1{margin:0;font-size:28px;font-weight:600;letter-spacing:-.01em;line-height:1.2}
+.head h1 small{font-size:14px;color:var(--muted);font-weight:400;margin-left:8px}
+.head .num{color:var(--muted);font-variant-numeric:tabular-nums;margin-bottom:4px}
+.meta{margin-top:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 18px}
+.meta b{font-weight:500;color:var(--fg)}
+.badge{display:inline-block;font-size:11px;padding:1px 7px;border:1px solid var(--line);border-radius:3px;color:var(--muted);vertical-align:middle;margin-left:6px}
+.t{display:inline-block;font-size:12px;font-weight:500;color:#fff;padding:2px 9px;border-radius:3px;line-height:1.5;margin:2px 3px 2px 0}
+.t.sm{font-size:11px;padding:1px 7px}
+section{margin-bottom:40px}
+h2{font-size:12px;font-weight:500;color:var(--muted);letter-spacing:.06em;margin:0 0 14px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{padding:3px 10px;border:1px solid var(--line);border-radius:3px;cursor:pointer}
+.chip.cur{background:var(--fg);color:#fff;border-color:var(--fg)}
+/* evolution */
+.evo{display:flex;align-items:center;gap:16px}
+.node{min-width:120px;padding:10px 12px;border:1px solid var(--line);border-radius:4px;cursor:pointer;text-align:center}
+.node.cur{border-color:var(--fg);box-shadow:inset 0 0 0 1px var(--fg)}
+.node .ko{font-weight:500}
+.node .fm{font-size:11px;color:var(--muted)}
+.node .ty{margin-top:4px}
+.branches{display:flex;flex-direction:column;gap:12px}
+.branch{display:flex;align-items:center;gap:16px}
+.how{font-size:12px;color:var(--muted);max-width:200px;position:relative;padding-left:20px}
+.how:before{content:"→";position:absolute;left:0;color:#bbb}
+.evo-scroll{overflow-x:auto;padding-bottom:6px}
+/* stats */
+.stats{display:grid;grid-template-columns:52px 40px 1fr;gap:8px 14px;align-items:center;max-width:620px}
+.stats .k{color:var(--muted)}
+.stats .v{text-align:right;font-variant-numeric:tabular-nums}
+.bar{height:6px;background:var(--soft);border-radius:3px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--fg)}
+.stats .tot{color:var(--muted);border-top:1px solid var(--line);padding-top:8px}
+.stats .tot.v{color:var(--fg)}
+.role{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:18px}
+.role .chip{cursor:default}
+.role .note{color:var(--muted);font-size:12px;margin-left:8px}
+/* matchups */
+.mu{display:grid;grid-template-columns:1fr 1fr;gap:28px}
+@media(max-width:700px){.mu{grid-template-columns:1fr}.head{gap:16px}.head img{width:96px;height:96px}}
+.mu h3{font-size:13px;font-weight:500;margin:0 0 10px}
+.row{display:grid;grid-template-columns:104px 1fr;gap:10px;align-items:start;margin-bottom:8px}
+.row .m{font-variant-numeric:tabular-nums;color:var(--muted);padding-top:3px;font-size:12px;white-space:nowrap}
+.lead{margin:0 0 18px;padding:10px 14px;background:var(--soft);border-radius:4px}
+.vs-search{margin:0 0 16px}
+.vs-search input{font-size:15px;padding:8px 0;border-bottom-color:var(--line)}
+.vs-card{border:1px solid var(--fg);border-radius:4px;padding:14px 16px;margin-bottom:18px}
+.vs-title{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px}
+.vs-title b{font-weight:500}
+.vs-title .lnk{cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.vs-title .note{color:var(--muted);font-size:12px}
+.x{margin-left:auto;font:inherit;font-size:12px;color:var(--muted);background:none;border:1px solid var(--line);border-radius:3px;padding:3px 8px;cursor:pointer}
+.row .note{color:var(--muted);font-size:12px;margin-left:4px}
+.ab{padding:10px 12px;border:1px solid var(--line);border-radius:4px;margin-bottom:8px}
+.ab.on{border-color:var(--fg)}
+.ab-h{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ab-h b{font-weight:500}
+.ab-h .badge{margin-left:0}
+.ab-e{color:var(--muted);font-size:12px}
+.ab-d{color:var(--muted);font-size:12px;margin-top:4px}
+.ab-w{font-size:12px;margin-top:6px}
+.desc{margin:-4px 0 12px;color:var(--muted);font-size:12px}
+.row .m.bad{color:#c0392b}.row .m.good{color:#27ae60}
+.sub{color:var(--muted);font-size:12px;margin:14px 0 6px}
+/* moves */
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th{font-weight:500;color:var(--muted);text-align:left;font-size:12px;padding:6px 8px;border-bottom:1px solid var(--line)}
+td{padding:7px 8px;border-bottom:1px solid var(--soft);vertical-align:middle}
+td.c,th.c{text-align:center}
+td .en{color:var(--muted);font-size:11px;margin-left:6px}
+.cat{font-size:11px;color:var(--muted)}
+.rec{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.rec .card{border:1px solid var(--line);border-radius:4px;padding:12px 14px}
+.rec .why{font-size:11px;color:var(--muted);margin-bottom:6px}
+.rec .nm{font-weight:500}
+.rec .st{color:var(--muted);font-size:12px;margin-top:4px}
+.opt{font-size:12px;color:var(--muted);display:flex;gap:16px;align-items:center;margin-bottom:12px}
+.opt label{cursor:pointer;display:flex;gap:6px;align-items:center}
+details{margin-top:10px}
+summary{cursor:pointer;color:var(--muted);padding:8px 0;list-style:none}
+summary::-webkit-details-marker{display:none}
+summary:before{content:"+";display:inline-block;width:16px;color:#bbb}
+details[open] summary:before{content:"−"}
+.empty{color:var(--muted);padding:8px}
+/* nav */
+.nav{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--line)}
+.nav-in{max-width:960px;margin:0 auto;padding:0 16px;display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
+.nav-in::-webkit-scrollbar{display:none}
+.nav a{flex:none;padding:14px 12px 12px;color:var(--muted);border-bottom:2px solid transparent;white-space:nowrap}
+.nav a.on{color:var(--fg);border-bottom-color:var(--fg)}
+.nav .brand{color:var(--fg);font-weight:600;padding-left:0;margin-right:12px}
+.ver{color:var(--muted);font-size:12px;margin-top:40px;border-top:1px solid var(--line);padding-top:12px}
+/* tab pages */
+.tab-head{margin:0 0 6px;font-size:22px;font-weight:600}
+.tab-desc{color:var(--muted);margin:0 0 24px}
+.filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:18px}
+.filters input[type=text],.filters select{font:inherit;padding:7px 10px;border:1px solid var(--line);border-radius:4px;background:var(--bg);color:var(--fg)}
+.filters input[type=text]{flex:1;min-width:180px}
+.filters label{font-size:12px;color:var(--muted);display:flex;gap:6px;align-items:center;cursor:pointer}
+.chip.sm{font-size:12px;padding:2px 9px}
+.list .it{border-bottom:1px solid var(--soft)}
+.list .it-h{display:grid;gap:10px;align-items:center;padding:9px 4px;cursor:pointer}
+.list .it-h:hover{background:var(--soft)}
+.list .it-b{padding:6px 4px 16px;display:none}
+.list .it.open .it-b{display:block}
+.list .muted{color:var(--muted);font-size:12px}
+.mon-chips{display:flex;flex-wrap:wrap;gap:6px}
+.mon-chip{display:inline-flex;align-items:center;gap:4px;padding:2px 9px 2px 3px;border:1px solid var(--line);border-radius:3px;cursor:pointer;font-size:12px}
+.mon-chip img{width:36px;height:36px;margin:-4px 0;image-rendering:pixelated}
+.mon-chip:hover{border-color:var(--fg)}
+.recipe{border:1px solid var(--line);border-radius:4px;padding:10px 12px;margin:6px 8px 6px 0;display:inline-block;vertical-align:top;max-width:100%}
+.recipe .rw{font-size:12px;color:var(--muted);margin-bottom:6px}
+.grid3{display:grid;grid-template-columns:repeat(3,76px);gap:3px;margin-bottom:6px}
+.grid3 div{height:54px;flex-direction:column;gap:1px;border:1px solid var(--line);border-radius:3px;font-size:10px;line-height:1.2;display:flex;align-items:center;justify-content:center;text-align:center;padding:2px;background:var(--soft);overflow:hidden}
+.grid3 div:empty{background:none}
+.ico{width:22px;height:22px;object-fit:cover;object-position:top;image-rendering:pixelated;vertical-align:middle;margin-right:5px;flex:none}
+.grid3 .ico{width:26px;height:26px;margin:0}
+.recipe .ri .ico{width:16px;height:16px;margin-right:3px}
+.recipe .ri{font-size:12px}
+.sp-row td{vertical-align:top}
+.sp-row .bi .t{background:#eee;color:var(--fg)}
+.bucket{font-size:12px;white-space:nowrap}
+.b-common{color:#555}.b-uncommon{color:#2a7ab0}.b-rare{color:#8e44ad}.b-ultra-rare{color:#c0392b}
+.cond{font-size:12px;color:var(--muted)}
+.cond b{font-weight:500;color:var(--fg)}
+.bio{display:inline-block;background:var(--soft);border-radius:3px;padding:1px 7px;margin:2px 4px 2px 0;font-size:12px;color:var(--fg);cursor:default}
+.bio b{font-weight:500}
+.bio .muted{color:var(--muted);font-weight:400}
+.bio code{font:11px ui-monospace,Consolas,monospace;color:var(--muted)}
+.dim{display:inline-block;font-size:11px;padding:0 6px;border-radius:3px;margin:2px 4px 2px 0;border:1px solid var(--line);color:var(--muted)}
+.dim-ow{color:#2e7d32;border-color:#a5d6a7}.dim-nether{color:#b03a2e;border-color:#f1b0a8}.dim-end{color:#6a4c93;border-color:#cbb8e6}
+.tchart{border-collapse:collapse;font-size:11px}
+.tchart th,.tchart td{border:1px solid #fff;padding:0;text-align:center;width:34px;height:30px}
+.tchart th{font-weight:500}
+.tchart th .t{margin:0;padding:1px 3px;font-size:10px}
+.tchart th.rh{text-align:right;padding-right:4px;width:auto}
+.c2{background:#d6f0dc;color:#1e7b3a;font-weight:600}.c05{background:#f6dcd8;color:#a93226}.c0{background:#333;color:#fff}
+.tc-wrap{overflow-x:auto}
+.guide h3{font-size:16px;font-weight:600;margin:32px 0 10px}
+.guide p,.guide li{line-height:1.7}
+.guide table{max-width:560px}
+.kv{display:grid;grid-template-columns:140px 1fr;gap:6px 14px}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0}
+</style>
+</head>
+<body>
+<nav class="nav"><div class="nav-in">
+  <a class="brand" href="#">코블몬 도감</a>
+  <a data-tab="" href="#">도감</a><a data-tab="spawn" href="#/spawn">출현</a><a data-tab="moves" href="#/moves">기술</a><a data-tab="abilities" href="#/abilities">특성</a><a data-tab="items" href="#/items">아이템</a><a data-tab="types" href="#/types">상성표</a><a data-tab="guide" href="#/guide">가이드</a>
+</div></nav>
+<div class="wrap">
+  <div class="search" id="dexbar">
+    <input id="q" placeholder="포켓몬 이름 (한글/영문/도감번호)" autocomplete="off" autofocus>
+    <div class="drop" id="drop"></div>
+  </div>
+  <div id="view"><p class="hint">예: 리자몽, 이브이, charizard, 6</p></div>
+  <div class="ver" id="ver"></div>
+</div>
+<script src="data.js"></script>
+<script>
+const D = window.DEX, M = D.mons, MV = D.moves, TK = D.types;
+const TYPES = Object.keys(TK);
+const COLOR = {normal:'#9fa19f',fire:'#e56c2b',water:'#3f8fd8',electric:'#e8b81e',grass:'#5fa83a',ice:'#59b9c8',fighting:'#c0392b',poison:'#9b5ab5',ground:'#b8893a',flying:'#8aa2e0',psychic:'#e06098',bug:'#8fa31b',rock:'#a89a6b',ghost:'#6a5a9c',dragon:'#5a4fcf',dark:'#5a4a42',steel:'#7f8fa0',fairy:'#e09ac0'};
+// attacker -> {defender: mult}; omitted = 1
+const CH = {
+ normal:{rock:.5,steel:.5,ghost:0},
+ fire:{grass:2,ice:2,bug:2,steel:2,fire:.5,water:.5,rock:.5,dragon:.5},
+ water:{fire:2,ground:2,rock:2,water:.5,grass:.5,dragon:.5},
+ electric:{water:2,flying:2,electric:.5,grass:.5,dragon:.5,ground:0},
+ grass:{water:2,ground:2,rock:2,fire:.5,grass:.5,poison:.5,flying:.5,bug:.5,dragon:.5,steel:.5},
+ ice:{grass:2,ground:2,flying:2,dragon:2,fire:.5,water:.5,ice:.5,steel:.5},
+ fighting:{normal:2,ice:2,rock:2,dark:2,steel:2,poison:.5,flying:.5,psychic:.5,bug:.5,fairy:.5,ghost:0},
+ poison:{grass:2,fairy:2,poison:.5,ground:.5,rock:.5,ghost:.5,steel:0},
+ ground:{fire:2,electric:2,poison:2,rock:2,steel:2,grass:.5,bug:.5,flying:0},
+ flying:{grass:2,fighting:2,bug:2,electric:.5,rock:.5,steel:.5},
+ psychic:{fighting:2,poison:2,psychic:.5,steel:.5,dark:0},
+ bug:{grass:2,psychic:2,dark:2,fire:.5,fighting:.5,poison:.5,flying:.5,ghost:.5,steel:.5,fairy:.5},
+ rock:{fire:2,ice:2,flying:2,bug:2,fighting:.5,ground:.5,steel:.5},
+ ghost:{psychic:2,ghost:2,dark:.5,normal:0},
+ dragon:{dragon:2,steel:.5,fairy:0},
+ dark:{psychic:2,ghost:2,fighting:.5,dark:.5,fairy:.5},
+ steel:{ice:2,rock:2,fairy:2,fire:.5,water:.5,electric:.5,steel:.5},
+ fairy:{fighting:2,dragon:2,dark:2,fire:.5,poison:.5,steel:.5},
+};
+const eff = (atk, defs) => defs.reduce((p, d) => p * (CH[atk][d] ?? 1), 1);
+const tchip = (t, sm) => `<span class="t${sm ? ' sm' : ''}" style="background:${COLOR[t]}">${TK[t]}</span>`;
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const CAT = {P:'물리', S:'특수', T:'변화'};
+const STAT = ['HP','공격','방어','특공','특방','스피드'];
+const fullKo = m => m.ko + (m.form ? ` (${m.form})` : '');
+
+// ---------- search ----------
+const norm = s => s.toLowerCase().replace(/[\s\-.'’:]/g, '');
+const IDX = D.order.map(k => ({k, m: M[k], ko: norm(fullKo(M[k])), en: norm(M[k].en + (M[k].form || ''))}));
+function search(q) {
+  q = norm(q); if (!q) return [];
+  if (/^\d+$/.test(q)) return IDX.filter(x => x.m.n === +q).slice(0, 12);
+  const hit = IDX.filter(x => x.ko.includes(q) || x.en.includes(q));
+  const rank = x => (x.ko === q || norm(x.m.en) === q ? 0 : x.ko.startsWith(q) || x.en.startsWith(q) ? 1 : 2) * 2 + (x.m.form ? 1 : 0);
+  return hit.sort((a, b) => rank(a) - rank(b) || a.m.n - b.m.n).slice(0, 12);
+}
+const $q = document.getElementById('q'), $drop = document.getElementById('drop'), $view = document.getElementById('view');
+function bindSearch(input, drop, onPick) {
+  let res = [], sel = 0;
+  const show = () => {
+    drop.innerHTML = res.map((x, i) => `<div data-k="${x.k}" class="${i === sel ? 'sel' : ''}"><span class="n">#${x.m.n}</span><span>${esc(fullKo(x.m))}</span><span class="en">${esc(x.m.en)}</span></div>`).join('');
+    drop.classList.toggle('on', res.length > 0);
+  };
+  input.addEventListener('input', () => { res = search(input.value); sel = 0; show(); });
+  input.addEventListener('keydown', e => {
+    if (e.key === 'ArrowDown') { sel = Math.min(sel + 1, res.length - 1); show(); e.preventDefault(); }
+    else if (e.key === 'ArrowUp') { sel = Math.max(sel - 1, 0); show(); e.preventDefault(); }
+    else if (e.key === 'Enter' && res[sel]) onPick(res[sel].k);
+    else if (e.key === 'Escape') drop.classList.remove('on');
+  });
+  drop.addEventListener('mousedown', e => { const d = e.target.closest('[data-k]'); if (d) onPick(d.dataset.k); });
+}
+bindSearch($q, $drop, go);
+document.addEventListener('click', e => { if (!e.target.closest('.search')) document.querySelectorAll('.drop').forEach(d => d.classList.remove('on')); });
+// URL: #내포켓몬 또는 #내포켓몬~상대포켓몬
+let CUR = null, OPP = null;
+function go(k) { location.hash = k + (OPP ? '~' + OPP : ''); }
+function setOpp(o) { location.hash = CUR + (o ? '~' + o : ''); }
+// #포켓몬[~상대]  또는  #/탭
+function route() {
+  const h = decodeURIComponent(location.hash.slice(1));
+  const tab = h.startsWith('/') ? h.slice(1).split('?')[0] : '';
+  document.querySelectorAll('.nav a[data-tab]').forEach(a => a.classList.toggle('on', a.dataset.tab === tab));
+  document.getElementById('dexbar').style.display = tab ? 'none' : '';
+  if (tab) { (TABS[tab] || TABS.guide)(); window.scrollTo(0, 0); return; }
+  const [me, opp] = h.split('~'); OPP = opp && M[opp] ? opp : null;
+  render(me);
+}
+window.addEventListener('hashchange', route);
+
+// ---------- evolution family ----------
+function root(k) { const seen = new Set(); while (M[k].pre && M[M[k].pre] && !seen.has(k)) { seen.add(k); k = M[k].pre; } return k; }
+function tree(k, seen = new Set()) {
+  seen.add(k);
+  const kids = {};
+  for (const e of M[k].evos) { if (seen.has(e.to)) continue; (kids[e.to] ??= []).push(e.how); }
+  return {k, kids: Object.entries(kids).map(([to, hows]) => ({how: hows.length > 2 ? hows[0] + ` 외 ${hows.length - 1}가지` : hows.join(' / '), node: tree(to, seen)}))};
+}
+function evoHtml(t, cur) {
+  const m = M[t.k];
+  const node = `<div class="node ${t.k === cur ? 'cur' : ''}" data-go="${t.k}"><div class="ko">${esc(m.ko)}</div>${m.form ? `<div class="fm">${esc(m.form)}</div>` : ''}<div class="ty">${m.types.map(x => tchip(x, 1)).join('')}</div></div>`;
+  if (!t.kids.length) return `<div class="evo">${node}</div>`;
+  return `<div class="evo">${node}<div class="branches">${t.kids.map(c => `<div class="branch"><div class="how">${esc(c.how)}</div>${evoHtml(c.node, cur)}</div>`).join('')}</div></div>`;
+}
+
+// ---------- role ----------
+// ponytail: 종족값만 보는 분류. 내구는 sqrt(HP×방어)로 공격과 같은 스케일에 놓고 비교
+function role(stats) {
+  const [hp, atk, def, spa, spd, spe] = stats, avg = stats.reduce((a, b) => a + b) / 6;
+  const off = Math.max(atk, spa), bulk = Math.max(Math.sqrt(hp * def), Math.sqrt(hp * spd));
+  let main;
+  if (off >= bulk * 1.15) main = atk >= spa * 1.15 ? '물리 어태커' : spa >= atk * 1.15 ? '특수 어태커' : '양 어태커';
+  else if (bulk >= off * 1.15) main = def >= spd * 1.15 ? '물리 막이' : spd >= def * 1.15 ? '특수 막이' : '양 막이';
+  else main = '밸런스형';
+  const tags = [];
+  if (spe >= 100 || spe >= avg * 1.25) tags.push('고속'); else if (spe <= 45 || spe <= avg * 0.6) tags.push('저속');
+  if (hp >= avg * 1.35) tags.push('고체력');
+  const pick = (f, dir) => stats.map((v, i) => [v, i]).filter(([v]) => f(v)).sort((a, b) => dir * (b[0] - a[0])).map(([, i]) => STAT[i]);
+  return {main, tags, hi: pick(v => v >= avg * 1.15, 1), lo: pick(v => v <= avg * 0.75, -1)};
+}
+function roleHtml(stats) {
+  const r = role(stats);
+  const note = [r.hi.length ? '강점 ' + r.hi.join('·') : '', r.lo.length ? '약점 ' + r.lo.join('·') : ''].filter(Boolean).join(' / ');
+  return `<div class="role"><span class="chip cur">${r.main}</span>${r.tags.map(t => `<span class="chip">${t}</span>`).join('')}<span class="note">${note}${stats[1] !== undefined && arguments[1] ? ' · ' + arguments[1] : ''}</span></div>`;
+}
+
+// ---------- nature / ability ----------
+// [올리는 스탯, 내리는 스탯] (STAT 인덱스). 없으면 무보정
+const NAT = {hardy:[],lonely:[1,2],brave:[1,5],adamant:[1,3],naughty:[1,4],bold:[2,1],docile:[],relaxed:[2,5],impish:[2,3],lax:[2,4],timid:[5,1],hasty:[5,2],serious:[],jolly:[5,3],naive:[5,4],modest:[3,1],mild:[3,2],quiet:[3,5],bashful:[],rash:[3,4],calm:[4,1],gentle:[4,2],sassy:[4,5],careful:[4,3],quirky:[]};
+const natEff = n => NAT[n].length ? `${STAT[NAT[n][0]]} ↑ ${STAT[NAT[n][1]]} ↓` : '보정 없음';
+function natureRec(stats) {
+  const r = role(stats), fast = r.tags.includes('고속'), phys = stats[1] >= stats[3];
+  const dump = phys ? '특공' : '공격';
+  let main, alt, why;
+  switch (r.main) {
+    case '물리 어태커': main = fast ? 'jolly' : 'adamant'; alt = fast ? 'adamant' : 'jolly'; why = fast ? '스피드로 선공 잡는 게 핵심. 안 쓰는 특공을 깎음' : '공격을 올리고 안 쓰는 특공을 깎음'; break;
+    case '특수 어태커': main = fast ? 'timid' : 'modest'; alt = fast ? 'modest' : 'timid'; why = fast ? '스피드로 선공 잡는 게 핵심. 안 쓰는 공격을 깎음' : '특공을 올리고 안 쓰는 공격을 깎음'; break;
+    case '양 어태커': main = fast ? 'naive' : (phys ? 'adamant' : 'modest'); alt = fast ? 'hasty' : 'hardy'; why = fast ? '공격·특공 둘 다 쓰니 스피드만 올림' : `더 높은 쪽(${phys ? '공격' : '특공'})을 올림. 둘 다 쓸 거면 무보정도 OK`; break;
+    case '물리 막이': main = phys ? 'impish' : 'bold'; alt = phys ? 'bold' : 'impish'; why = `방어를 올리고 안 쓰는 ${dump}을 깎음`; break;
+    case '특수 막이': main = phys ? 'careful' : 'calm'; alt = phys ? 'calm' : 'careful'; why = `특방을 올리고 안 쓰는 ${dump}을 깎음`; break;
+    case '양 막이': { const lowDef = stats[2] <= stats[4]; main = lowDef ? (phys ? 'impish' : 'bold') : (phys ? 'careful' : 'calm'); alt = lowDef ? (phys ? 'careful' : 'calm') : (phys ? 'impish' : 'bold'); why = `더 낮은 쪽(${lowDef ? '방어' : '특방'})을 메움. 안 쓰는 ${dump}을 깎음`; break; }
+    default: main = fast ? (phys ? 'jolly' : 'timid') : (phys ? 'adamant' : 'modest'); alt = fast ? (phys ? 'adamant' : 'modest') : (phys ? 'jolly' : 'timid'); why = `${phys ? '공격' : '특공'}이 더 높으니 그쪽 어태커로. 안 쓰는 ${dump}을 깎음`;
+  }
+  return {main, alt, why};
+}
+// ponytail: 특성 강도 수동 점수(0~5). 없는 건 2. 대전 통념 기준이지 코블몬 전용 밸런스는 아님
+const ABIL_SCORE = {hugepower:5,purepower:5,speedboost:5,intimidate:5,adaptability:5,protean:5,libero:5,magicguard:5,regenerator:5,multiscale:5,shadowshield:5,beastboost:5,toughclaws:5,sheerforce:5,technician:5,poisonheal:5,magicbounce:5,contrary:5,furcoat:5,icescales:5,intrepidsword:5,disguise:5,parentalbond:5,goodasgold:5,aerilate:5,pixilate:5,refrigerate:5,galvanize:5,sharpness:5,
+levitate:4,wonderguard:4,moxie:4,guts:4,drought:4,drizzle:4,sandstream:4,unburden:4,prankster:4,serenegrace:4,skilllink:4,waterabsorb:4,voltabsorb:4,flashfire:4,stormdrain:4,lightningrod:4,sapsipper:4,thickfat:4,unaware:4,moldbreaker:4,teravolt:4,turboblaze:4,simple:4,download:4,reckless:4,strongjaw:4,megalauncher:4,shadowtag:4,arenatrap:4,prismarmor:4,fluffy:4,stamina:4,gorillatactics:4,dauntlessshield:4,quarkdrive:4,protosynthesis:4,supremeoverlord:4,triage:4,tintedlens:4,steelworker:4,transistor:4,dragonsmaw:4,rockypayload:4,toxicchain:4,poisonpuppeteer:4,orichalcumpulse:4,hadronengine:4,swordofruin:4,beadsofruin:4,tabletsofruin:4,vesselofruin:4,
+snowwarning:3,sturdy:3,analytic:3,rockhead:3,ironfist:3,sandrush:3,slushrush:3,swiftswim:3,chlorophyll:3,surgesurfer:3,naturalcure:3,filter:3,solidrock:3,queenlymajesty:3,dazzling:3,armortail:3,neutralizinggas:3,scrappy:3,competitive:3,defiant:3,bulletproof:3,immunity:3,flamebody:3,roughskin:3,ironbarbs:3,shedskin:3,marvelscale:3,compoundeyes:3,noguard:3,quickfeet:3,flareboost:3,toxicboost:3,harvest:3,clearbody:3,whitesmoke:3,fullmetalbody:3,sandforce:3,galewings:3,steelyspirit:3,punkrock:3,cursedbody:3,pickpocket:2,innerfocus:2,
+hustle:2,overgrow:2,blaze:2,torrent:2,swarm:2,
+aftermath:1,cutecharm:1,tangledfeet:1,frisk:1,anticipation:1,forewarn:1,telepathy:1,keeneye:1,normalize:1,heavymetal:1,lightmetal:1,minus:1,plus:1,rattled:1,bigpecks:1,suctioncups:1,stickyhold:1,damp:1,leafguard:1,waterveil:1,magmaarmor:1,hospitality:1,
+illuminate:0,runaway:0,pickup:0,honeygather:0,ballfetch:0,klutz:0,stall:0,truant:0,slowstart:0,defeatist:0};
+const WEATHER = new Set(['swiftswim','chlorophyll','sandrush','slushrush','solarpower','raindish','icebody','dryskin','hydration','leafguard','sandveil','snowcloak','sandforce','flowergift','forecast']);
+function abilityRec(m) {
+  const scored = m.abil.map((a, i) => ({...a, i, s: ABIL_SCORE[a.id] ?? 2}));
+  scored.sort((a, b) => b.s - a.s || a.h - b.h || a.i - b.i);
+  const best = scored[0], flat = scored.every(x => x.s === best.s);
+  const why = flat ? (m.abil.length > 1 ? '특성 간 차이 거의 없음. 아무거나 OK' : '특성이 하나뿐') : best.s >= 4 ? '거의 항상 이득인 특성' : best.s === 3 ? '무난하게 좋은 쪽' : '그나마 나은 쪽';
+  return {best: best.id, why: why + (WEATHER.has(best.id) ? ' (날씨·필드 조건 필요)' : '')};
+}
+function abilHtml(m) {
+  const r = abilityRec(m), n = natureRec(m.stats);
+  const rows = m.abil.map(a => { const [ko, desc] = D.abilities[a.id] || [a.id, '']; const rec = a.id === r.best && m.abil.length > 1;
+    return `<div class="ab ${rec ? 'on' : ''}"><div class="ab-h">${rec ? '<span class="chip cur">추천</span>' : ''}<b>${esc(ko)}</b>${a.h ? '<span class="badge">숨겨진 특성</span>' : ''}${WEATHER.has(a.id) ? '<span class="badge">날씨·필드</span>' : ''}</div><div class="ab-d">${esc(desc)}</div>${rec ? `<div class="ab-w">${esc(r.why)}</div>` : ''}</div>`; }).join('');
+  const natRow = (id, label) => `<div class="ab ${label === '추천' ? 'on' : ''}"><div class="ab-h"><span class="chip ${label === '추천' ? 'cur' : ''}">${label}</span><b>${esc(D.natures[id])}</b><span class="ab-e">${natEff(id)}</span></div>${label === '추천' ? `<div class="ab-w">${esc(n.why)}</div>` : ''}</div>`;
+  const table = `<table><thead><tr><th>성격</th><th>올라감 (×1.1)</th><th>내려감 (×0.9)</th></tr></thead><tbody>${Object.keys(NAT).map(k => `<tr><td>${esc(D.natures[k])}</td><td>${NAT[k].length ? STAT[NAT[k][0]] : '—'}</td><td>${NAT[k].length ? STAT[NAT[k][1]] : '—'}</td></tr>`).join('')}</tbody></table>`;
+  return `<div class="mu"><div><h3>특성</h3><p class="desc">${m.abil.length > 1 ? '잡을 때 이 중 하나가 랜덤. 숨겨진 특성은 확률 낮음' : ''}</p>${rows}</div>
+    <div><h3>성격</h3><p class="desc">성격은 한 스탯 +10%, 다른 스탯 −10%. 박하로 바꿀 수 있음</p>${natRow(n.main, '추천')}${natRow(n.alt, '대안')}<details><summary>성격 25종 전체</summary>${table}</details></div></div>`;
+}
+
+// ---------- matchups ----------
+function defense(m) {
+  const g = {};
+  for (const t of TYPES) { const e = eff(t, m.types); if (e !== 1) (g[e] ??= []).push(t); }
+  return g;
+}
+const MULT = [[4,'치명적 ×4','bad'],[2,'약점 ×2','bad'],[.5,'반감 ×½','good'],[.25,'강한 반감 ×¼','good'],[0,'무효 ×0','good']];
+function muSummary(m, def) {
+  const bad = [...(def[4] || []), ...(def[2] || [])], no = def[0] || [];
+  const s = [];
+  const eun = w => ((w.charCodeAt(w.length - 1) - 0xAC00) % 28 ? '은' : '는');
+  if (bad.length) { const x4 = (def[4] || []).map(t => TK[t]).join('·'); s.push(`${bad.map(t => TK[t]).join('·')} 기술을 조심` + (x4 ? ` (${x4}${eun(x4)} 4배)` : '')); }
+  if (no.length) s.push(`${no.map(t => TK[t]).join('·')} 기술은 아예 안 맞음`);
+  if (!bad.length) s.push('약점 없음');
+  return s.join(' · ');
+}
+
+// ---------- recommendation ----------
+// ponytail: stat-weighted power heuristic, no Smogon sets. Fixed-damage moves (Seismic Toss 등) are ignored.
+// 조건부·기믹 기술은 위력만 보면 과대평가되므로 제외
+const GIMMICK = new Set(['lastresort','dreameater','synchronoise','spitup','swallow','fling','naturalgift','snore','beatup','bide','belch','skydrop','falseswipe','holdback','struggle','fakeout','firstimpression','steelroller','burnup','doubleshock','mindblown','steelbeam']);
+function dmgScore(m, mv) {
+  const [, , type, cat, pow, acc, , flags] = mv;
+  if (cat === 'T' || pow <= 0 || flags.includes('s')) return 0;
+  const atk = m.stats[1], spa = m.stats[3], hi = Math.max(atk, spa);
+  let s = pow * (acc ? acc / 100 : 1) * ((cat === 'P' ? atk : spa) / hi) ** 2; // 반대 분류는 제곱으로 깎음: 물리/특수 섞이지 않게
+  if (m.types.includes(type)) s *= 1.5;
+  if (flags.includes('c') || flags.includes('r')) s *= 0.6;
+  if (flags.includes('k')) s *= 0.85;
+  if (flags.includes('m')) s *= 2.5;
+  return s;
+}
+function recommend(m, all) {
+  const ids = new Set(m.lv.map(x => x[1]));
+  if (all) [...m.tm, ...m.egg, ...m.tutor, ...m.other].forEach(x => ids.add(x));
+  const pool = [...ids].filter(id => MV[id] && !MV[id][7].includes('n') && !GIMMICK.has(id));
+  const bias = m.stats[1] >= m.stats[3] * 1.1 ? 'P' : m.stats[3] >= m.stats[1] * 1.1 ? 'S' : null; // 한쪽이 10% 이상 높으면 그 분류만
+  const allCands = pool.map(id => ({id, mv: MV[id], s: dmgScore(m, MV[id])})).filter(c => c.s > 0).sort((a, b) => b.s - a.s);
+  const cands = allCands.filter(c => !bias || c.mv[3] === bias);
+  const picks = [], used = new Set(), covered = new Set();
+  const add = (c, why) => { picks.push({...c, why}); used.add(c.id); TYPES.forEach(d => { if (eff(c.mv[2], [d]) >= 2) covered.add(d); }); };
+  for (const t of m.types) { const c = cands.find(x => x.mv[2] === t && !used.has(x.id)); if (c) add(c, '자속'); }
+  while (picks.length < 3) {
+    let best = null, bs = 0;
+    for (const c of cands) {
+      if (used.has(c.id)) continue;
+      const nw = TYPES.filter(d => eff(c.mv[2], [d]) >= 2 && !covered.has(d));
+      const v = c.s * (1 + 0.3 * Math.min(nw.length, 4)) * (nw.length ? 1 : 0.5);
+      if (v > bs) { bs = v; best = {c, nw}; }
+    }
+    if (!best) break;
+    add(best.c, best.nw.length ? '견제 · ' + best.nw.slice(0, 3).map(d => TK[d]).join(', ') : '화력');
+  }
+  const phys = m.stats[1] >= m.stats[3];
+  const status = pool.filter(id => MV[id][3] === 'T' && !used.has(id));
+  const setup = status.filter(id => MV[id][7].includes('b')).map(id => {
+    const b = MV[id][8].split(',');
+    return {id, v: (b.includes(phys ? 'atk' : 'spa') ? 2 : 0) + (b.includes('spe') ? 1 : 0) + (b.includes('def') || b.includes('spd') ? 0.5 : 0)};
+  }).filter(x => x.v >= 2).sort((a, b) => b.v - a.v)[0];
+  if (setup) picks.push({id: setup.id, mv: MV[setup.id], why: '강화'});
+  else {
+    const heal = status.find(id => MV[id][7].includes('h'));
+    if (heal) picks.push({id: heal, mv: MV[heal], why: '회복'});
+    else {
+      const types = new Set(picks.map(p => p.mv[2]));
+      const c = cands.find(x => !used.has(x.id) && !types.has(x.mv[2])) || cands.find(x => !used.has(x.id));
+      if (c) picks.push({...c, why: '화력'});
+    }
+  }
+  // 자리가 남으면: 반대 분류 공격기 → 아무 변화기
+  for (const c of allCands) { if (picks.length >= 4) break; if (!picks.some(p => p.id === c.id)) picks.push({...c, why: '화력'}); }
+  for (const id of status) { if (picks.length >= 4) break; if (!picks.some(p => p.id === id)) picks.push({id, mv: MV[id], why: '보조'}); }
+  return picks.slice(0, 4);
+}
+function recHtml(m, all) {
+  const r = recommend(m, all);
+  if (!r.length) return '<div class="empty">추천할 기술이 없음</div>';
+  return `<div class="rec">${r.map(p => `<div class="card"><div class="why">${esc(p.why)}</div><div class="nm">${tchip(p.mv[2], 1)} ${esc(p.mv[0])}</div><div class="st">${CAT[p.mv[3]]}${p.mv[4] ? ` · 위력 ${p.mv[4]}` : ''} · 명중 ${p.mv[5] || '—'}</div></div>`).join('')}</div>`;
+}
+
+// ---------- 1:1 compare ----------
+const fmt = e => ({4:'×4', 2:'×2', 1:'×1', 0.5:'×½', 0.25:'×¼', 0:'×0'})[e] ?? '×' + e;
+const MLABEL = e => e >= 4 ? '×4 치명타' : e >= 2 ? '×2 효과 굉장' : e === 1 ? '×1 보통' : e === 0 ? '×0 무효' : e <= 0.25 ? '×¼ 거의 안 박힘' : '×½ 반감';
+const mcls = (e, mine) => e === 1 ? '' : (e > 1) === mine ? 'good' : 'bad'; // mine: 내가 때리는 쪽이면 배수 높을수록 good
+function bestMoves(a, b, n = 3) { // a의 레벨업 기술 중 b에게 가장 아픈 것
+  const ids = [...new Set(a.lv.map(x => x[1]))].filter(id => MV[id] && !MV[id][7].includes('n') && !GIMMICK.has(id));
+  return ids.map(id => ({id, mv: MV[id], e: eff(MV[id][2], b.types), s: dmgScore(a, MV[id]) * eff(MV[id][2], b.types)}))
+    .filter(x => x.s > 0).sort((x, y) => y.s - x.s).slice(0, n);
+}
+function compareHtml(m, o) {
+  const mine = m.types.map(t => ({t, e: eff(t, o.types)})), theirs = o.types.map(t => ({t, e: eff(t, m.types)}));
+  const myBest = Math.max(...mine.map(x => x.e)), opBest = Math.max(...theirs.map(x => x.e));
+  const spd = m.stats[5] > o.stats[5] ? '내가 선공' : m.stats[5] < o.stats[5] ? '상대가 선공' : '동속';
+  const verdict = myBest > opBest ? '유리' : myBest < opBest ? '불리' : '비등';
+  const vcol = {유리: '#27ae60', 불리: '#c0392b', 비등: '#777'}[verdict];
+  const rows = (arr, isMine) => arr.map(x => `<div class="row"><span class="m ${mcls(x.e, isMine)}">${MLABEL(x.e)}</span><div>${tchip(x.t, 1)} 기술${isMine ? '로 때리면' : '에 맞으면'}</div></div>`).join('');
+  const mvs = (arr, isMine) => arr.length ? arr.map(x => `<div class="row"><span class="m ${mcls(x.e, isMine)}">${fmt(x.e)}</span><div>${tchip(x.mv[2], 1)} ${esc(x.mv[0])} <span class="note">${CAT[x.mv[3]]} ${x.mv[4]}</span></div></div>`).join('') : '<div class="empty">공격기 없음</div>';
+  return `<div class="vs-card">
+    <div class="vs-title"><span class="t" style="background:${vcol}">${verdict}</span><b>${esc(m.ko)}</b><span class="note">vs</span><b class="lnk" data-go="${o.id}">${esc(fullKo(o))}</b>${o.types.map(t => tchip(t, 1)).join('')}<span class="note">내 자속 최대 ${fmt(myBest)} · 상대 자속 최대 ${fmt(opBest)} · 스피드 ${m.stats[5]} vs ${o.stats[5]} → ${spd}</span><button class="x" id="oclear">상대 지우기</button></div>
+    <div class="mu">
+      <div><h3>내가 때릴 때</h3>${rows(mine, true)}<div class="sub">내 레벨업 기술 중 가장 아픈 것</div>${mvs(bestMoves(m, o), true)}</div>
+      <div><h3>상대가 때릴 때</h3>${rows(theirs, false)}<div class="sub">상대 레벨업 기술 중 조심할 것</div>${mvs(bestMoves(o, m), false)}</div>
+    </div></div>`;
+}
+
+// ---------- moves table ----------
+function moveRows(list, withLv) {
+  return list.map(x => {
+    const [lv, id] = withLv ? x : [null, x];
+    const mv = MV[id]; if (!mv) return '';
+    return `<tr>${withLv ? `<td class="c">${lv}</td>` : ''}<td>${esc(mv[0])}<span class="en">${esc(mv[1])}</span></td><td>${tchip(mv[2], 1)}</td><td class="cat">${CAT[mv[3]]}</td><td class="c">${mv[4] || '—'}</td><td class="c">${mv[5] || '—'}</td><td class="c">${mv[6]}</td></tr>`;
+  }).join('');
+}
+const thead = withLv => `<thead><tr>${withLv ? '<th class="c">Lv</th>' : ''}<th>기술</th><th>타입</th><th>분류</th><th class="c">위력</th><th class="c">명중</th><th class="c">PP</th></tr></thead>`;
+function moveTable(list, withLv) {
+  if (!list.length) return '<div class="empty">없음</div>';
+  const sorted = withLv ? list : [...list].sort((a, b) => (MV[a]?.[0] || '').localeCompare(MV[b]?.[0] || ''));
+  return `<table>${thead(withLv)}<tbody>${moveRows(sorted, withLv)}</tbody></table>`;
+}
+
+// ---------- render ----------
+// 특성으로 실질 스탯이 바뀌는 경우(천하장사 등)는 역할·성격·기술 추천에 반영. 바 표시는 원래 종족값
+function eff6(m) {
+  const s = [...m.stats], ids = m.abil.map(a => a.id);
+  if (ids.some(x => x === 'hugepower' || x === 'purepower')) s[1] *= 2;
+  else if (ids.includes('gorillatactics')) s[1] *= 1.5;
+  return s;
+}
+function render(k) {
+  const m0 = M[k];
+  if (!m0) { $view.innerHTML = '<p class="hint">예: 리자몽, 이브이, charizard, 6</p>'; return; }
+  const m = {...m0, stats: eff6(m0), raw: m0.stats};
+  CUR = k;
+  const o = OPP ? {...M[OPP], id: OPP, stats: eff6(M[OPP])} : null;
+  $drop.classList.remove('on'); $q.value = '';
+  document.title = `${fullKo(m)} · 코블몬 도감`;
+  const forms = D.order.filter(x => M[x].n === m.n && (M[x].en === m.en));
+  const def = defense(m), tot = m.raw.reduce((a, b) => a + b, 0);
+  const off = m.types.map(t => {
+    const se = TYPES.filter(d => CH[t][d] === 2), nv = TYPES.filter(d => CH[t][d] === .5), im = TYPES.filter(d => CH[t][d] === 0);
+    return `<div class="sub">${tchip(t, 1)} 기술을 쓰면</div>
+      <div class="row"><span class="m good">효과 굉장 ×2</span><div>${se.map(x => tchip(x, 1)).join('')}</div></div>
+      <div class="row"><span class="m bad">효과 별로 ×½</span><div>${nv.map(x => tchip(x, 1)).join('')}</div></div>
+      ${im.length ? `<div class="row"><span class="m bad">효과 없음 ×0</span><div>${im.map(x => tchip(x, 1)).join('')}</div></div>` : ''}`;
+  }).join('');
+  $view.innerHTML = `
+  <div class="head">
+    <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${m.n}.png" alt="" onerror="this.style.visibility='hidden'">
+    <div>
+      <div class="num">#${String(m.n).padStart(4, '0')}</div>
+      <h1>${esc(m.ko)}${m.form ? ` <span style="font-weight:400">${esc(m.form)}</span>` : ''}<small>${esc(m.en)}</small>
+        ${m.bo ? '<span class="badge">배틀 중 폼</span>' : ''}${m.imp ? '' : '<span class="badge">코블몬 미구현</span>'}</h1>
+      <div>${m.types.map(t => tchip(t)).join('')}</div>
+      <div class="meta"><span>포획률 <b>${m.catch}</b></span><span>종족값 합 <b>${tot}</b></span><span>${esc(role(m.stats).main)}</span></div>
+      ${forms.length > 1 ? `<div class="chips">${forms.map(x => `<span class="chip ${x === k ? 'cur' : ''}" data-go="${x}">${esc(M[x].form || '기본')}</span>`).join('')}</div>` : ''}
+    </div>
+  </div>
+  <section><h2>상성</h2>
+  <div class="search vs-search"><input id="oq" placeholder="상대 포켓몬 입력 → 1:1 상성 (예: 한카리아스)" autocomplete="off"><div class="drop" id="odrop"></div></div>
+  ${o ? compareHtml(m, o) : ''}
+  <p class="lead">${esc(muSummary(m, def))}</p>
+  <div class="mu">
+    <div><h3>맞을 때</h3><p class="desc">상대가 이 타입 기술을 쓰면 ${esc(m.ko)}가 받는 데미지</p>${MULT.filter(([x]) => def[x]).map(([x, l, c]) => `<div class="row"><span class="m ${c}">${l}</span><div>${def[x].map(t => tchip(t, 1)).join('')}</div></div>`).join('') || '<div class="empty">약점·반감 없음 (전부 ×1)</div>'}</div>
+    <div><h3>때릴 때</h3><p class="desc">${esc(m.ko)}의 자속 기술이 상대 타입에게 주는 데미지</p>${off}</div>
+  </div></section>
+  <section><h2>어디서 잡나</h2>${spawnSection(k, m)}</section>
+  <section><h2>진화</h2><div class="evo-scroll">${evoHtml(tree(root(k)), k)}</div></section>
+  ${gimmickSection(m)}
+  <section><h2>종족값</h2>${roleHtml(m.stats, m.stats[1] !== m.raw[1] ? '특성으로 공격 ' + (m.stats[1] / m.raw[1]) + '배 반영' : '')}<div class="stats">
+    ${m.raw.map((v, i) => `<span class="k">${STAT[i]}</span><span class="v">${v}</span><div class="bar"><i style="width:${v / 255 * 100}%"></i></div>`).join('')}
+    <span class="k tot">합계</span><span class="v tot">${tot}</span><span class="tot"></span>
+  </div></section>
+  <section><h2>특성 · 성격</h2>${abilHtml(m)}</section>
+  <section><h2>추천 최종 기술</h2>
+    <div class="opt"><label><input type="checkbox" id="recall"> 기술머신·튜터·교배 기술 포함</label><span>종족값 기준 ${m.stats[1] >= m.stats[3] ? '물리' : '특수'} 어태커로 계산</span></div>
+    <div id="rec">${recHtml(m, false)}</div>
+  </section>
+  <section><h2>레벨업 기술</h2>${moveTable(m.lv, true)}</section>
+  <section><h2>그 외 기술</h2>
+    <details><summary>기술머신 (${m.tm.length})</summary>${moveTable(m.tm)}</details>
+    <details><summary>튜터 (${m.tutor.length})</summary>${moveTable(m.tutor)}</details>
+    <details><summary>교배 (${m.egg.length})</summary>${moveTable(m.egg)}</details>
+    <details><summary>기타·과거작 (${m.other.length})</summary>${moveTable(m.other)}</details>
+  </section>`;
+  document.getElementById('recall').addEventListener('change', e => { document.getElementById('rec').innerHTML = recHtml(m, e.target.checked); });
+  bindSearch(document.getElementById('oq'), document.getElementById('odrop'), setOpp);
+  document.getElementById('oclear')?.addEventListener('click', () => setOpp(null));
+  window.scrollTo(0, 0);
+}
+$view.addEventListener('click', e => { const d = e.target.closest('[data-go]'); if (d) go(d.dataset.go); });
+// =================== 공통 ===================
+const sprite = n => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${n}.png`;
+const monChip = k => `<span class="mon-chip" data-go="${k}"><img loading="lazy" src="${sprite(M[k].n)}" alt="" onerror="this.style.visibility='hidden'">${esc(fullKo(M[k]))}</span>`;
+const BUCKET = {common: '흔함', uncommon: '드묾', rare: '희귀', 'ultra-rare': '매우 희귀'};
+const bucketHtml = b => `<span class="bucket b-${b}" title="이 희귀도 등급이 뽑힐 확률. 등급 안에서는 가중치로 다시 고름">${BUCKET[b] ?? b} ${D.cfg.world[b] ?? ''}%</span>`;
+const SP = D.spawns, SP_BY = {};
+SP.forEach(s => (SP_BY[s[0]] ??= []).push(s));
+const LAB = {legendary: '전설', mythical: '환상', ultra_beast: '울트라비스트', paradox: '패러독스'};
+function noSpawnReason(k) {
+  const m = M[k];
+  const ro = w => { const c = (w.charCodeAt(w.length - 1) - 0xAC00) % 28; return w + (c > 0 && c !== 8 ? '으로' : '로'); }; // 받침(ㄹ 제외) 있으면 으로
+  if (m.gm && m.form) return `${ro(m.gm[0][0])}${m.bo ? ' 배틀 중에만' : ''} 바뀌는 폼. 기본 폼을 잡아서 변신 → 아래 "변신 · 기믹"에 필요한 아이템·제작법`;
+  if (m.bo) return '배틀 중에만 바뀌는 폼. 특성·날씨·HP 같은 배틀 조건으로 자동 변신 (아이템 불필요)';
+  if (m.ev) return `야생 자연 출현 없음 → ${m.ev}에서만 만남 (코블벌스 전설 구조물)`;
+  if (m.fossil) return `야생 출현 없음 → 화석 복원 (${m.fossil.join(', ')})`;
+  if (m.pre && M[m.pre]) return `야생 출현 없음 → ${fullKo(M[m.pre])}에서 진화시켜 얻기`;
+  const why = m.lab ? `${LAB[m.lab]} 포켓몬인데 코블벌스에 야생 출현이 없음` : '코블벌스에 야생 출현이 없음';
+  return why + (m.imp ? '. 레이드·이벤트·교환 같은 다른 경로로 얻어야 함' : '. 게다가 아직 미구현(모델 없음)');
+}
+const condHtml = s => [...s[7], ...s[8]].map(esc).join(' · ') || '—';
+const NETHER = new Set(['nether_wastes','soul_sand_valley','crimson_forest','warped_forest','basalt_deltas']);
+const END = new Set(['the_end','end_highlands','end_midlands','small_end_islands','end_barrens','the_void']);
+const DIMS = {ow: '오버월드', nether: '네더', end: '엔드'};
+const dimOf = i => { const id = D.cfg.biomes[i][0]; return NETHER.has(id) ? 'nether' : END.has(id) ? 'end' : 'ow'; };
+// 줄마다: [차원] 묶음 이름 (실제 바이옴들)  — 제외 조건까지 반영된 s[6] 기준
+function whereHtml(s) {
+  if (s[5][0] === '바이옴 무관') return '<span class="bio"><b>바이옴 무관</b> <span class="muted">조건의 구조물 안이면 어디든</span></span>';
+  const dims = Object.keys(DIMS).filter(d => s[6].some(i => dimOf(i) === d));
+  const chips = s[5].map(l => {
+    // 바이옴마다 F3 화면에 뜨는 영어 ID를 같이 표시 (F3엔 minecraft: 접두어가 붙음)
+    const mem = (D.blabel[l] || []).filter(i => s[6].includes(i)).map(i => D.cfg.biomes[i]);
+    const inner = !mem.length ? '바닐라엔 없음 · 바이옴 모드 전용' : mem.length === 1 && mem[0][1] === l ? `<code>${mem[0][0]}</code>` : mem.map(([id, ko]) => `${esc(ko)} <code>${id}</code>`).join(', ');
+    return `<span class="bio"><b>${esc(l)}</b> <span class="muted">${inner}</span></span>`;
+  }).join('');
+  return (dims.length ? dims.map(d => `<span class="dim dim-${d}">${DIMS[d]}</span>`).join('') : '<span class="dim">모드 바이옴 전용</span>') + chips;
+}
+// 아이템 그림 (build.js가 img/<ns>/<id>.png 로 복사해 둠)
+const ico = k => k ? `<img class="ico" src="img/${k}.png" alt="" loading="lazy">` : '';
+function recipeHtml(r) {
+  const gi = (r.gi || []).flat();
+  const grid = r.g ? `<div class="grid3">${r.g.flat().map((c, j) => c ? `<div title="${esc(c)}">${ico(gi[j])}${esc(c)}</div>` : '<div></div>').join('')}</div>` : '';
+  return `<div class="recipe"><div class="rw">${ico(r.o)}${esc(r.w)}${r.n > 1 ? ` · ${r.n}개 제작` : ''}</div>${grid}<div class="ri">${r.i.map((x, j) => ico(r.ii?.[j]) + esc(x)).join(' + ')}</div></div>`;
+}
+const recipesOf = id => (D.recipes[id] || []).map(recipeHtml).join('') || '<span class="muted">제작법 없음 (드롭·채집·구조물 등에서 획득)</span>';
+// 리스트 행 토글
+function bindList(root, detail) {
+  root.addEventListener('click', e => {
+    if (e.target.closest('[data-go]')) return;
+    const h = e.target.closest('.it-h'); if (!h) return;
+    const it = h.parentElement, b = it.querySelector('.it-b');
+    if (!it.classList.contains('open') && !b.dataset.done) { b.innerHTML = detail(it.dataset.id); b.dataset.done = 1; }
+    it.classList.toggle('open');
+  });
+}
+const qmatch = (q, ...s) => !q || s.some(x => norm(String(x)).includes(q));
+
+// 도감 페이지의 변신·기믹 섹션: 같은 종의 모든 폼이 쓰는 기믹 + 필요한 아이템(재료로 쓰이는 애드온 아이템까지 한 단계) 제작법
+function gimmickSection(m) {
+  const ks = D.order.filter(x => M[x].en === m.en && M[x].gm);
+  if (!ks.length) return '';
+  const IT = D.items, nm = id => IT[id]?.[0] ?? id;
+  const rows = ks.flatMap(x => M[x].gm.map(([t, how, need]) => `<tr><td style="width:220px">${monChip(x)}</td><td><span class="badge" style="margin:0 6px 0 0">${esc(t)}</span>${esc(how)}<div class="muted">필요: ${need.map(id => ico(IT[id]?.[3]) + esc(nm(id))).join(' + ')}</div></td></tr>`)).join('');
+  const need = [...new Set(ks.flatMap(x => M[x].gm.flatMap(g => g[2])))];
+  const addon = Object.keys(IT).filter(x => x.includes(':'));
+  for (const id of [...need]) for (const r of D.recipes[id] || []) for (const s of r.i) {
+    const sub = addon.find(x => IT[x][0] === s.replace(/ ×\d+$/, ''));
+    if (sub && !need.includes(sub)) need.push(sub);
+  }
+  return `<section><h2>변신 · 기믹</h2><table><tbody>${rows}</tbody></table>
+    <div class="sub" style="margin-top:14px">필요 아이템 제작법</div>${need.map(id => `<div style="display:inline-block;vertical-align:top;margin:0 18px 14px 0;max-width:300px"><b>${ico(IT[id]?.[3])}${esc(nm(id))}</b> <span class="muted">${esc(IT[id]?.[2] || '')}</span><div>${recipesOf(id)}</div></div>`).join('')}</section>`;
+}
+
+// 도감 페이지의 출현 섹션
+function spawnSection(k, m) {
+  const list = SP_BY[k] || [];
+  let note = '';
+  if (m.fossil) note += `<p class="lead">화석 복원: <b>${m.fossil.map(esc).join(', ')}</b> → 화석 분석기·복원 탱크에 넣어 되살림</p>`;
+  if (!list.length) {
+    // 변신 폼이면 기본 폼으로, 아니면 진화 전으로 링크
+    const to = m.form && (m.gm || m.bo) ? D.order.find(x => M[x].en === m.en && !M[x].form) : m.pre, pre = to && M[to];
+    note += m.fossil ? '' : `<p class="lead">${esc(noSpawnReason(k))}${pre ? ` <b class="lnk" data-go="${to}" style="cursor:pointer;text-decoration:underline">${esc(fullKo(pre))} 보기</b>` : ''}</p>`;
+    return note;
+  }
+  const rows = list.sort((a, b) => a[1] - b[1] || Object.keys(BUCKET).indexOf(a[2]) - Object.keys(BUCKET).indexOf(b[2]))
+    .map(s => `<tr class="sp-row"><td>${bucketHtml(s[2])}</td><td class="c">${esc(s[3])}</td><td>${esc(s[4])}</td><td>${whereHtml(s)}</td><td class="cond">${condHtml(s)}</td></tr>`).join('');
+  return note + `<table><thead><tr><th>희귀도</th><th class="c">레벨</th><th>위치</th><th>어디 (차원 · 바이옴)</th><th>조건</th></tr></thead><tbody>${rows}</tbody></table>
+    <p class="desc" style="margin-top:8px">희귀도 %는 그 등급이 뽑힐 확률.</p>`;
+}
+
+// =================== 탭 ===================
+const TABS = {};
+
+// ---- 출현 ----
+TABS.spawn = () => {
+  const opt = (arr) => arr.map(([id, ko]) => `<option value="${id}">${esc(ko)} · ${id}</option>`).join('');
+  const bs = D.cfg.biomes.filter(([id]) => id !== 'the_void').sort((a, b) => a[1].localeCompare(b[1]));
+  const sp0 = new URLSearchParams(location.hash.split('?')[1] || ''), sel = sp0.has('b') ? sp0.get('b') : 'plains';
+  $view.innerHTML = `<h1 class="tab-head">출현</h1><p class="tab-desc">내가 있는 바이옴을 고르면 거기서 나오는 포켓몬. F3 화면 Biome 줄의 영어 ID(예: minecraft:beach)와 맞춰보면 됨.</p>
+  <div class="filters">
+    <select id="sb"><option value="">전체 바이옴</option><optgroup label="오버월드">${opt(bs.filter(([id]) => !NETHER.has(id) && !END.has(id)))}</optgroup><optgroup label="네더">${opt(bs.filter(([id]) => NETHER.has(id)))}</optgroup><optgroup label="엔드">${opt(bs.filter(([id]) => END.has(id)))}</optgroup></select>
+    <select id="sg"><option value="">지상·지하 전체</option><option value="up">지상</option><option value="down">지하·동굴</option></select>
+    <select id="st"><option value="">시간 전체</option><option value="낮">낮</option><option value="밤">밤</option></select>
+    <select id="sp"><option value="">위치 전체</option><option>땅</option><option>물속</option><option>수면</option><option>해저</option><option>낚시</option></select>
+    <input type="text" id="sq" placeholder="포켓몬 이름으로 거르기">
+    <label><input type="checkbox" id="ss"> 포케스낵 전용 포함</label>
+    <label><input type="checkbox" id="sx"> 구조물·특정 블록 조건 포함</label>
+  </div><div id="sres"></div>`;
+  const $ = id => document.getElementById(id);
+  $('sb').value = sel;
+  const draw = () => {
+    const bv = $('sb').value, bi = D.cfg.biomes.findIndex(([id]) => id === bv), t = $('st').value, p = $('sp').value, g = $('sg').value, q = norm($('sq').value);
+    const other = t === '낮' ? '밤' : t === '밤' ? '낮' : null;
+    const under = s => s[7].includes('햇빛 안 드는 곳') || s[7].includes('하늘 안 보이는 곳');
+    const SPECIAL = /^(구조물|바닥):|도시|폐허|사원|대저택|차원문|고대 도시|요새|네더 화석|레드스톤|거미줄|소금|슬라임 청크/;
+    const special = s => s[7].some(c => SPECIAL.test(c) || (c.startsWith('근처:') && !/^근처: (물|용암|나뭇잎|꽃)/.test(c)));
+    const hits = SP.filter(s => (!bv || s[6].includes(bi)) && (!p || s[4] === p) && (!g || (g === 'down') === under(s)) &&($('ss').checked || !s[7].includes('포케스낵 전용')) && ($('sx').checked || !special(s))
+      && (!other || !s[7].includes(other) && !(other === '밤' && s[7].includes('해질녘·새벽'))) && qmatch(q, fullKo(M[s[0]]), M[s[0]].en));
+    const groups = Object.keys(BUCKET).map(b => {
+      const by = new Map(); hits.filter(s => s[2] === b).forEach(s => { if (!by.has(s[0])) by.set(s[0], []); by.get(s[0]).push(s); });
+      return [b, [...by.entries()].sort((x, y) => M[x[0]].n - M[y[0]].n)];
+    }).filter(([, a]) => a.length);
+    const line = s => `<div><span class="muted" style="display:inline-block;min-width:96px;white-space:nowrap">Lv ${esc(s[3])} · ${esc(s[4])}</span>${bv ? condHtml(s) : whereHtml(s) + `<div style="margin:2px 0 6px 100px">${condHtml(s)}</div>`}</div>`;
+    $('sres').innerHTML = groups.length ? groups.map(([b, arr]) => `<section style="margin-bottom:28px"><h2>${bucketHtml(b)} · ${arr.length}종</h2>
+      <table><tbody>${arr.map(([k, ss]) => `<tr class="sp-row"><td style="width:200px">${monChip(k)}</td><td class="cond">${[...new Map(ss.map(s => [line(s), s])).keys()].join('')}</td></tr>`).join('')}</tbody></table></section>`).join('')
+      : (q ? (search($('sq').value).map(x => `<div class="row" style="grid-template-columns:200px 1fr;align-items:center">${monChip(x.k)}<span class="cond">${SP_BY[x.k] ? '지금 고른 바이옴·필터에선 안 나옴. 바이옴을 "전체"로 바꾸고 체크박스를 켜봐' : esc(noSpawnReason(x.k))}</span></div>`).join('') || '<p class="empty">그런 이름의 포켓몬 없음</p>') : '<p class="empty">조건에 맞는 출현 없음</p>');
+  };
+  ['sb', 'sg', 'st', 'sp', 'ss', 'sx'].forEach(id => $(id).addEventListener('change', () => { if (id === 'sb') history.replaceState(null, '', '#/spawn?b=' + $('sb').value); draw(); }));
+  $('sq').addEventListener('input', draw);
+  draw();
+};
+
+// ---- 기술 ----
+const LEARN = {}; // move -> [[mon, how]]
+function learners(id) {
+  if (LEARN[id]) return LEARN[id];
+  const out = [];
+  for (const k of D.order) {
+    const m = M[k];
+    const lv = m.lv.find(x => x[1] === id);
+    const how = lv ? `Lv.${lv[0]}` : m.tm.includes(id) ? 'TM' : m.tutor.includes(id) ? '튜터' : m.egg.includes(id) ? '교배' : null;
+    if (how) out.push([k, how]);
+  }
+  return (LEARN[id] = out);
+}
+TABS.moves = () => {
+  const ids = Object.keys(MV).filter(id => !MV[id][7].includes('n')).sort((a, b) => MV[a][0].localeCompare(MV[b][0]));
+  $view.innerHTML = `<h1 class="tab-head">기술</h1><p class="tab-desc">행을 누르면 설명·TM 제작법·배우는 포켓몬. TM은 TMCraft 모드: 조합대에서 빈 디스크 + 재료로 제작.</p>
+  <div class="filters"><input type="text" id="mq" placeholder="기술 이름 (한글/영문)">
+    <select id="mt"><option value="">타입 전체</option>${TYPES.map(t => `<option value="${t}">${TK[t]}</option>`).join('')}</select>
+    <select id="mc"><option value="">분류 전체</option><option value="P">물리</option><option value="S">특수</option><option value="T">변화</option></select>
+    <label><input type="checkbox" id="mtm"> TM 있는 것만</label></div>
+  <div class="list" id="ml"></div>`;
+  const $ = id => document.getElementById(id), cols = 'grid-template-columns:1.6fr 70px 50px 50px 50px 40px 70px';
+  const draw = () => {
+    const q = norm($('mq').value), t = $('mt').value, c = $('mc').value, tm = $('mtm').checked;
+    const rows = ids.filter(id => { const m = MV[id]; return qmatch(q, m[0], m[1]) && (!t || m[2] === t) && (!c || m[3] === c) && (!tm || m[10]); });
+    $('ml').innerHTML = `<div class="it-h muted" style="${cols};cursor:default"><span>기술 (${rows.length})</span><span>타입</span><span>분류</span><span>위력</span><span>명중</span><span>PP</span><span>TM</span></div>` +
+      rows.map(id => { const m = MV[id]; return `<div class="it" data-id="${id}"><div class="it-h" style="${cols}"><span>${esc(m[0])} <span class="muted">${esc(m[1])}</span></span><span>${tchip(m[2], 1)}</span><span class="muted">${CAT[m[3]]}</span><span>${m[4] || '—'}</span><span>${m[5] || '—'}</span><span>${m[6]}</span><span class="muted">${m[10] ? '제작' : ''}</span></div><div class="it-b"></div></div>`; }).join('');
+  };
+  bindList($('ml'), id => {
+    const m = MV[id], ls = learners(id);
+    const groups = {}; ls.forEach(([k, how]) => (groups[how.startsWith('Lv') ? '레벨업' : how] ??= []).push([k, how]));
+    return `<p>${esc(m[9] || '설명 없음')}</p>
+      ${m[10] ? `<div class="sub">TM 제작법</div>${recipeHtml(m[10])}` : ''}
+      ${Object.entries(groups).map(([g, arr]) => `<div class="sub">${g} ${arr.length}</div><div class="mon-chips">${arr.slice(0, 80).map(([k, how]) => monChip(k).replace('</span>', g === '레벨업' ? ` <span class="muted">${how}</span></span>` : '</span>')).join('')}${arr.length > 80 ? `<span class="muted">외 ${arr.length - 80}</span>` : ''}</div>`).join('') || '<p class="muted">배우는 포켓몬 없음</p>'}`;
+  });
+  ['mt', 'mc', 'mtm'].forEach(id => $(id).addEventListener('change', draw));
+  $('mq').addEventListener('input', draw);
+  draw();
+};
+
+// ---- 특성 ----
+TABS.abilities = () => {
+  const own = {}; D.order.forEach(k => M[k].abil.forEach(a => (own[a.id] ??= []).push([k, a.h])));
+  const ids = Object.keys(D.abilities).filter(id => own[id]).sort((a, b) => D.abilities[a][0].localeCompare(D.abilities[b][0]));
+  $view.innerHTML = `<h1 class="tab-head">특성</h1><p class="tab-desc">행을 누르면 그 특성을 가진 포켓몬. ★ = 추천 점수 높은 특성.</p>
+  <div class="filters"><input type="text" id="aq" placeholder="특성 이름 또는 설명 키워드 (예: 회복, 스피드)"></div><div class="list" id="al"></div>`;
+  const cols = 'grid-template-columns:160px 1fr 50px';
+  const draw = () => {
+    const q = norm(document.getElementById('aq').value);
+    const rows = ids.filter(id => qmatch(q, ...D.abilities[id]));
+    document.getElementById('al').innerHTML = rows.map(id => `<div class="it" data-id="${id}"><div class="it-h" style="${cols}"><span>${esc(D.abilities[id][0])}${(ABIL_SCORE[id] ?? 2) >= 4 ? ' ★' : ''}</span><span class="muted">${esc(D.abilities[id][1])}</span><span class="muted">${own[id].length}</span></div><div class="it-b"></div></div>`).join('') || '<p class="empty">없음</p>';
+  };
+  bindList(document.getElementById('al'), id => `<div class="mon-chips">${own[id].map(([k, h]) => monChip(k).replace('</span>', h ? ' <span class="muted">숨특</span></span>' : '</span>')).join('')}</div>`);
+  document.getElementById('aq').addEventListener('input', draw);
+  draw();
+};
+
+// ---- 아이템 ----
+TABS.items = () => {
+  const IT = D.items, ids = Object.keys(IT).sort((a, b) => IT[a][0].localeCompare(IT[b][0]));
+  const cats = ['전체', ...[...new Set(ids.map(id => IT[id][1]))].sort((a, b) => (a === '기타') - (b === '기타') || a.localeCompare(b))];
+  let cat = '전체';
+  $view.innerHTML = `<h1 class="tab-head">아이템</h1><p class="tab-desc">행을 누르면 제작법. 진화 아이템은 그걸로 진화하는 포켓몬도 표시.</p>
+  <div class="filters"><input type="text" id="iq" placeholder="아이템 이름 또는 설명 키워드"></div>
+  <div class="chips" id="ic" style="margin:-6px 0 18px">${cats.map(c => `<span class="chip sm ${c === cat ? 'cur' : ''}" data-c="${c}">${esc(c)}</span>`).join('')}</div>
+  <div class="list" id="il"></div>`;
+  const cols = 'grid-template-columns:180px 90px 1fr';
+  const draw = () => {
+    const q = norm(document.getElementById('iq').value);
+    const rows = ids.filter(id => (cat === '전체' || IT[id][1] === cat) && qmatch(q, IT[id][0], IT[id][2]));
+    document.getElementById('il').innerHTML = rows.map(id => `<div class="it" data-id="${id}"><div class="it-h" style="${cols}"><span>${ico(IT[id][3])}${esc(IT[id][0])}</span><span class="muted">${esc(IT[id][1])}</span><span class="muted">${esc(IT[id][2])}</span></div><div class="it-b"></div></div>`).join('') || '<p class="empty">없음</p>';
+  };
+  document.getElementById('ic').addEventListener('click', e => { const c = e.target.closest('[data-c]'); if (!c) return; cat = c.dataset.c; document.querySelectorAll('#ic .chip').forEach(x => x.classList.toggle('cur', x === c)); draw(); });
+  bindList(document.getElementById('il'), id => {
+    const name = IT[id][0];
+    const evo = D.order.filter(k => M[k].evos.some(e => e.how.includes(name))).flatMap(k => M[k].evos.filter(e => e.how.includes(name)).map(e => [k, e.to]));
+    const fos = D.order.filter(k => (M[k].fossil || []).includes(name));
+    const gmf = D.order.filter(k => (M[k].gm || []).some(g => g[2].includes(id)));
+    return `${evo.length ? `<div class="sub">이 아이템으로 진화</div><div class="mon-chips">${[...new Map(evo.map(x => [x.join(), x])).values()].map(([a, b]) => `<span style="display:inline-flex;gap:4px;align-items:center;margin-right:14px">${monChip(a)}<span class="muted">→</span>${monChip(b)}</span>`).join('')}</div>` : ''}
+      ${fos.length ? `<div class="sub">복원되는 포켓몬</div><div class="mon-chips">${fos.map(monChip).join('')}</div>` : ''}
+      ${gmf.length ? `<div class="sub">이 아이템으로 변신·기믹을 쓰는 포켓몬</div><div class="mon-chips">${gmf.map(monChip).join('')}</div>` : ''}
+      <div class="sub">제작법</div>${recipesOf(id)}`;
+  });
+  document.getElementById('iq').addEventListener('input', draw);
+  draw();
+};
+
+// ---- 상성표 ----
+TABS.types = () => {
+  const cell = e => e === 2 ? '<td class="c2">2</td>' : e === .5 ? '<td class="c05">½</td>' : e === 0 ? '<td class="c0">0</td>' : '<td></td>';
+  $view.innerHTML = `<h1 class="tab-head">상성표</h1><p class="tab-desc">왼쪽 = 공격 기술 타입, 위 = 맞는 포켓몬 타입.</p>
+  <section><h2>방어 타입 계산기</h2><div class="filters"><select id="d1">${TYPES.map(t => `<option value="${t}">${TK[t]}</option>`).join('')}</select><select id="d2"><option value="">(단일 타입)</option>${TYPES.map(t => `<option value="${t}">${TK[t]}</option>`).join('')}</select></div><div id="dres"></div></section>
+  <section><h2>전체 표</h2><div class="tc-wrap"><table class="tchart"><thead><tr><th></th>${TYPES.map(t => `<th>${tchip(t, 1)}</th>`).join('')}</tr></thead>
+  <tbody>${TYPES.map(a => `<tr><th class="rh">${tchip(a, 1)}</th>${TYPES.map(d => cell(CH[a][d] ?? 1)).join('')}</tr>`).join('')}</tbody></table></div></section>`;
+  const draw = () => {
+    const ts = [document.getElementById('d1').value, document.getElementById('d2').value].filter(Boolean);
+    const g = defense({types: [...new Set(ts)]});
+    document.getElementById('dres').innerHTML = MULT.filter(([x]) => g[x]).map(([x, l, c]) => `<div class="row"><span class="m ${c}">${l}</span><div>${g[x].map(t => tchip(t, 1)).join('')}</div></div>`).join('');
+  };
+  ['d1', 'd2'].forEach(id => document.getElementById(id).addEventListener('change', draw));
+  draw();
+};
+
+// ---- 가이드 ----
+TABS.guide = () => {
+  const C = D.cfg, IT = D.items, tip = id => IT[id] ? esc(IT[id][2]) : '';
+  const pctRow = o => Object.keys(BUCKET).map(b => `<tr><td>${BUCKET[b]}</td><td class="c">${o[b] ?? '—'}%</td></tr>`).join('');
+  const device = id => IT[id] ? `<div style="display:inline-block;vertical-align:top;margin:0 18px 14px 0;max-width:280px"><b>${esc(IT[id][0])}</b> <span class="muted">${tip(id)}</span><div>${recipesOf(id)}</div></div>` : '';
+  const evoCount = {}; D.order.forEach(k => M[k].evos.forEach(e => { const t = e.how.split(' · ')[0]; evoCount[t.includes('사용') && !t.includes('연결의끈') ? '아이템 사용' : t.startsWith('교환') ? '교환' : '레벨업'] = (evoCount[t.includes('사용') && !t.includes('연결의끈') ? '아이템 사용' : t.startsWith('교환') ? '교환' : '레벨업'] || 0) + 1; }));
+  const tmAll = Object.values(MV).filter(m => m[10]).length;
+  $view.innerHTML = `<div class="guide"><h1 class="tab-head">가이드</h1><p class="tab-desc">${C.version} 기준 핵심 시스템. 수치는 모드팩 기본 설정값이라 서버마다 다를 수 있음.</p>
+  <h3>1. 야생 출현 희귀도</h3>
+  <p>포켓몬이 나올 때 먼저 희귀도 등급을 뽑고, 그 등급 안에서 바이옴·시간·날씨 조건이 맞는 포켓몬 중 하나를 고름. 그래서 "매우 희귀" 포켓몬은 조건이 맞아도 잘 안 나옴.</p>
+  <div class="mu"><div><div class="sub">일반 출현</div><table><tbody>${pctRow(C.world)}${C.world.boss ? `<tr><td>보스</td><td class="c">${C.world.boss}%</td></tr>` : ''}</tbody></table></div>
+</div>
+  <p>포케스낵(캠프 냄비 요리)을 설치하면 주변에 포켓몬을 끌어들임. "포케스낵 전용" 출현은 이걸로만 나옴. 출현 탭에서 바이옴별로 확인.</p>
+  <h3>2. 처음 만들 장치</h3>
+  ${['healing_machine', 'pc', 'pasture', 'fossil_analyzer', 'restoration_tank', 'monitor'].map(device).join('')}
+  <h3>3. 진화 방법</h3>
+  <ul><li><b>레벨업</b> (${evoCount['레벨업'] || 0}건): 조건 레벨 도달. 친밀도·시간·바이옴·기술 보유 조건이 붙기도 함.</li>
+  <li><b>아이템 사용</b> (${evoCount['아이템 사용'] || 0}건): 진화의 돌 등을 포켓몬에게 우클릭.</li>
+  <li><b>교환 진화</b> (${evoCount['교환'] || 0}건): 실제 교환 또는 <b>${esc(IT.link_cable?.[0] || '연결의끈')}</b> 사용. ${tip('link_cable')}</li></ul>
+  <p>포켓몬마다 정확한 조건은 도감의 진화 섹션에, 진화 아이템별 대상은 아이템 탭 "진화 아이템"에 있음.</p>
+  <h3>4. 기술머신 (TM)</h3>
+  <p>코블벌스는 TMCraft 모드로 TM을 만듦. 조합대에서 빈 디스크(구리·철·금·다이아몬드·에메랄드·네더라이트)에 타입 주얼 같은 재료를 더해 제작. 레시피가 있는 기술은 ${tmAll}개. 기술별 재료는 기술 탭에서 "TM 있는 것만" 체크. 배울 수 있는 포켓몬은 도감의 "그 외 기술" TM 목록 기준.</p>
+  <h3>5. 성장·육성</h3>
+  <dl class="kv">${['exp_candy_xs', 'exp_candy_s', 'exp_candy_m', 'exp_candy_l', 'exp_candy_xl', 'rare_candy', 'hp_up', 'health_feather', 'health_mochi', 'adamant_mint', 'ability_capsule', 'ability_patch'].filter(id => IT[id]).map(id => `<dt>${esc(IT[id][0])}</dt><dd>${tip(id)}</dd>`).join('')}</dl>
+  <p>민트는 성격 보정만 바꾸고 실제 성격은 그대로. 어떤 성격이 좋은지는 도감의 "특성 · 성격" 섹션 추천 참고.</p>
+  <h3>6. 회복</h3>
+  <dl class="kv">${['potion', 'super_potion', 'hyper_potion', 'max_potion', 'full_restore'].filter(id => IT[id]).map(id => `<dt>${esc(IT[id][0])}</dt><dd>${tip(id)}</dd>`).join('')}</dl>
+  <p>회복약은 양조기·캠프 냄비로 만듦. 아이템 탭 "회복약"에서 제작법 확인.</p>
+  <h3>7. 몬스터볼</h3>
+  <p>규토리(아프리코트) 열매를 따서 볼을 만듦. 볼별 포획 보정은 아이템 탭 "몬스터볼" 설명 끝의 (포획률: N배) 참고.</p>
+  </div>`;
+};
+
+document.getElementById('ver').textContent =`데이터: ${D.cfg.version} 인스턴스의 모드·데이터팩 파일 (기술 수치는 Pokémon Showdown). 서버 설정이나 추가 데이터팩에 따라 다를 수 있음.`;
+route();
+</script>
+</body>
+</html>

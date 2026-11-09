@@ -238,7 +238,9 @@ for (const id of used) {
 }
 
 // ---------- recipes ----------
-const RTYPE = { 'minecraft:crafting_shaped': '조합대', 'minecraft:crafting_shapeless': '조합대', 'minecraft:smelting': '화로', 'minecraft:blasting': '용광로', 'minecraft:smoking': '훈연기', 'minecraft:campfire_cooking': '모닥불', 'minecraft:stonecutting': '석재 절단기', 'minecraft:smithing_transform': '대장장이 작업대', 'cobblemon:brewing_stand': '양조기', 'cobblemon:cooking_pot': '캠프 냄비', 'cobblemon:cooking_pot_shapeless': '캠프 냄비' };
+const RTYPE = { 'minecraft:crafting_shaped': '조합대', 'minecraft:crafting_shapeless': '조합대', 'minecraft:smelting': '화로', 'minecraft:blasting': '용광로', 'minecraft:smoking': '훈연기', 'minecraft:campfire_cooking': '모닥불', 'minecraft:stonecutting': '석재 절단기', 'minecraft:smithing_transform': '대장장이 작업대', 'cobblemon:brewing_stand': '양조기', 'cobblemon:cooking_pot': '모닥불 냄비', 'cobblemon:cooking_pot_shapeless': '모닥불 냄비' };
+// 작업대 이름 -> 그 작업대 아이템 (레시피 머리글 그림용)
+const STATION = { 조합대: 'minecraft:crafting_table', 화로: 'minecraft:furnace', 용광로: 'minecraft:blast_furnace', 훈연기: 'minecraft:smoker', 모닥불: 'minecraft:campfire', '석재 절단기': 'minecraft:stonecutter', '대장장이 작업대': 'minecraft:smithing_table', 양조기: 'minecraft:brewing_stand', '모닥불 냄비': 'cobblemon:campfire_pot_red' };
 // 아이템 키: 코블몬 건 접두어 없이, 애드온 건 "ns:id"
 const ikey = id => id.replace(/^cobblemon:/, '');
 const ITEM_NS = ['cobblemon', 'mega_showdown', 'zamega', 'legendarymonuments'];
@@ -252,14 +254,16 @@ function texOf(ref, depth = 0) {
   if (!mf || depth > 6) return null;
   let j; try { j = readJ(mf); } catch { return null; }
   const t = j.textures || {}, res = v => { while (v && v.startsWith('#')) v = t[v.slice(1)]; return v; };
-  for (const k of ['layer0', 'all', 'side', 'front', 'top', 'texture', 'cross', 'plant', 'particle', ...Object.keys(t)]) { const v = res(t[k]); if (v) return v; }
+  for (const k of ['layer0', 'all', 'front', 'side', 'top', 'texture', 'cross', 'plant', 'particle', ...Object.keys(t)]) { const v = res(t[k]); if (v) return v; }
   return j.parent && !/generated|handheld|builtin/.test(j.parent) ? texOf(j.parent, depth + 1) : null;
 }
+// 블록 그림이 알아보기 어려운 것만 면을 직접 지정 (조합대는 격자가 보이는 윗면)
+const ICON_TEX = { 'minecraft:crafting_table': 'minecraft:block/crafting_table_top' };
 const iconCache = {}, ICONS = new Set(); // ICONS: 그림 있는 아이템 키
 function icon(id) { // 'ns:name' (접두어 없으면 cobblemon) -> 'ns/name' (img/ 아래 경로) | null
   const full = id.includes(':') ? id : 'cobblemon:' + id;
   if (full in iconCache) return iconCache[full];
-  const [ns, n] = full.split(':'), tx = texOf(`${ns}:item/${n}`);
+  const [ns, n] = full.split(':'), tx = ICON_TEX[full] ?? texOf(`${ns}:item/${n}`);
   const src = tx && assetFile(...(tx.includes(':') ? tx.split(':') : ['minecraft', tx]).map((x, i) => i ? `textures/${x}.png` : x));
   if (!src) return (iconCache[full] = null);
   const key = ns + '/' + n, dst = path.join(IMG, key + '.png');
@@ -310,6 +314,7 @@ function recipeOf(r) {
   icon(out);
   return { w, g, gk, i, ik, n: r.result.count || 1, o: ikey(out) };
 }
+Object.values(STATION).forEach(icon);
 // 모든 레시피를 결과물별로 모아둠 (바닐라·TMCraft 포함)
 const allR = new Map();
 for (const { f } of dataFiles('recipe')) {
@@ -573,7 +578,7 @@ if (bad) process.exit(1);
 
 const order = Object.keys(mons).sort((a, b) => mons[a].n - mons[b].n || (mons[a].form ? 1 : 0) - (mons[b].form ? 1 : 0) || a.localeCompare(b));
 const types = Object.fromEntries(TYPES.map(t => [t, typeKo(t)]));
-const out = `window.DEX=${JSON.stringify({ types, moves, mons, order, abilities, natures, items, recipes, src, ic: [...ICONS], spawns, cfg, blabel })};`;
+const out = `window.DEX=${JSON.stringify({ types, moves, mons, order, abilities, natures, items, recipes, src, ic: [...ICONS], st: Object.fromEntries(Object.entries(STATION).map(([w, id]) => [w, ikey(id)])), spawns, cfg, blabel })};`;
 fs.writeFileSync(path.join(__dirname, 'data.js'), out);
 const cats = {}; Object.values(items).forEach(i => cats[i[1]] = (cats[i[1]] || 0) + 1);
 console.log(`Cobblemon ${VERSION}: mons ${order.length} (species ${Object.keys(species).length}), moves ${Object.keys(moves).length}, tm ${Object.values(moves).filter(m => m[10]).length}, items ${Object.keys(items).length}, recipes ${Object.keys(recipes).length}, spawns ${spawns.length}, data.js ${(out.length / 1048576).toFixed(1)} MB`);

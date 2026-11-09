@@ -586,7 +586,7 @@ const itAttr = (k, nm) => k ? ` class="clk" data-it="${esc(k)}" data-nm="${esc(n
 function recipeHtml(r) {
   const gk = (r.gk || []).flat();
   const grid = r.g ? `<div class="grid3">${r.g.flat().map((c, j) => c ? `<div${itAttr(gk[j], c)}>${ico(gk[j])}${esc(c)}</div>` : '<div></div>').join('')}</div>` : '';
-  return `<div class="recipe"><div class="rw">${ico(r.o)}${esc(r.w)}${r.n > 1 ? ` · ${r.n}개 제작` : ''}</div>${grid}<div class="ri">${r.i.map((x, j) => `<span${itAttr(r.ik?.[j], x)}>${ico(r.ik?.[j])}${esc(x)}</span>`).join(' + ')}</div></div>`;
+  return `<div class="recipe"><div class="rw">${ico(D.st[r.w])}${esc(r.w)}${r.n > 1 ? ` · ${r.n}개 제작` : ''}</div>${grid}<div class="ri">${r.i.map((x, j) => `<span${itAttr(r.ik?.[j], x)}>${ico(r.ik?.[j])}${esc(x)}</span>`).join(' + ')}</div></div>`;
 }
 // 아이템 얻는 법: 제작 + 포켓몬 드롭 + 블록 캐기 + 몹 처치 + 상자·보상
 const SRC_T = [['d', '포켓몬 드롭'], ['b', '블록 캐기·수확'], ['e', '몹 처치'], ['l', '상자·보상']];
@@ -802,7 +802,7 @@ TABS.guide = () => {
   <p>포켓몬이 나올 때 먼저 희귀도 등급을 뽑고, 그 등급 안에서 바이옴·시간·날씨 조건이 맞는 포켓몬 중 하나를 고름. 그래서 "매우 희귀" 포켓몬은 조건이 맞아도 잘 안 나옴.</p>
   <div class="mu"><div><div class="sub">일반 출현</div><table><tbody>${pctRow(C.world)}${C.world.boss ? `<tr><td>보스</td><td class="c">${C.world.boss}%</td></tr>` : ''}</tbody></table></div>
 </div>
-  <p>포케스낵(캠프 냄비 요리)을 설치하면 주변에 포켓몬을 끌어들임. "포케스낵 전용" 출현은 이걸로만 나옴. 출현 탭에서 바이옴별로 확인.</p>
+  <p>포케스낵(모닥불 냄비 요리)을 설치하면 주변에 포켓몬을 끌어들임. "포케스낵 전용" 출현은 이걸로만 나옴. 출현 탭에서 바이옴별로 확인.</p>
   <h3>2. 처음 만들 장치</h3>
   ${['healing_machine', 'pc', 'pasture', 'fossil_analyzer', 'restoration_tank', 'monitor'].map(device).join('')}
   <h3>3. 진화 방법</h3>
@@ -817,7 +817,7 @@ TABS.guide = () => {
   <p>민트는 성격 보정만 바꾸고 실제 성격은 그대로. 어떤 성격이 좋은지는 도감의 "특성 · 성격" 섹션 추천 참고.</p>
   <h3>6. 회복</h3>
   <dl class="kv">${['potion', 'super_potion', 'hyper_potion', 'max_potion', 'full_restore'].filter(id => IT[id]).map(id => `<dt>${esc(IT[id][0])}</dt><dd>${tip(id)}</dd>`).join('')}</dl>
-  <p>회복약은 양조기·캠프 냄비로 만듦. 아이템 탭 "회복약"에서 제작법 확인.</p>
+  <p>회복약은 양조기·모닥불 냄비로 만듦. 아이템 탭 "회복약"에서 제작법 확인.</p>
   <h3>7. 몬스터볼</h3>
   <p>규토리(아프리코트) 열매를 따서 볼을 만듦. 볼별 포획 보정은 아이템 탭 "몬스터볼" 설명 끝의 (포획률: N배) 참고.</p>
   </div>`;

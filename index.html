@@ -172,6 +172,8 @@ details[open] summary:before{content:"−"}
 .guide .tcard{display:inline-block;vertical-align:top;max-width:262px;margin:0 14px 16px 0}
 .guide .tcard > .muted{font-size:13px;margin:2px 0 4px}
 .guide table{max-width:560px}
+.guide table.balls{max-width:860px}
+@media(min-width:700px){.balls td span,.balls td:first-child{white-space:nowrap}}
 .kv{display:grid;grid-template-columns:140px 1fr;gap:6px 14px}
 .kv dt{color:var(--muted)}
 .kv dd{margin:0}
@@ -541,7 +543,7 @@ $view.addEventListener('click', e => {
   if (e.target.closest('.srcbox .x')) return e.target.closest('.srcbox').remove();
   const c = e.target.closest('[data-it]');
   if (!c) return;
-  const at = c.closest('.recipe') || c.parentElement, nx = at.nextElementSibling;
+  const at = c.closest('.recipe') || c.closest('table') || c.parentElement, nx = at.nextElementSibling;
   if (nx?.classList.contains('srcbox')) { nx.remove(); if (nx.dataset.for === c.dataset.it) return; }
   at.insertAdjacentHTML('afterend', srcHtml(c.dataset.it, c.dataset.nm));
 });
@@ -802,6 +804,12 @@ TABS.guide = () => {
   const device = id => IT[id] ? `<div style="display:inline-block;vertical-align:top;margin:0 18px 14px 0;max-width:280px"><b>${esc(IT[id][0])}</b> <span class="muted">${tip(id)}</span><div>${recipesOf(id)}</div></div>` : '';
   const evoCount = {}; D.order.forEach(k => M[k].evos.forEach(e => { const t = e.how.split(' · ')[0]; evoCount[t.includes('사용') && !t.includes('연결의끈') ? '아이템 사용' : t.startsWith('교환') ? '교환' : '레벨업'] = (evoCount[t.includes('사용') && !t.includes('연결의끈') ? '아이템 사용' : t.startsWith('교환') ? '교환' : '레벨업'] || 0) + 1; }));
   const tmAll = Object.values(MV).filter(m => m[10]).length;
+  // 볼 표: 대표 제작법을 규토리 / 주괴로 나눠서 한 줄
+  const chip = (k, x) => `<span${itAttr(k, x)}>${ico(k)}${esc(x)}</span>`;
+  const ballTable = rows => `<table class="balls"><thead><tr><th>종류</th><th>규토리</th><th>주괴</th><th>특징</th></tr></thead><tbody>${rows.filter(([k]) => IT[k] && D.recipes[k]).map(([k, note]) => {
+    const r = mainRecipes(k)[0], part = apr => r.i.map((x, j) => [r.ik[j], x]).filter(([ik]) => ik.endsWith('_apricorn') === apr).map(([ik, x]) => chip(ik, x)).join(' ');
+    return `<tr><td>${chip(k, IT[k][0])}</td><td>${part(true)}</td><td>${part(false)}</td><td>${esc(note)}</td></tr>`;
+  }).join('')}</tbody></table>`;
   $view.innerHTML = `<div class="guide"><h1 class="tab-head">가이드</h1><p class="tab-desc">${C.version} 기준 핵심 시스템. 수치는 모드팩 기본 설정값이라 서버마다 다를 수 있음.</p>
   <h3>1. 야생 출현 희귀도</h3>
   <p>포켓몬이 나올 때 먼저 희귀도 등급을 뽑고, 그 등급 안에서 바이옴·시간·날씨 조건이 맞는 포켓몬 중 하나를 고름. 그래서 "매우 희귀" 포켓몬은 조건이 맞아도 잘 안 나옴.</p>
@@ -824,7 +832,9 @@ TABS.guide = () => {
   <dl class="kv">${['potion', 'super_potion', 'hyper_potion', 'max_potion', 'full_restore'].filter(id => IT[id]).map(id => `<dt>${esc(IT[id][0])}</dt><dd>${tip(id)}</dd>`).join('')}</dl>
   <p>회복약은 양조기·모닥불 냄비로 만듦. 아이템 탭 "회복약"에서 제작법 확인.</p>
   <h3>7. 몬스터볼</h3>
-  <p>규토리(아프리코트) 열매를 따서 볼을 만듦. 볼별 포획 보정은 아이템 탭 "몬스터볼" 설명 끝의 (포획률: N배) 참고.</p>
+  <p>규토리(아프리코트) 열매를 따서 조합대에서 만듦. 가운데 주괴 1개 + 규토리 4개로 한 번에 4개. 재료를 누르면 얻는 법. 나머지 볼은 아이템 탭 "몬스터볼".</p>
+  <h4>주요 몬스터볼</h4>${ballTable([['poke_ball', '포획률 1배'], ['great_ball', '포획률 1.5배'], ['ultra_ball', '포획률 2배']])}
+  <h4>자주 쓰는 특수볼</h4>${ballTable([['quick_ball', '배틀 첫 턴에 던지면 포획률 5배'], ['dusk_ball', '어두울수록 잘 잡힘 (밝기 0: 3.5배, 1~7: 3배)'], ['timer_ball', '턴이 지날수록 잘 잡힘 (10턴 이상 4배)'], ['heal_ball', '잡자마자 HP·PP·상태 이상 회복']])}
   <h3>8. 가방 · 자주 쓰는 도구</h3>
   <p>재료를 누르면 그 재료 얻는 법, 이름을 누르면 상자·보상 같은 다른 입수처와 염색 등 나머지 제작법. 칸 수·비용은 모드팩 기본 설정값.</p>
   ${D.tools.map(([g, note, rows]) => `<h4>${esc(g)}</h4>${note ? `<p>${esc(note)}</p>` : ''}${rows.filter(([k]) => IT[k]).map(([k, d]) => `<div class="tcard"><div><b${itAttr(k, IT[k][0])}>${ico(k)}${esc(IT[k][0])}</b></div><div class="muted">${esc(d || IT[k][2])}</div>${mainRecipes(k).map(recipeHtml).join('')}</div>`).join('')}`).join('')}

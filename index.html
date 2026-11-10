@@ -134,6 +134,41 @@ details[open] summary:before{content:"−"}
   .dex > .c4{grid-column:span 4}.dex > .c8{grid-column:span 8}.dex > .c6{grid-column:span 6}
   .dex > .top{align-self:start}
 }
+/* 배틀 기초 탭 */
+.bt h3{scroll-margin-top:70px}
+.bt .toc + h3{margin-top:20px;padding-top:0;border-top:0}
+.guide.bt table{max-width:920px}
+.bt td{vertical-align:top}
+.bt th{white-space:nowrap}
+.bt .kv{grid-template-columns:150px 1fr;max-width:920px;margin:14px 0}
+.bt .kv .ico{margin-right:4px}
+.bt a.lnk{text-decoration:underline;text-underline-offset:3px}
+/* 목차: 좁은 화면은 위쪽 칩 줄, 넓은 화면은 오른쪽에 붙어 따라오는 세로 목록 */
+.bt .toc-in{display:flex;flex-wrap:wrap;gap:6px}
+.bt .toc-in b{display:none}
+.bt .tj{padding:3px 10px;border:1px solid var(--line);border-radius:3px;cursor:pointer;font-size:14px}
+@media(min-width:1100px){
+  .bt{position:relative;padding-right:250px}
+  .bt .toc{position:absolute;top:8px;right:0;bottom:0;width:210px}
+  .bt .toc-in{position:sticky;top:76px;flex-direction:column;flex-wrap:nowrap;gap:0}
+  .bt .toc-in b{display:block;font-size:13px;font-weight:500;color:var(--muted);margin-bottom:8px}
+  .bt .tj{border:0;border-left:2px solid var(--line);border-radius:0;padding:5px 12px;color:var(--muted)}
+  .bt .tj:hover{color:var(--fg);border-left-color:var(--fg)}
+}
+.bt .sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,180px),1fr));gap:10px;margin:14px 0;max-width:920px}
+.bt .sbox{border:1px solid var(--line);border-radius:6px;padding:12px 14px}
+.bt .sbox b{display:block;font-weight:600;margin-bottom:2px}
+.bt .sbox small{font-weight:400;font-size:12px;color:var(--muted);margin-left:4px}
+.bt .sbox span{font-size:14px;color:var(--muted)}
+.bt .steps{display:grid;grid-template-columns:auto 40px minmax(60px,1fr);gap:8px 14px;align-items:center;max-width:680px;margin:12px 0 14px}
+.bt .steps b{text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+.bt .fx{background:var(--soft);border-radius:6px;padding:12px 16px;margin:12px 0;max-width:920px;line-height:1.8}
+.guide.bt .rk{max-width:560px}
+.bt .rk td{text-align:center;color:var(--muted);font-size:13px;padding:7px 2px}
+.bt .rk th{padding:7px 8px 7px 0}
+.bt .rk td b{color:var(--fg);font-size:15px;font-weight:600}
+.bt .rk th{border-bottom:1px solid var(--soft)}
+.bt h4 small{font-size:13px;font-weight:400;color:var(--muted);margin-left:6px}
 /* nav */
 .nav{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--line)}
 .nav-in{max-width:1280px;margin:0 auto;padding:0 16px;display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
@@ -272,7 +307,7 @@ h2 .bucket{font-size:inherit}
 <body>
 <nav class="nav"><div class="nav-in">
   <a class="brand" href="#">코블몬 도감</a>
-  <a data-tab="" href="#">도감</a><a data-tab="spawn" href="#/spawn">출현</a><a data-tab="moves" href="#/moves">기술</a><a data-tab="abilities" href="#/abilities">특성</a><a data-tab="items" href="#/items">아이템</a><a data-tab="types" href="#/types">상성표</a><a data-tab="guide" href="#/guide">가이드</a><a data-tab="calc" href="#/calc">계산기</a>
+  <a data-tab="" href="#">도감</a><a data-tab="spawn" href="#/spawn">출현</a><a data-tab="moves" href="#/moves">기술</a><a data-tab="abilities" href="#/abilities">특성</a><a data-tab="items" href="#/items">아이템</a><a data-tab="types" href="#/types">상성표</a><a data-tab="guide" href="#/guide">가이드</a><a data-tab="calc" href="#/calc">계산기</a><a data-tab="battle" href="#/battle">배틀 기초</a>
 </div></nav>
 <div class="wrap">
   <div class="search" id="dexbar">
@@ -945,6 +980,196 @@ TABS.guide = () => {
   <p>재료를 누르면 그 재료 얻는 법, 이름을 누르면 상자·보상 같은 다른 입수처와 염색 등 나머지 제작법. 칸 수·비용은 모드팩 기본 설정값.</p>
   ${D.tools.map(([g, note, rows]) => `<h4>${esc(g)}</h4>${note ? `<p>${esc(note)}</p>` : ''}${tcards(rows)}`).join('')}
   </div>`;
+};
+
+// ---- 배틀 기초 ----
+// 수치는 인스턴스 showdown 폴더의 엔진 파일에서 확인한 값 (data/conditions.js, data/moves.js, sim/battle-actions.js, sim/pokemon.js, 옛 세대는 data/mods/gen5·gen6).
+// 조작 키는 모드팩 기본 설정(config/defaultoptions), 변신 기믹 조건은 config/mega_showdown/config.json 기준.
+TABS.battle = () => {
+  const IT = D.items, nm = k => esc(IT[k]?.[0] || k), mv = id => esc(MV[id]?.[0] || id), ab = id => D.abilities[id];
+  const kv = ks => `<dl class="kv">${ks.filter(k => IT[k]).map(k => `<dt>${ico(k)}${nm(k)}</dt><dd>${esc(IT[k][2])}</dd>`).join('')}</dl>`;
+  const names = ks => ks.filter(k => IT[k]).map(nm).join(' · ');
+  // 실제 능력치 (HP 제외): 종족값·개체값·노력치·레벨·성격
+  const stat = (b, iv, ev, lv, nat) => Math.floor((Math.floor((2 * b + iv + Math.floor(ev / 4)) * lv / 100) + 5) * nat);
+  const ex = M.charizard, eb = ex.stats[3], def = defense(ex);
+  const steps = [['개체값 0 · 노력치 0', stat(eb, 0, 0, 50, 1)], ['개체값 31 (타고난 최고)', stat(eb, 31, 0, 50, 1)], ['+ 노력치 252 (끝까지 키움)', stat(eb, 31, 252, 50, 1)], [`+ 성격 ${esc(D.natures.modest)} (특공 ×1.1)`, stat(eb, 31, 252, 50, 1.1)]];
+  const SEC = [['flow', '배틀 순서'], ['stats', '능력치 6가지'], ['build', '능력치가 정해지는 법'], ['type', '타입 상성'], ['move', '기술 읽는 법'], ['dmg', '데미지 계산'], ['order', '누가 먼저 움직이나'], ['status', '상태 이상'], ['rank', '능력치 올리기·내리기'], ['field', '날씨·필드'], ['item', '특성·지닌 물건'], ['gim', '변신 기믹'], ['old', '예전과 달라진 점'], ['word', '용어']];
+  const h = (id, i) => `<h3 id="bt-${id}">${i}. ${SEC.find(s => s[0] === id)[1]}</h3>`;
+  const rank = [1.5, 2, 2.5, 3, 3.5, 4];
+  $view.innerHTML = `<div class="guide bt"><h1 class="tab-head">배틀 기초</h1><p class="tab-desc">포켓몬 배틀을 처음 하거나 예전 게임만 해본 사람용. 수치는 이 모드팩에 들어 있는 배틀 엔진(Pokémon Showdown) 파일에서 확인한 값.</p>
+  <p class="lead">세 가지만 기억하면 됨. ① 상대의 약점 타입 기술을 고른다 ② 내 포켓몬이 잘하는 쪽(공격 또는 특공) 기술을 쓴다 ③ 스피드가 빠르면 먼저 때린다.</p>
+  <div class="toc"><div class="toc-in"><b>목차</b>${SEC.map(([id, t], i) => `<span class="tj" data-jump="bt-${id}">${i + 1}. ${t}</span>`).join('')}</div></div>
+
+  ${h('flow', 1)}
+  <ol>
+    <li>야생 포켓몬이나 다른 플레이어를 보고 <b>R 키</b>(선택한 포켓몬 꺼내기)를 누르면 배틀 시작. 플레이어에게 걸면 상대가 받아야 시작됨.</li>
+    <li>매 턴 하나를 고름: 기술 쓰기(4개 중 하나) · 포켓몬 교체 · 가방(몬스터볼·약) · 도망.</li>
+    <li>양쪽이 다 고르면 스피드가 높은 쪽부터 움직임. 교체와 아이템은 기술보다 먼저 처리됨.</li>
+    <li>HP가 0이 되면 기절하고 다음 포켓몬이 나옴. 한쪽이 전부 기절하면 끝.</li>
+  </ol>
+  <p>포켓몬은 6마리까지 데리고 다니고, 기술은 한 마리당 4개까지 씀. 내 포켓몬의 능력치·기술·성격은 <b>상태창(C 키)</b>에서 봄. 야생 포켓몬은 HP를 깎을수록 잘 잡힘.</p>
+
+  ${h('stats', 2)}
+  <div class="sgrid">
+    <div class="sbox"><b>HP</b><span>버틸 수 있는 체력. 0이 되면 기절.</span></div>
+    <div class="sbox"><b>공격</b><span>물리 기술로 때리는 힘.</span></div>
+    <div class="sbox"><b>방어</b><span>물리 기술을 맞을 때 버티는 힘.</span></div>
+    <div class="sbox"><b>특공 <small>특수공격</small></b><span>특수 기술로 때리는 힘.</span></div>
+    <div class="sbox"><b>특방 <small>특수방어</small></b><span>특수 기술을 맞을 때 버티는 힘.</span></div>
+    <div class="sbox"><b>스피드</b><span>누가 먼저 움직일지. 높은 쪽이 먼저.</span></div>
+  </div>
+  <p>기술은 물리·특수·변화 세 종류. <b>물리 기술은 내 공격과 상대 방어</b>로, <b>특수 기술은 내 특공과 상대 특방</b>으로 계산함. 그래서 공격이 높은 포켓몬은 물리 기술을, 특공이 높은 포켓몬은 특수 기술을 써야 셈.</p>
+  <p>예: ${esc(ex.ko)}은 공격 ${ex.stats[1]}, 특공 ${ex.stats[3]}이라 특수 기술 위주로 씀. 도감 페이지의 "물리 공격형 / 특수 공격형" 표시가 이 뜻.</p>
+
+  ${h('build', 3)}
+  <p>같은 ${esc(ex.ko)}이라도 능력치는 개체마다 다름. 아래 네 가지가 합쳐져서 실제 능력치가 됨.</p>
+  <table><thead><tr><th>요소</th><th>뭔지</th><th>범위</th><th>바꾸는 법</th></tr></thead><tbody>
+    <tr><td><b>종족값</b><br><span class="muted">기본 능력치</span></td><td>포켓몬 종류마다 정해진 값. 도감의 막대 그래프가 이것</td><td>종류마다 고정</td><td>못 바꿈. 진화하면 오름</td></tr>
+    <tr><td><b>개체값</b><br><span class="muted">타고난 능력치</span></td><td>잡거나 태어날 때 정해지는 재능</td><td>능력치마다 0~31</td><td>병뚜껑 (가이드 8번)</td></tr>
+    <tr><td><b>노력치</b><br><span class="muted">키워서 쌓는 값</span></td><td>배틀에서 이기거나 아이템을 먹여서 쌓음</td><td>능력치 하나 252까지, 전부 합쳐 510까지</td><td>아래 아이템</td></tr>
+    <tr><td><b>성격</b></td><td>능력치 하나가 10% 오르고 하나가 10% 내려감</td><td>25종 (5종은 변화 없음)</td><td>민트</td></tr>
+  </tbody></table>
+  <p>레벨 100 기준으로 개체값 1 = 능력치 1, 노력치 4 = 능력치 1. 레벨 50이면 그 절반. 노력치는 합쳐서 510까지라 보통 두 능력치에 252씩 넣음.</p>
+  <h4>${esc(ex.ko)} 레벨 50의 특공이 달라지는 정도 <small>종족값 ${eb}</small></h4>
+  <div class="steps">${steps.map(([l, v]) => `<span>${l}</span><b>${v}</b><div class="bar"><i style="width:${v / steps[3][1] * 100}%"></i></div>`).join('')}</div>
+  <p>같은 포켓몬인데 ${steps[0][1]}과 ${steps[3][1]}까지 벌어짐. 처음엔 신경 안 써도 되고, 주력 포켓몬을 정한 뒤에 손보면 됨.</p>
+  <dl class="kv">
+    <dt>확인하는 곳</dt><dd>상태창(C 키)의 능력치 화면에서 능력치 · 종족값 · 개체값 · 노력치를 바꿔 볼 수 있음</dd>
+    <dt>노력치 +10</dt><dd>${names(['hp_up', 'protein', 'iron', 'calcium', 'zinc', 'carbos'])} <span class="muted">(순서대로 HP·공격·방어·특공·특방·스피드)</span></dd>
+    <dt>노력치 +1</dt><dd>깃털 (${names(['health_feather', 'muscle_feather'])} 등)</dd>
+    <dt>이길 때마다 +8</dt><dd>파워 아이템을 지니게 함 (${names(['power_weight', 'power_bracer'])} 등)</dd>
+    <dt>노력치 −10</dt><dd>열매 (${names(['pomeg_berry', 'kelpsy_berry'])} 등). 잘못 쌓았을 때 되돌림</dd>
+  </dl>
+  <details><summary>계산식 보기</summary><div class="fx">HP = (종족값 × 2 + 개체값 + 노력치 ÷ 4) × 레벨 ÷ 100 + 레벨 + 10<br>그 외 = ((종족값 × 2 + 개체값 + 노력치 ÷ 4) × 레벨 ÷ 100 + 5) × 성격(0.9 · 1 · 1.1)<br><span class="muted">나눗셈마다 소수점은 버림</span></div></details>
+
+  ${h('type', 4)}
+  <ul>
+    <li>포켓몬은 타입을 1~2개, 기술은 타입을 1개 가짐. 타입은 18가지.</li>
+    <li>기술 타입이 상대 타입에 강하면 <b>×2</b>(효과가 굉장했다), 약하면 <b>×½</b>(효과가 별로인 듯하다), 안 통하면 <b>×0</b>.</li>
+    <li>상대 타입이 2개면 둘을 곱함. ×2와 ×2면 ×4, ×2와 ×½이면 ×1.</li>
+    <li><b>자기 타입과 같은 타입의 기술은 위력 1.5배.</b> ${esc(ex.ko)}(${ex.types.map(t => TK[t]).join('/')})이 ${ex.types.map(t => TK[t]).join(' 기술이나 ')} 기술을 쓰면 1.5배.</li>
+  </ul>
+  <h4>${esc(ex.ko)}이 맞을 때</h4>
+  ${MULT.filter(([x]) => def[x]).map(([x, l, c]) => `<div class="row"><span class="m ${c}">${l}</span><div>${def[x].map(t => tchip(t, 1)).join('')}</div></div>`).join('')}
+  <p>먼저 외울 것: 불꽃 → 풀 → 물 → 불꽃 순서로 강함. 전기는 물·비행에 강하고 땅에는 안 통함. 노말과 고스트는 서로 안 통함. 페어리는 드래곤에 강하고 드래곤 기술을 안 맞음. 전체는 <a href="#/types" class="lnk">상성표 탭</a>에서 타입을 눌러서 확인.</p>
+
+  ${h('move', 5)}
+  <dl class="kv">
+    <dt>분류</dt><dd>물리(공격으로 계산) · 특수(특공으로 계산) · 변화(데미지 없이 능력치를 바꾸거나 상태 이상을 검)</dd>
+    <dt>위력</dt><dd>클수록 셈. 100이 넘는 기술은 대개 명중이 낮거나 반동이 있음</dd>
+    <dt>명중</dt><dd>맞을 확률(%). "—"는 반드시 맞음</dd>
+    <dt>PP</dt><dd>쓸 수 있는 횟수. 0이 되면 그 기술은 못 씀</dd>
+    <dt>급소</dt><dd>1/24 확률로 데미지 1.5배. 급소에 잘 맞는 기술은 1/8</dd>
+  </dl>
+
+  ${h('dmg', 6)}
+  <div class="fx">데미지 ≈ 레벨 보정 × <b>기술 위력</b> × <b>내 공격 ÷ 상대 방어</b> × 아래 배율들<br><span class="muted">특수 기술이면 공격·방어 자리에 특공·특방</span></div>
+  <table><thead><tr><th>배율</th><th>값</th></tr></thead><tbody>
+    <tr><td>자기 타입 기술</td><td>×1.5</td></tr>
+    <tr><td>타입 상성</td><td>×0 · ¼ · ½ · 1 · 2 · 4</td></tr>
+    <tr><td>급소</td><td>×1.5</td></tr>
+    <tr><td>난수</td><td>×0.85 ~ 1 (매번 조금씩 다름)</td></tr>
+    <tr><td>화상 상태에서 물리 기술</td><td>×0.5</td></tr>
+    <tr><td>날씨 (쾌청에 불꽃, 비에 물)</td><td>×1.5, 반대 타입은 ×0.5</td></tr>
+    <tr><td>상대의 벽 (${mv('reflect')} · ${mv('lightscreen')})</td><td>×0.5</td></tr>
+  </tbody></table>
+  <p>자기 타입(1.5)에 약점(2)이 겹치면 3배. 그래서 위력만 높은 기술보다 상성이 맞는 기술이 보통 더 셈.</p>
+  <details><summary>계산식 보기</summary><div class="fx">((레벨 × 2 ÷ 5 + 2) × 위력 × 공격 ÷ 방어 ÷ 50 + 2) × 배율<br><span class="muted">나눗셈마다 소수점은 버림</span></div></details>
+
+  ${h('order', 7)}
+  <ol>
+    <li><b>우선도</b>가 높은 기술이 먼저. ${mv('quickattack')}·${mv('suckerpunch')} +1, ${mv('extremespeed')} +2, ${mv('fakeout')} +3, ${mv('protect')} +4.</li>
+    <li>우선도가 같으면 <b>스피드</b>가 높은 쪽.</li>
+    <li>스피드도 같으면 랜덤.</li>
+  </ol>
+  <p>먼저 때려서 쓰러뜨리면 한 대도 안 맞기 때문에 스피드가 중요함. 순서를 뒤집는 것: 마비(스피드 절반), ${nm('choice_scarf')}(스피드 1.5배), ${mv('trickroom')}(5턴 동안 느린 쪽이 먼저).</p>
+
+  ${h('status', 8)}
+  <table><thead><tr><th>상태</th><th>효과</th><th>안 걸리는 타입</th></tr></thead><tbody>
+    <tr><td><b>화상</b></td><td>매 턴 최대 HP의 1/16 데미지. 물리 기술 데미지가 절반</td><td>불꽃</td></tr>
+    <tr><td><b>독</b></td><td>매 턴 1/8 데미지</td><td>독 · 강철</td></tr>
+    <tr><td><b>맹독</b></td><td>매 턴 1/16, 2/16, 3/16으로 점점 커짐. 교체하면 다시 1/16부터</td><td>독 · 강철</td></tr>
+    <tr><td><b>마비</b></td><td>스피드 절반. 매 턴 25% 확률로 못 움직임</td><td>전기</td></tr>
+    <tr><td><b>잠듦</b></td><td>1~3턴 동안 못 움직임</td><td></td></tr>
+    <tr><td><b>얼음</b></td><td>못 움직임. 매 턴 20% 확률로 풀림. 불꽃 기술을 맞으면 바로 풀림</td><td>얼음</td></tr>
+    <tr><td><b>혼란</b></td><td>2~5턴. 매 턴 33% 확률로 자기를 때림</td><td></td></tr>
+    <tr><td><b>풀죽음</b></td><td>그 턴만 못 움직임. 상대보다 늦게 움직일 때만 걸림</td><td></td></tr>
+  </tbody></table>
+  <p>화상부터 얼음까지는 한 번에 하나만 걸리고 교체해도 안 풀림. 혼란은 그것들과 겹쳐 걸리고 교체하면 풀림. 약은 ${nm('full_heal')}, 지닌 물건은 ${nm('lum_berry')}.</p>
+
+  ${h('rank', 9)}
+  <p>${mv('swordsdance')}(공격 2단계 올림)처럼 배틀 중에 능력치를 올리거나 내리는 기술이 있음. 단계는 −6부터 +6까지고 <b>교체하면 0으로 돌아감.</b></p>
+  <table class="rk"><tbody>
+    <tr><th>올림</th>${rank.map((x, i) => `<td>+${i + 1}<br><b>×${x}</b></td>`).join('')}</tr>
+    <tr><th>내림</th>${rank.map((x, i) => `<td>−${i + 1}<br><b>×${(1 / x).toFixed(2)}</b></td>`).join('')}</tr>
+  </tbody></table>
+  <p>공격을 2단계 올리면 데미지가 2배. 명중·회피도 같은 식으로 오르내림(1단계에 1.33배).</p>
+
+  ${h('field', 10)}
+  <p>날씨와 필드는 기술이나 특성으로 깔고 5턴 동안 이어짐. 날씨는 하나, 필드도 하나만 깔림.</p>
+  <table><thead><tr><th></th><th>이름</th><th>효과</th></tr></thead><tbody>
+    <tr><td rowspan="4" class="muted">날씨</td><td><b>쾌청</b></td><td>불꽃 기술 ×1.5, 물 기술 ×0.5. 얼음 상태에 안 걸림</td></tr>
+    <tr><td><b>비</b></td><td>물 기술 ×1.5, 불꽃 기술 ×0.5</td></tr>
+    <tr><td><b>모래바람</b></td><td>바위·땅·강철 타입이 아니면 매 턴 1/16 데미지. 바위 타입은 특방 ×1.5</td></tr>
+    <tr><td><b>눈</b></td><td>얼음 타입은 방어 ×1.5</td></tr>
+    <tr><td rowspan="4" class="muted">필드<br>땅에 서 있는<br>포켓몬만</td><td><b>${mv('electricterrain')}</b></td><td>전기 기술 ×1.3. 잠들지 않음</td></tr>
+    <tr><td><b>${mv('grassyterrain')}</b></td><td>풀 기술 ×1.3. 매 턴 HP 1/16 회복</td></tr>
+    <tr><td><b>${mv('psychicterrain')}</b></td><td>에스퍼 기술 ×1.3. 우선도 기술을 안 맞음</td></tr>
+    <tr><td><b>${mv('mistyterrain')}</b></td><td>드래곤 기술 ×0.5. 상태 이상에 안 걸림</td></tr>
+    <tr><td rowspan="2" class="muted">벽</td><td><b>${mv('reflect')}</b></td><td>5턴 동안 우리 편이 받는 물리 데미지 절반</td></tr>
+    <tr><td><b>${mv('lightscreen')}</b></td><td>5턴 동안 우리 편이 받는 특수 데미지 절반</td></tr>
+  </tbody></table>
+
+  ${h('item', 11)}
+  <p><b>특성</b>은 포켓몬이 가진 자동 효과. 따로 누르지 않아도 조건이 되면 알아서 발동함. 포켓몬마다 가질 수 있는 특성이 정해져 있고, 전체는 <a href="#/abilities" class="lnk">특성 탭</a>.</p>
+  <dl class="kv">${['intimidate', 'levitate', 'speedboost'].filter(ab).map(id => `<dt>${esc(ab(id)[0])}</dt><dd>${esc(ab(id)[1])}</dd>`).join('')}</dl>
+  <p><b>지닌 물건</b>은 포켓몬 한 마리가 하나씩 들 수 있는 아이템. 배틀 중에 알아서 효과를 냄.</p>
+  ${kv(['leftovers', 'sitrus_berry', 'lum_berry', 'choice_band', 'choice_scarf', 'life_orb', 'focus_sash', 'eviolite', 'exp_share', 'lucky_egg'])}
+
+  ${h('gim', 12)}
+  <p>배틀 중에 한 번 쓰는 강화 수단 네 가지. 전부 "트레이너가 차는 장비 + 포켓몬 쪽 아이템" 구조. 이 모드팩은 네 가지가 다 켜져 있음.</p>
+  <table><thead><tr><th>이름</th><th>누가 쓰나</th><th>일어나는 일</th><th>준비물</th></tr></thead><tbody>
+    <tr><td><b>메가진화</b></td><td>전용 메가스톤이 있는 포켓몬만</td><td>더 센 모습으로 변신. 능력치가 크게 오르고 타입·특성이 바뀌기도 함</td><td>${nm('mega_showdown:mega_bracelet')} + 전용 메가스톤</td></tr>
+    <tr><td><b>Z기술</b></td><td>아무 포켓몬</td><td>기술 하나를 배틀당 한 번 아주 센 기술로 씀</td><td>${nm('mega_showdown:z_ring')} + Z크리스탈</td></tr>
+    <tr><td><b>다이맥스</b></td><td>아무 포켓몬</td><td>3턴 동안 거대해짐. HP가 늘고 기술이 강화판으로 바뀜</td><td>${nm('mega_showdown:dynamax_band')}</td></tr>
+    <tr><td><b>테라스탈</b></td><td>아무 포켓몬</td><td>포켓몬마다 가진 "테라 타입"으로 타입이 바뀌고 그 타입 기술이 세짐</td><td>${nm('mega_showdown:tera_orb')}</td></tr>
+  </tbody></table>
+  <ul>
+    <li>메가진화는 한 배틀에 여러 마리가 가능하고, 배틀 밖에서도 변신할 수 있음. <span class="muted">(이 모드팩 설정)</span></li>
+    <li>다이맥스는 파워스폿 32블록 안에서만 됨. 특정 포켓몬의 거다이맥스는 ${nm('mega_showdown:max_soup')}를 먹여서 풂.</li>
+    <li>테라 타입을 바꾸려면 테라피스 50개가 필요함.</li>
+    <li>어떤 포켓몬이 뭘 쓸 수 있는지는 도감 페이지의 "변신 · 기믹" 칸에 나옴.</li>
+  </ul>
+  <h4>트레이너 장비 만드는 법</h4>
+  ${tcards([['mega_showdown:mega_bracelet', '메가진화용'], ['mega_showdown:z_ring', 'Z기술용'], ['mega_showdown:dynamax_band', '다이맥스용'], ['mega_showdown:tera_orb', '테라스탈용']])}
+
+  ${h('old', 13)}
+  <table><thead><tr><th></th><th>예전</th><th>지금</th></tr></thead><tbody>
+    <tr><td><b>물리·특수 구분</b></td><td>타입으로 정해짐 (불꽃 기술은 전부 특수)</td><td>기술마다 따로 정해짐 <span class="muted">4세대부터</span></td></tr>
+    <tr><td><b>특성 · 성격</b></td><td>없음</td><td>모든 포켓몬이 가짐 <span class="muted">3세대부터</span></td></tr>
+    <tr><td><b>페어리 타입</b></td><td>없음 (타입 17가지)</td><td>18번째 타입. 드래곤에 강함 <span class="muted">6세대부터</span></td></tr>
+    <tr><td><b>강철 타입</b></td><td>고스트·악 기술을 반만 맞음</td><td>고스트·악 기술을 그대로 맞음 <span class="muted">6세대부터</span></td></tr>
+    <tr><td><b>급소</b></td><td>데미지 2배</td><td>1.5배 <span class="muted">6세대부터</span></td></tr>
+    <tr><td><b>마비</b></td><td>스피드가 1/4</td><td>스피드가 절반 <span class="muted">7세대부터</span></td></tr>
+    <tr><td><b>화상</b></td><td>매 턴 1/8 데미지</td><td>매 턴 1/16 데미지 <span class="muted">7세대부터</span></td></tr>
+    <tr><td><b>혼란</b></td><td>50% 확률로 자기를 때림</td><td>33% <span class="muted">7세대부터</span></td></tr>
+  </tbody></table>
+
+  ${h('word', 14)}
+  <dl class="kv">
+    <dt>종족값</dt><dd>포켓몬 종류마다 정해진 기본 능력치</dd>
+    <dt>개체값 (IV)</dt><dd>개체마다 타고나는 능력치. 0~31</dd>
+    <dt>노력치 (EV)</dt><dd>키우면서 쌓는 능력치</dd>
+    <dt>실수치</dt><dd>위 셋과 성격·레벨을 합친 실제 능력치</dd>
+    <dt>자속</dt><dd>자기 타입과 같은 타입의 기술. 위력 1.5배</dd>
+    <dt>반감 · 무효</dt><dd>×½로 맞는 것 · 아예 안 맞는 것</dd>
+    <dt>랭크</dt><dd>배틀 중 능력치를 올리고 내리는 단계 (−6 ~ +6)</dd>
+    <dt>선공기</dt><dd>우선도가 높아서 스피드와 상관없이 먼저 나가는 기술</dd>
+    <dt>어태커 · 막이</dt><dd>때리는 역할 · 버티는 역할 (이 사이트의 공격형 · 방어형)</dd>
+    <dt>결정력 · 내구</dt><dd>한 방의 세기 · 버티는 정도</dd>
+    <dt>숨특</dt><dd>숨겨진 특성. 드물게 나오는 세 번째 특성</dd>
+  </dl></div>`;
+  $view.querySelector('.toc').addEventListener('click', e => { const j = e.target.dataset.jump; if (j) document.getElementById(j).scrollIntoView({behavior: 'smooth'}); });
 };
 
 // ---- 계산기: 만들 것 × 개수 -> 모을 재료 합계 ----

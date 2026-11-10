@@ -837,7 +837,7 @@ TABS.types = () => {
   const cell = e => e === 2 ? '<td class="c2">2</td>' : e === .5 ? '<td class="c05">½</td>' : e === 0 ? '<td class="c0">0</td>' : '<td></td>';
   $view.innerHTML = `<h1 class="tab-head">상성표</h1><p class="tab-desc">왼쪽 = 공격 기술 타입, 위 = 맞는 포켓몬 타입.</p>
   <section><h2>방어 타입 계산기</h2><div class="filters"><select id="d1">${TYPES.map(t => `<option value="${t}">${TK[t]}</option>`).join('')}</select><select id="d2"><option value="">(단일 타입)</option>${TYPES.map(t => `<option value="${t}">${TK[t]}</option>`).join('')}</select></div><div id="dres"></div></section>
-  <section><h2>전체 표</h2><p class="desc">2 = 효과 굉장 (2배) · ½ = 효과 별로 (절반) · 0 = 효과 없음 · 빈칸 = 보통 (1배). 타입을 누르면 그 줄만 강조, 다시 누르면 해제.</p><div class="tc-wrap"><table class="tchart"><thead><tr><th class="tc-c">방어 →<br>공격 ↓</th>${TYPES.map((t, j) => `<th data-k="c${j}">${tchip(t, 1)}</th>`).join('')}</tr></thead>
+  <section><h2>전체 표</h2><p class="desc">2 = 효과 굉장 (2배) · ½ = 효과 별로 (절반) · 0 = 효과 없음 · 빈칸 = 보통 (1배). 타입을 누르면 그 줄만 강조 (여러 개 선택 가능), 다시 누르면 해제. <button class="x" id="tclr" hidden>선택 해제</button></p><div class="tc-wrap"><table class="tchart"><thead><tr><th class="tc-c">방어 →<br>공격 ↓</th>${TYPES.map((t, j) => `<th data-k="c${j}">${tchip(t, 1)}</th>`).join('')}</tr></thead>
   <tbody>${TYPES.map((a, i) => `<tr><th class="rh" data-k="r${i}">${tchip(a, 1)}</th>${TYPES.map(d => cell(CH[a][d] ?? 1)).join('')}</tr>`).join('')}</tbody></table></div></section>`;
   const draw = () => {
     const ts = [document.getElementById('d1').value, document.getElementById('d2').value].filter(Boolean);
@@ -846,18 +846,18 @@ TABS.types = () => {
   };
   ['d1', 'd2'].forEach(id => document.getElementById(id).addEventListener('change', draw));
   draw();
-  // 타입 머리칸 클릭: 그 줄(공격 = 가로, 방어 = 세로)과, 그 줄에서 값이 있는 칸의 맞은편 타입만 남기고 흐리게
-  const tb = $view.querySelector('.tchart'), hit = (a, d) => (CH[TYPES[a]][TYPES[d]] ?? 1) !== 1; let sel = null;
-  tb.addEventListener('click', e => {
-    const th = e.target.closest('th[data-k]'); if (!th) return;
-    sel = sel === th.dataset.k ? null : th.dataset.k;
-    const i = sel && +sel.slice(1), row = sel?.[0] === 'r';
-    tb.classList.toggle('sel', !!sel);
+  // 타입 머리칸 클릭(여러 개): 고른 줄(공격 = 가로, 방어 = 세로)과, 그 줄에서 값이 있는 칸의 맞은편 타입만 남기고 흐리게
+  const tb = $view.querySelector('.tchart'), clr = document.getElementById('tclr'), hit = (a, d) => (CH[TYPES[a]][TYPES[d]] ?? 1) !== 1, sel = new Set();
+  const paint = () => {
+    const pick = p => [...sel].filter(k => k[0] === p).map(k => +k.slice(1)), rs = pick('r'), cs = pick('c');
+    tb.classList.toggle('sel', sel.size > 0); clr.hidden = !sel.size;
     [...tb.rows].forEach((tr, r) => [...tr.cells].forEach((c, j) => {
-      c.classList.toggle('cur', !!sel && c.dataset.k === sel);
-      c.classList.toggle('on', !!sel && (row ? r === i + 1 || (!r && j > 0 && hit(i, j - 1)) : j === i + 1 || (!j && r > 0 && hit(r - 1, i))));
+      c.classList.toggle('cur', sel.has(c.dataset.k));
+      c.classList.toggle('on', r && j ? rs.includes(r - 1) || cs.includes(j - 1) : !r ? j > 0 && (cs.includes(j - 1) || rs.some(i => hit(i, j - 1))) : rs.includes(r - 1) || cs.some(i => hit(r - 1, i)));
     }));
-  });
+  };
+  tb.addEventListener('click', e => { const k = e.target.closest('th[data-k]')?.dataset.k; if (!k) return; sel.delete(k) || sel.add(k); paint(); });
+  clr.addEventListener('click', () => { sel.clear(); paint(); });
 };
 
 // ---- 가이드 ----

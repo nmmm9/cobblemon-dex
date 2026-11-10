@@ -6,22 +6,22 @@
 <title>코블몬 도감</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <style>
-:root{--fg:#111;--bg:#fff;--line:#e6e6e6;--muted:#666;--soft:#f5f5f5}
+:root{--fg:#111;--bg:#fff;--page:#f4f4f5;--line:#e6e6e6;--muted:#666;--soft:#f5f5f5}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--fg);font-family:"Pretendard Variable",Pretendard,-apple-system,"Malgun Gothic",sans-serif;font-size:15px;line-height:1.6;letter-spacing:-.01em;-webkit-font-smoothing:antialiased}
+body{margin:0;background:var(--page);color:var(--fg);font-family:"Pretendard Variable",Pretendard,-apple-system,"Malgun Gothic",sans-serif;font-size:15px;line-height:1.6;letter-spacing:-.01em;word-break:keep-all;overflow-wrap:break-word;-webkit-font-smoothing:antialiased}
 a{color:inherit;text-decoration:none}
 button,input,select,textarea{font:inherit;letter-spacing:inherit}
 .wrap{max-width:1280px;margin:0 auto;padding:40px 16px 80px}
 .search{position:relative;margin-bottom:40px}
 .search input{width:100%;font:inherit;font-size:20px;padding:12px 0;border:0;border-bottom:1px solid var(--fg);outline:0;background:transparent;color:var(--fg)}
-.search input::placeholder{color:#bbb}
+.search input::placeholder{color:#a8a8a8}
 .drop{position:absolute;left:0;right:0;top:100%;background:var(--bg);border:1px solid var(--line);border-top:0;z-index:10;max-height:360px;overflow:auto;display:none}
 .drop.on{display:block}
 .drop div{padding:9px 12px;cursor:pointer;display:flex;gap:10px;align-items:baseline}
 .drop div.sel,.drop div:hover{background:var(--soft)}
 .drop .n{color:var(--muted);font-variant-numeric:tabular-nums;min-width:44px}
 .drop .en{color:var(--muted);font-size:13px}
-.hint{color:var(--muted)}
+.hint,.muted{color:var(--muted)}
 .head{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start;margin-bottom:40px}
 .head img{width:140px;height:140px;object-fit:contain;flex:none;image-rendering:auto}
 .head h1{margin:0;font-size:28px;font-weight:600;letter-spacing:-.01em;line-height:1.2}
@@ -104,6 +104,7 @@ th{font-weight:500;color:var(--muted);text-align:left;font-size:13px;padding:6px
 td{padding:7px 8px;border-bottom:1px solid var(--soft);vertical-align:middle}
 td.c,th.c{text-align:center}
 td .en{color:var(--muted);font-size:12px;margin-left:6px}
+@media(max-width:700px){td .en{display:block;margin-left:0}}
 .cat{font-size:12px;color:var(--muted)}
 .rec{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
 .rec .card{border:1px solid var(--line);border-radius:4px;padding:12px 14px}
@@ -121,10 +122,13 @@ details[open] summary:before{content:"−"}
 /* 상세 페이지: 섹션을 카드로 묶고, 넓은 화면에선 12칸 격자 (c4·c8·c6 = 차지하는 칸 수) */
 .dex h2{font-size:18px;border:0;padding:0;margin:0 0 16px}
 .dex .stats{max-width:none}
-@media(max-width:700px){.dex > section{border-top:1px solid var(--line);padding-top:24px}}
+/* 폰은 카드가 없으니 바탕도 흰색. 넓은 화면은 옅은 회색 바탕 위에 흰 판(헤더·카드·탭 본문) */
+@media(max-width:700px){:root{--page:#fff}.dex > section{border-top:1px solid var(--line);padding-top:24px}}
 @media(min-width:701px){
   .dex{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:16px}
-  .dex > section{grid-column:1 / -1;margin:0;padding:22px 24px;border:1px solid var(--line);border-radius:8px}
+  .dex > section{grid-column:1 / -1;margin:0;padding:22px 24px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+  .head,#view:not(:has(.dex)){padding:24px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+  .head{margin-bottom:16px}
 }
 @media(min-width:1000px){
   .dex > .c4{grid-column:span 4}.dex > .c8{grid-column:span 8}.dex > .c6{grid-column:span 6}
@@ -147,9 +151,12 @@ details[open] summary:before{content:"−"}
 .filters label{font-size:13px;color:var(--muted);display:flex;gap:6px;align-items:center;cursor:pointer}
 .chip.sm{font-size:13px;padding:2px 9px}
 .list .it{border-bottom:1px solid var(--soft)}
-.list .it-h{display:grid;gap:10px;align-items:center;padding:9px 4px;cursor:pointer}
+.list .it-h{display:grid;gap:10px;align-items:center;padding:9px 10px;cursor:pointer}
 .list .it-h:hover{background:var(--soft)}
-.list .it-b{padding:6px 4px 16px;display:none}
+.list .it-b{padding:10px 14px 20px;display:none}
+.list .it.open{box-shadow:inset 2px 0 0 var(--fg)}
+.list .it.open > .it-h{background:var(--soft);font-weight:500}
+.list .it-b > p:first-child{margin-top:4px}
 .list .it.open .it-b{display:block}
 .list .muted{color:var(--muted);font-size:14px}
 .mon-chips{display:flex;flex-wrap:wrap;gap:6px}
@@ -164,6 +171,24 @@ details[open] summary:before{content:"−"}
 .ico{width:22px;height:22px;object-fit:cover;object-position:top;image-rendering:pixelated;vertical-align:middle;margin-right:5px;flex:none}
 .grid3 .ico{width:26px;height:26px;margin:0}
 .recipe .ri .ico{width:16px;height:16px;margin-right:3px}
+/* 도감 변신·기믹: 기믹 상자 + 같은 폭의 아이템 격자 */
+.gms{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,400px),1fr));gap:12px}
+.gm{border:1px solid var(--line);border-radius:6px;padding:14px 16px}
+.gm-h{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px}
+.gm-h .badge{margin:0}
+.gm-need{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;margin-top:8px;font-size:14px}
+.gm-need > span{white-space:nowrap}
+.gm-sub{font-size:14px;font-weight:500;margin:26px 0 12px}
+/* 아이템 카드 격자 (가이드·도감 공용): 이름 / 설명 / 조합 칸. 같은 줄 카드끼리 세 칸 높이를 맞춤 */
+.tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,270px),1fr));gap:24px;margin-bottom:8px}
+.tcard{display:grid;grid-row:span 3;grid-template-rows:subgrid;row-gap:4px;align-content:start}
+.tcard b{font-weight:600}
+.tcard > .muted{font-size:13px;line-height:1.5}
+.tcard .recipe{display:block;margin:4px 0 6px}
+.tcard .grid3{grid-template-columns:repeat(3,1fr)}
+.tcard .sub{margin:0 0 2px}
+.tcard .sub ~ .sub{margin-top:8px}
+.tcard .cond{margin:0}
 .clk{cursor:pointer}
 .grid3 .clk:hover,.ri .clk:hover{outline:1px solid var(--fg);outline-offset:1px}
 .srcbox{display:inline-block;vertical-align:top;border:1px solid var(--fg);border-radius:4px;padding:10px 12px;margin:6px 8px 6px 0;max-width:440px;background:var(--bg);font-size:14px}
@@ -171,6 +196,7 @@ details[open] summary:before{content:"−"}
 .srcbox .x{float:right;cursor:pointer;color:var(--muted);font-size:13px;margin-left:10px}
 .srcbox .sub{margin-top:10px}
 .recipe .ri{font-size:13px}
+.recipe .ri span{display:inline-block;max-width:100%}
 .sp-row td{vertical-align:top}
 .sl{display:grid;grid-template-columns:120px 1fr;gap:2px 14px;padding:6px 0}
 .sl > *{grid-column:2}
@@ -179,6 +205,7 @@ details[open] summary:before{content:"−"}
 th{white-space:nowrap}
 @media(min-width:701px){.sp5 td:nth-child(5){min-width:170px}.sp5 td:nth-child(4){width:48%}}
 .filters select{max-width:100%}
+#sb{flex:0 1 260px;width:260px;min-width:0}
 /* 폰: 출현 표는 세로로 쌓고, 기술 목록은 이름·타입·위력·TM만 */
 @media(max-width:700px){
   #sres .sp-row td{display:block;width:auto!important;padding:4px 0}
@@ -227,11 +254,11 @@ h2 .bucket{font-size:inherit}
 .tchart th.cur .t{outline:2px solid var(--fg);outline-offset:1px}
 .tc-wrap{overflow-x:auto;padding:3px 0}
 @media(max-width:700px){.tchart th,.tchart td{width:36px;height:30px}.tchart th .t{width:38px;font-size:11px;padding:2px 0}}
-.guide h3{font-size:16px;font-weight:600;margin:32px 0 10px}
+.guide h3{font-size:19px;font-weight:600;margin:40px 0 14px;padding-top:32px;border-top:1px solid var(--line)}
+.guide .tab-desc + h3{margin-top:8px;padding-top:0;border-top:0}
 .guide p,.guide li{line-height:1.7;max-width:900px}
-.guide h4{font-size:14px;font-weight:600;margin:22px 0 4px}
-.guide .tcard{display:inline-block;vertical-align:top;max-width:262px;margin:0 14px 16px 0}
-.guide .tcard > .muted{font-size:14px;margin:2px 0 4px}
+.guide h4{font-size:16px;font-weight:600;margin:30px 0 10px}
+.guide h4 + p{margin-top:-4px}
 .guide table{max-width:560px}
 .crow{display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:520px;padding:6px 0;border-bottom:1px solid var(--line)}
 .crow input[type=number]{width:64px;font:inherit;padding:3px 6px;border:1px solid var(--line);border-radius:4px;background:var(--bg);color:var(--fg)}
@@ -661,7 +688,7 @@ const itAttr = (k, nm) => k ? ` class="clk" data-it="${esc(k)}" data-nm="${esc(n
 function recipeHtml(r) {
   const gk = (r.gk || []).flat();
   const grid = r.g ? `<div class="grid3">${r.g.flat().map((c, j) => c ? `<div${itAttr(gk[j], c)}>${ico(gk[j])}${esc(c)}</div>` : '<div></div>').join('')}</div>` : '';
-  return `<div class="recipe"><div class="rw">${ico(D.st[r.w])}${esc(r.w)}${r.n > 1 ? ` · ${r.n}개 제작` : ''}</div>${grid}<div class="ri">${r.i.map((x, j) => `<span${itAttr(r.ik?.[j], x)}>${ico(r.ik?.[j])}${esc(x)}</span>`).join(' + ')}</div></div>`;
+  return `<div class="recipe"><div class="rw">${ico(D.st[r.w])}${esc(r.w)}${r.n > 1 ? ` · ${r.n}개 제작` : ''}</div>${grid}<div class="ri">${r.i.map((x, j) => `<span${itAttr(r.ik?.[j], x)}>${ico(r.ik?.[j])}${esc(x).replace(/ (×d+)$/, '&nbsp;$1')}</span>`).join(' + ')}</div></div>`;
 }
 // 아이템 얻는 법: 제작 + 포켓몬 드롭 + 블록 캐기 + 몹 처치 + 상자·보상
 const SRC_T = [['d', '포켓몬 드롭'], ['b', '블록 캐기·수확'], ['e', '몹 처치'], ['l', '상자·보상']];
@@ -676,13 +703,15 @@ function srcHtml(k, nm) {
 }
 // 대표 제작법: 모양 있는 레시피가 있으면 그것만(염색·변환용 무형 레시피 빼기), 재료가 같은 좌우반전판은 하나로
 const mainRecipes = k => { const rs = D.recipes[k] || [], g = rs.filter(r => r.g), seen = new Set(); return (g.length ? g : rs).filter(r => { const s = [...r.i].sort().join(); return !seen.has(s) && seen.add(s); }); };
+// 이름 + 한 줄 설명 + 조합 칸 카드 (가이드 7·8번, 도감 변신·기믹). 제작법이 없는 건 얻는 법을 대신 표시
+const tcards = rows => `<div class="tgrid">${rows.filter(([k]) => D.items[k]).map(([k, d]) => `<div class="tcard"><div><b${itAttr(k, D.items[k][0])}>${ico(k)}${esc(D.items[k][0])}</b></div><div class="muted">${esc(d || D.items[k][2])}</div><div>${mainRecipes(k).map(recipeHtml).join('') || (srcParts(k) ? `<div class="recipe">${srcParts(k)}</div>` : '<span class="muted">제작법 없음</span>')}</div></div>`).join('')}</div>`;
 const recipesOf = id =>(D.recipes[id] || []).map(recipeHtml).join('') || '<span class="muted">제작법 없음</span>';
 // 리스트 행 토글
 function bindList(root, detail) {
   root.addEventListener('click', e => {
     if (e.target.closest('[data-go]')) return;
     const h = e.target.closest('.it-h'); if (!h) return;
-    const it = h.parentElement, b = it.querySelector('.it-b');
+    const it = h.parentElement, b = it.querySelector('.it-b'); if (!it.dataset.id) return; // 머리줄(.it-h)은 펼칠 게 없음
     if (!it.classList.contains('open') && !b.dataset.done) { b.innerHTML = detail(it.dataset.id); b.dataset.done = 1; }
     it.classList.toggle('open');
   });
@@ -694,15 +723,15 @@ function gimmickSection(m) {
   const ks = D.order.filter(x => M[x].en === m.en && M[x].gm);
   if (!ks.length) return '';
   const IT = D.items, nm = id => IT[id]?.[0] ?? id;
-  const rows = ks.flatMap(x => M[x].gm.map(([t, how, need]) => `<tr><td style="width:220px">${monChip(x)}</td><td><span class="badge" style="margin:0 6px 0 0">${esc(t)}</span>${esc(how)}<div class="muted">필요: ${need.map(id => `<span${itAttr(id, nm(id))}>${ico(id)}${esc(nm(id))}</span>`).join(' + ')}</div></td></tr>`)).join('');
+  const rows = ks.flatMap(x => M[x].gm.map(([t, how, need]) => `<div class="gm"><div class="gm-h">${monChip(x)}<span class="badge">${esc(t)}</span></div><div>${esc(how)}</div><div class="gm-need"><span class="muted">필요</span>${need.map(id => `<span${itAttr(id, nm(id))}>${ico(id)}${esc(nm(id))}</span>`).join('<span class="muted">+</span>')}</div></div>`)).join('');
   const need = [...new Set(ks.flatMap(x => M[x].gm.flatMap(g => g[2])))];
   const addon = Object.keys(IT).filter(x => x.includes(':'));
   for (const id of [...need]) for (const r of D.recipes[id] || []) for (const s of r.i) {
     const sub = addon.find(x => IT[x][0] === s.replace(/ ×\d+$/, ''));
     if (sub && !need.includes(sub)) need.push(sub);
   }
-  return `<section><h2>변신 · 기믹</h2><table><tbody>${rows}</tbody></table>
-    <div class="sub" style="margin-top:14px">필요 아이템 제작법</div>${need.map(id => `<div style="display:inline-block;vertical-align:top;margin:0 18px 14px 0;max-width:300px"><b>${ico(id)}${esc(nm(id))}</b> <span class="muted">${esc(IT[id]?.[2] || '')}</span><div>${recipesOf(id)}</div></div>`).join('')}</section>`;
+  return `<section><h2>변신 · 기믹</h2><div class="gms">${rows}</div>
+    <h3 class="gm-sub">필요한 아이템 만드는 법</h3>${tcards(need.map(id => [id]))}</section>`;
 }
 
 // 도감 페이지의 출현 섹션
@@ -810,11 +839,11 @@ TABS.abilities = () => {
   const ids = Object.keys(D.abilities).filter(id => own[id]).sort((a, b) => D.abilities[a][0].localeCompare(D.abilities[b][0]));
   $view.innerHTML = `<h1 class="tab-head">특성</h1><p class="tab-desc">특성은 포켓몬이 가진 자동 효과. 행을 누르면 그 특성을 가진 포켓몬. ★ = 대체로 좋은 특성.</p>
   <div class="filters"><input type="text" id="aq" placeholder="특성 이름 또는 설명 키워드 (예: 회복, 스피드)"></div><div class="list" id="al"></div>`;
-  const cols = 'grid-template-columns:160px 1fr 50px';
+  const cols = 'grid-template-columns:160px 1fr 60px';
   const draw = () => {
     const q = norm(document.getElementById('aq').value);
     const rows = ids.filter(id => qmatch(q, ...D.abilities[id]));
-    document.getElementById('al').innerHTML = rows.map(id => `<div class="it" data-id="${id}"><div class="it-h" style="${cols}"><span>${esc(D.abilities[id][0])}${(ABIL_SCORE[id] ?? 2) >= 4 ? ' ★' : ''}</span><span class="muted">${esc(D.abilities[id][1])}</span><span class="muted">${own[id].length}</span></div><div class="it-b"></div></div>`).join('') || '<p class="empty">없음</p>';
+    document.getElementById('al').innerHTML = rows.map(id => `<div class="it" data-id="${id}"><div class="it-h" style="${cols}"><span>${esc(D.abilities[id][0])}${(ABIL_SCORE[id] ?? 2) >= 4 ? ' ★' : ''}</span><span class="muted">${esc(D.abilities[id][1])}</span><span class="muted" style="text-align:right">${own[id].length}마리</span></div><div class="it-b"></div></div>`).join('') || '<p class="empty">없음</p>';
   };
   bindList(document.getElementById('al'), id => `<div class="mon-chips">${own[id].map(([k, h]) => monChip(k).replace('</span>', h ? ' <span class="muted">숨겨진 특성</span></span>' : '</span>')).join('')}</div>`);
   document.getElementById('aq').addEventListener('input', draw);
@@ -883,11 +912,8 @@ TABS.types = () => {
 TABS.guide = () => {
   const C = D.cfg, IT = D.items, tip = id => IT[id] ? esc(IT[id][2]) : '';
   const pctRow = o => Object.keys(BUCKET).map(b => `<tr><td>${BUCKET[b]}</td><td class="c">${o[b] ?? '—'}%</td></tr>`).join('');
-  const device = id => IT[id] ? `<div style="display:inline-block;vertical-align:top;margin:0 18px 14px 0;max-width:280px"><b>${esc(IT[id][0])}</b> <span class="muted">${tip(id)}</span><div>${recipesOf(id)}</div></div>` : '';
   const evoCount = {}; D.order.forEach(k => M[k].evos.forEach(e => { const t = e.how.split(' · ')[0]; evoCount[t.includes('사용') && !t.includes('연결의끈') ? '아이템 사용' : t.startsWith('교환') ? '교환' : '레벨업'] = (evoCount[t.includes('사용') && !t.includes('연결의끈') ? '아이템 사용' : t.startsWith('교환') ? '교환' : '레벨업'] || 0) + 1; }));
   const tmAll = Object.values(MV).filter(m => m[10]).length;
-  // 이름 + 한 줄 설명 + 조합 칸 카드 (7번 볼, 8번 도구)
-  const tcards = rows => rows.filter(([k]) => IT[k]).map(([k, d]) => `<div class="tcard"><div><b${itAttr(k, IT[k][0])}>${ico(k)}${esc(IT[k][0])}</b></div><div class="muted">${esc(d || IT[k][2])}</div>${mainRecipes(k).map(recipeHtml).join('')}</div>`).join('');
   $view.innerHTML = `<div class="guide"><h1 class="tab-head">가이드</h1><p class="tab-desc">${C.version} 기준 핵심 시스템. 수치는 모드팩 기본 설정값이라 서버마다 다를 수 있음.</p>
   <h3>1. 야생 출현 희귀도</h3>
   <p>포켓몬이 나올 때 먼저 희귀도 등급을 뽑고, 그 등급 안에서 바이옴·시간·날씨 조건이 맞는 포켓몬 중 하나를 고름. 그래서 "매우 희귀" 포켓몬은 조건이 맞아도 잘 안 나옴.</p>
@@ -895,7 +921,7 @@ TABS.guide = () => {
 </div>
   <p>포케스낵(모닥불 냄비 요리)을 설치하면 주변에 포켓몬을 끌어들임. "포케스낵 전용" 출현은 이걸로만 나옴. 출현 탭에서 바이옴별로 확인.</p>
   <h3>2. 처음 만들 장치</h3>
-  ${['healing_machine', 'pc', 'pasture', 'fossil_analyzer', 'restoration_tank', 'monitor'].map(device).join('')}
+  ${tcards(['healing_machine', 'pc', 'pasture', 'fossil_analyzer', 'restoration_tank', 'monitor'].map(id => [id]))}
   <h3>3. 진화 방법</h3>
   <ul><li><b>레벨업</b> (${evoCount['레벨업'] || 0}건): 조건 레벨 도달. 친밀도·시간·바이옴·기술 보유 조건이 붙기도 함.</li>
   <li><b>아이템 사용</b> (${evoCount['아이템 사용'] || 0}건): 진화의 돌 등을 포켓몬에게 우클릭.</li>

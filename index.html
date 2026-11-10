@@ -11,7 +11,7 @@
 body{margin:0;background:var(--bg);color:var(--fg);font-family:"Pretendard Variable",Pretendard,-apple-system,"Malgun Gothic",sans-serif;font-size:15px;line-height:1.6;letter-spacing:-.01em;-webkit-font-smoothing:antialiased}
 a{color:inherit;text-decoration:none}
 button,input,select,textarea{font:inherit;letter-spacing:inherit}
-.wrap{max-width:960px;margin:0 auto;padding:40px 16px 80px}
+.wrap{max-width:1280px;margin:0 auto;padding:40px 16px 80px}
 .search{position:relative;margin-bottom:40px}
 .search input{width:100%;font:inherit;font-size:20px;padding:12px 0;border:0;border-bottom:1px solid var(--fg);outline:0;background:transparent;color:var(--fg)}
 .search input::placeholder{color:#bbb}
@@ -22,15 +22,14 @@ button,input,select,textarea{font:inherit;letter-spacing:inherit}
 .drop .n{color:var(--muted);font-variant-numeric:tabular-nums;min-width:44px}
 .drop .en{color:var(--muted);font-size:13px}
 .hint{color:var(--muted)}
-.head{display:flex;gap:28px;align-items:flex-start;margin-bottom:40px}
+.head{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start;margin-bottom:40px}
 .head img{width:140px;height:140px;object-fit:contain;flex:none;image-rendering:auto}
 .head h1{margin:0;font-size:28px;font-weight:600;letter-spacing:-.01em;line-height:1.2}
 .head h1 small{font-size:14px;color:var(--muted);font-weight:400;margin-left:8px}
-.head > div:nth-child(2){flex:1;min-width:0}
-.head-rec{flex:none;width:340px}
-.head-rec .ab:last-child{margin-bottom:0}
-.head-rec .chip{cursor:default}
-@media(max-width:860px){.head{flex-wrap:wrap}.head-rec{width:100%}}
+.head > div:nth-child(2){flex:1 1 280px;min-width:0}
+.head-rec{flex:2 1 560px;min-width:0}
+.head-rec .mu{gap:20px}
+.head-rec details{margin-top:4px}
 .head .num{color:var(--muted);font-variant-numeric:tabular-nums;margin-bottom:4px}
 .meta{margin-top:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 18px}
 .meta b{font-weight:500;color:var(--fg)}
@@ -117,7 +116,7 @@ details[open] summary:before{content:"−"}
 .empty{color:var(--muted);padding:8px}
 /* nav */
 .nav{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--line)}
-.nav-in{max-width:960px;margin:0 auto;padding:0 16px;display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
+.nav-in{max-width:1280px;margin:0 auto;padding:0 16px;display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
 .nav-in::-webkit-scrollbar{display:none}
 .nav a{flex:none;padding:14px 12px 12px;color:var(--muted);border-bottom:2px solid transparent;white-space:nowrap}
 .nav a.on{color:var(--fg);border-bottom-color:var(--fg)}
@@ -203,7 +202,7 @@ h2 .bucket{font-size:inherit}
 .c2{background:#d6f0dc;color:#1e7b3a;font-weight:600}.c05{background:#f6dcd8;color:#a93226}.c0{background:#333;color:#fff}
 .tc-wrap{overflow-x:auto}
 .guide h3{font-size:16px;font-weight:600;margin:32px 0 10px}
-.guide p,.guide li{line-height:1.7}
+.guide p,.guide li{line-height:1.7;max-width:900px}
 .guide h4{font-size:14px;font-weight:600;margin:22px 0 4px}
 .guide .tcard{display:inline-block;vertical-align:top;max-width:262px;margin:0 14px 16px 0}
 .guide .tcard > .muted{font-size:14px;margin:2px 0 4px}
@@ -379,12 +378,6 @@ function abilityRec(m) {
   const why = flat ? (m.abil.length > 1 ? '특성 간 차이 거의 없음. 아무거나 OK' : '특성이 하나뿐') : best.s >= 4 ? '거의 항상 이득인 특성' : best.s === 3 ? '무난하게 좋은 쪽' : '그나마 나은 쪽';
   return {best: best.id, why: why + (WEATHER.has(best.id) ? ' (날씨·필드 조건 필요)' : '')};
 }
-// 헤더 오른쪽: 추천 특성·성격 카드
-function headRecHtml(m) {
-  const r = abilityRec(m), n = natureRec(m.stats), a = m.abil.find(x => x.id === r.best), [ko, desc] = D.abilities[r.best] || [r.best, ''], many = m.abil.length > 1;
-  return `<div class="head-rec"><div class="ab on"><div class="ab-h"><span class="chip cur">${many ? '추천 특성' : '특성'}</span><b>${esc(ko)}</b>${a?.h ? '<span class="badge">숨겨진 특성</span>' : ''}</div><div class="ab-d">${esc(desc)}</div>${many ? `<div class="ab-w">${esc(r.why)}</div>` : ''}</div>
-    <div class="ab on"><div class="ab-h"><span class="chip cur">추천 성격</span><b>${esc(D.natures[n.main])}</b><span class="ab-e">${natEff(n.main)}</span></div><div class="ab-w">${esc(n.why)}</div></div></div>`;
-}
 function abilHtml(m) {
   const r = abilityRec(m), n = natureRec(m.stats);
   const rows = m.abil.map(a => { const [ko, desc] = D.abilities[a.id] || [a.id, '']; const rec = a.id === r.best && m.abil.length > 1;
@@ -551,7 +544,7 @@ function render(k) {
       <div class="meta"><span>포획률 <b>${m.catch}</b></span><span>종족값 합 <b>${tot}</b></span><span>${esc(role(m.stats).main)}</span></div>
       ${forms.length > 1 ? `<div class="chips">${forms.map(x => `<span class="chip ${x === k ? 'cur' : ''}" data-go="${x}">${esc(M[x].form || '기본')}</span>`).join('')}</div>` : ''}
     </div>
-    ${headRecHtml(m)}
+    <div class="head-rec">${abilHtml(m)}</div>
   </div>
   <section><h2>상성</h2>
   <div class="search vs-search"><input id="oq" placeholder="상대 포켓몬 입력 → 1:1 상성 (예: 한카리아스)" autocomplete="off"><div class="drop" id="odrop"></div></div>
@@ -568,7 +561,6 @@ function render(k) {
     ${m.raw.map((v, i) => `<span class="k">${STAT[i]}</span><span class="v">${v}</span><div class="bar"><i style="width:${v / 255 * 100}%"></i></div>`).join('')}
     <span class="k tot">합계</span><span class="v tot">${tot}</span><span class="tot"></span>
   </div></section>
-  <section><h2>특성 · 성격</h2>${abilHtml(m)}</section>
   <section><h2>추천 최종 기술</h2>
     <div class="opt"><label><input type="checkbox" id="recall"> 기술머신·튜터·교배 기술 포함</label><span>종족값 기준 ${m.stats[1] >= m.stats[3] ? '물리' : '특수'} 어태커로 계산</span></div>
     <div id="rec">${recHtml(m, false)}</div>

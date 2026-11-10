@@ -179,8 +179,8 @@ th{white-space:nowrap}
   #ml .it-h{grid-template-columns:1fr 56px 36px 34px!important;gap:8px}
   #ml .it-h > :nth-child(3),#ml .it-h > :nth-child(5),#ml .it-h > :nth-child(6){display:none}
   #ml .it-h > :first-child .muted{display:block}
-  #il .it-h{grid-template-columns:1fr auto!important;gap:2px 10px}
-  #il .it-h > :nth-child(3){grid-column:1 / -1}
+  #il .it-h,#cs .it-h{grid-template-columns:1fr auto!important;gap:2px 10px}
+  #il .it-h > :nth-child(3),#cs .it-h > :nth-child(3){grid-column:1 / -1}
   #al .it-h{grid-template-columns:1fr auto!important;gap:2px 10px}
   #al .it-h > :nth-child(2){grid-column:1 / -1;grid-row:2}
 }
@@ -885,14 +885,14 @@ TABS.calc = () => {
   const $ = id => document.getElementById(id), cnt = s => +(s.match(/×(\d+)$/)?.[1] || 1);
   const NM = {}; Object.values(D.recipes).flat().forEach(r => r.ik.forEach((k, j) => NM[k] ??= r.i[j].replace(/ ×\d+$/, '')));
   const name = k => D.items[k]?.[0] || NM[k] || k;
-  const byName = {}; Object.keys(D.recipes).forEach(k => { const n = name(k); byName[byName[n] ? `${n} (${k})` : n] = k; });
+  const cids = Object.keys(D.recipes).sort((a, b) => name(a).localeCompare(name(b)));
   // 중간 재료를 풀지: 모드 아이템만. 재료 한 가지짜리(광석→돌, 블록→조각, 사탕 합치기)는 거꾸로 가는 거라 안 풂
   const expand = (k, path) => { if (k.startsWith('minecraft:') || path.includes(k)) return null; const r = mainRecipes(k)[0], ks = [...new Set(r?.ik || [])]; return r && (ks.length > 1 || ks[0].startsWith('minecraft:')) ? r : null; };
   let list = (new URLSearchParams(location.hash.split('?')[1] || '').get('l') || '').split(',').map(s => s.split('*')).filter(([k]) => D.recipes[k]).map(([k, q]) => [k, Math.max(1, +q || 1)]);
   $view.innerHTML = `<h1 class="tab-head">계산기</h1><p class="tab-desc">만들 아이템과 개수를 넣으면 모아야 할 재료 합계. 한 번에 여러 개 나오는 조합(볼은 4개)은 조합 횟수를 올림해서 계산.</p>
-  <div class="filters"><input type="text" id="cq" list="cdl" placeholder="만들 아이템 이름 (예: 몬스터볼, 철 배낭)"><datalist id="cdl">${Object.keys(byName).map(n => `<option value="${esc(n)}">`).join('')}</datalist>
+  <div class="filters"><input type="text" id="cq" placeholder="만들 아이템 이름 또는 설명 키워드 (예: 몬스터볼, 철 배낭)">
   <label class="muted"><input type="checkbox" id="cd" checked> 배낭·기능 틀 같은 중간 재료도 풀기</label></div>
-  <div id="cr"></div><div id="co" style="margin-top:28px"></div>`;
+  <div class="list" id="cs" style="margin:-6px 0 18px"></div><div id="cr"></div><div id="co" style="margin-top:28px"></div>`;
   const save = () => history.replaceState(null, '', '#/calc' + (list.length ? '?l=' + list.map(x => x.join('*')).join(',') : ''));
   const run = () => {
     const raw = new Map(), made = new Map(), left = new Map(), deep = $('cd').checked;
@@ -909,7 +909,12 @@ TABS.calc = () => {
       <div><h3>조합 순서</h3>${[...made].map(([k, [t, r]]) => `<div class="crow"><span>${ico(k)}${esc(name(k))}</span><span class="muted">${esc(r.w)} ${t}번 → ${t * r.n}개${left.get(k) ? ` (${left.get(k)}개 남음)` : ''}</span></div>`).join('')}</div></div>` : '<p class="empty">위에서 만들 아이템을 고르면 여기에 재료가 나옴</p>';
   };
   const draw = () => { $('cr').innerHTML = list.map(([k, q], i) => `<div class="crow"><span>${ico(k)}${esc(name(k))}</span><span><input type="number" min="1" value="${q}" data-i="${i}"> 개 <button class="x" data-del="${i}">빼기</button></span></div>`).join(''); run(); };
-  $('cq').addEventListener('input', e => { const k = byName[e.target.value]; if (!k) return; const x = list.find(y => y[0] === k); x ? x[1]++ : list.push([k, 1]); e.target.value = ''; save(); draw(); });
+  const add = k => { const x = list.find(y => y[0] === k); x ? x[1]++ : list.push([k, 1]); $('cq').value = ''; $('cs').innerHTML = ''; save(); draw(); };
+  // 이름이 맞는 것 먼저, 그다음 설명만 맞는 것
+  const hit = () => { const q = norm($('cq').value); return q ? cids.filter(k => qmatch(q, name(k), D.items[k]?.[2] || '')).sort((a, b) => !norm(name(a)).includes(q) - !norm(name(b)).includes(q)) : []; };
+  $('cq').addEventListener('input', () => { $('cs').innerHTML = hit().map(k => `<div class="it" data-id="${k}"><div class="it-h" style="grid-template-columns:180px 90px 1fr"><span>${ico(k)}${esc(name(k))}</span><span class="muted">${esc(D.items[k]?.[1] || '')}</span><span class="muted">${esc(D.items[k]?.[2] || '')}</span></div></div>`).join('') || (norm($('cq').value) ? '<p class="empty">만들 수 있는 아이템 없음</p>' : ''); });
+  $('cq').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing && hit()[0]) add(hit()[0]); });
+  $('cs').addEventListener('click', e => { const it = e.target.closest('.it'); if (it) add(it.dataset.id); });
   $('cr').addEventListener('input', e => { const i = e.target.dataset.i; if (i == null) return; list[i][1] = Math.max(1, +e.target.value || 1); save(); run(); });
   $('cr').addEventListener('click', e => { const i = e.target.dataset.del; if (i == null) return; list.splice(i, 1); save(); draw(); });
   $('cd').addEventListener('change', run);

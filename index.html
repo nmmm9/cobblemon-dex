@@ -189,6 +189,8 @@ details[open] summary:before{content:"−"}
 .tcard .sub{margin:0 0 2px}
 .tcard .sub ~ .sub{margin-top:8px}
 .tcard .cond{margin:0}
+/* 카드 안에서 연 얻는 법 상자는 카드 폭을 그대로 씀 (안 그러면 조합 칸이 내용 폭으로 쪼그라듦) */
+.tcard .srcbox{display:block;max-width:none;margin:8px 0 0}
 .clk{cursor:pointer}
 .grid3 .clk:hover,.ri .clk:hover{outline:1px solid var(--fg);outline-offset:1px}
 .srcbox{display:inline-block;vertical-align:top;border:1px solid var(--fg);border-radius:4px;padding:10px 12px;margin:6px 8px 6px 0;max-width:440px;background:var(--bg);font-size:14px}

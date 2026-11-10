@@ -4,12 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>코블몬 도감</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <style>
-:root{--fg:#111;--bg:#fff;--line:#e6e6e6;--muted:#777;--soft:#f5f5f5}
+:root{--fg:#111;--bg:#fff;--line:#e6e6e6;--muted:#666;--soft:#f5f5f5}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--fg);font-family:Pretendard,-apple-system,"Malgun Gothic",sans-serif;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:"Pretendard Variable",Pretendard,-apple-system,"Malgun Gothic",sans-serif;font-size:15px;line-height:1.6;letter-spacing:-.01em;-webkit-font-smoothing:antialiased}
 a{color:inherit;text-decoration:none}
+button,input,select,textarea{font:inherit;letter-spacing:inherit}
 .wrap{max-width:960px;margin:0 auto;padding:40px 16px 80px}
 .search{position:relative;margin-bottom:40px}
 .search input{width:100%;font:inherit;font-size:20px;padding:12px 0;border:0;border-bottom:1px solid var(--fg);outline:0;background:transparent;color:var(--fg)}
@@ -19,7 +20,7 @@ a{color:inherit;text-decoration:none}
 .drop div{padding:9px 12px;cursor:pointer;display:flex;gap:10px;align-items:baseline}
 .drop div.sel,.drop div:hover{background:var(--soft)}
 .drop .n{color:var(--muted);font-variant-numeric:tabular-nums;min-width:44px}
-.drop .en{color:var(--muted);font-size:12px}
+.drop .en{color:var(--muted);font-size:13px}
 .hint{color:var(--muted)}
 .head{display:flex;gap:28px;align-items:flex-start;margin-bottom:40px}
 .head img{width:140px;height:140px;object-fit:contain;flex:none;image-rendering:auto}
@@ -28,11 +29,11 @@ a{color:inherit;text-decoration:none}
 .head .num{color:var(--muted);font-variant-numeric:tabular-nums;margin-bottom:4px}
 .meta{margin-top:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 18px}
 .meta b{font-weight:500;color:var(--fg)}
-.badge{display:inline-block;font-size:11px;padding:1px 7px;border:1px solid var(--line);border-radius:3px;color:var(--muted);vertical-align:middle;margin-left:6px}
-.t{display:inline-block;font-size:12px;font-weight:500;color:#fff;padding:2px 9px;border-radius:3px;line-height:1.5;margin:2px 3px 2px 0}
-.t.sm{font-size:11px;padding:1px 7px}
+.badge{display:inline-block;font-size:12px;padding:1px 7px;border:1px solid var(--line);border-radius:3px;color:var(--muted);vertical-align:middle;margin-left:6px}
+.t{display:inline-block;font-size:13px;font-weight:500;color:#fff;padding:2px 9px;border-radius:3px;line-height:1.5;margin:2px 3px 2px 0}
+.t.sm{font-size:12px;padding:1px 7px}
 section{margin-bottom:40px}
-h2{font-size:12px;font-weight:500;color:var(--muted);letter-spacing:.06em;margin:0 0 14px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+h2{font-size:16px;font-weight:600;color:var(--fg);margin:0 0 14px;padding-bottom:8px;border-bottom:1px solid var(--line)}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .chip{padding:3px 10px;border:1px solid var(--line);border-radius:3px;cursor:pointer}
 .chip.cur{background:var(--fg);color:#fff;border-color:var(--fg)}
@@ -41,11 +42,11 @@ h2{font-size:12px;font-weight:500;color:var(--muted);letter-spacing:.06em;margin
 .node{min-width:120px;padding:10px 12px;border:1px solid var(--line);border-radius:4px;cursor:pointer;text-align:center}
 .node.cur{border-color:var(--fg);box-shadow:inset 0 0 0 1px var(--fg)}
 .node .ko{font-weight:500}
-.node .fm{font-size:11px;color:var(--muted)}
+.node .fm{font-size:12px;color:var(--muted)}
 .node .ty{margin-top:4px}
 .branches{display:flex;flex-direction:column;gap:12px}
 .branch{display:flex;align-items:center;gap:16px}
-.how{font-size:12px;color:var(--muted);max-width:200px;position:relative;padding-left:20px}
+.how{font-size:13px;color:var(--muted);max-width:200px;position:relative;padding-left:20px}
 .how:before{content:"→";position:absolute;left:0;color:#bbb}
 .evo-scroll{overflow-x:auto;padding-bottom:6px}
 /* stats */
@@ -58,13 +59,13 @@ h2{font-size:12px;font-weight:500;color:var(--muted);letter-spacing:.06em;margin
 .stats .tot.v{color:var(--fg)}
 .role{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:18px}
 .role .chip{cursor:default}
-.role .note{color:var(--muted);font-size:12px;margin-left:8px}
+.role .note{color:var(--muted);font-size:13px;margin-left:8px}
 /* matchups */
 .mu{display:grid;grid-template-columns:1fr 1fr;gap:28px}
 @media(max-width:700px){.mu{grid-template-columns:1fr}.head{gap:16px}.head img{width:96px;height:96px}}
-.mu h3{font-size:13px;font-weight:500;margin:0 0 10px}
+.mu h3{font-size:14px;font-weight:500;margin:0 0 10px}
 .row{display:grid;grid-template-columns:104px 1fr;gap:10px;align-items:start;margin-bottom:8px}
-.row .m{font-variant-numeric:tabular-nums;color:var(--muted);padding-top:3px;font-size:12px;white-space:nowrap}
+.row .m{font-variant-numeric:tabular-nums;color:var(--muted);padding-top:3px;font-size:13px;white-space:nowrap}
 .lead{margin:0 0 18px;padding:10px 14px;background:var(--soft);border-radius:4px}
 .vs-search{margin:0 0 16px}
 .vs-search input{font-size:15px;padding:8px 0;border-bottom-color:var(--line)}
@@ -72,33 +73,33 @@ h2{font-size:12px;font-weight:500;color:var(--muted);letter-spacing:.06em;margin
 .vs-title{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px}
 .vs-title b{font-weight:500}
 .vs-title .lnk{cursor:pointer;text-decoration:underline;text-underline-offset:3px}
-.vs-title .note{color:var(--muted);font-size:12px}
-.x{margin-left:auto;font:inherit;font-size:12px;color:var(--muted);background:none;border:1px solid var(--line);border-radius:3px;padding:3px 8px;cursor:pointer}
-.row .note{color:var(--muted);font-size:12px;margin-left:4px}
+.vs-title .note{color:var(--muted);font-size:13px}
+.x{margin-left:auto;font:inherit;font-size:13px;color:var(--muted);background:none;border:1px solid var(--line);border-radius:3px;padding:3px 8px;cursor:pointer}
+.row .note{color:var(--muted);font-size:13px;margin-left:4px}
 .ab{padding:10px 12px;border:1px solid var(--line);border-radius:4px;margin-bottom:8px}
 .ab.on{border-color:var(--fg)}
 .ab-h{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .ab-h b{font-weight:500}
 .ab-h .badge{margin-left:0}
-.ab-e{color:var(--muted);font-size:12px}
-.ab-d{color:var(--muted);font-size:12px;margin-top:4px}
-.ab-w{font-size:12px;margin-top:6px}
-.desc{margin:-4px 0 12px;color:var(--muted);font-size:12px}
+.ab-e{color:var(--muted);font-size:13px}
+.ab-d{color:var(--muted);font-size:13px;margin-top:4px}
+.ab-w{font-size:13px;margin-top:6px}
+.desc{margin:-4px 0 12px;color:var(--muted);font-size:13px}
 .row .m.bad{color:#c0392b}.row .m.good{color:#27ae60}
-.sub{color:var(--muted);font-size:12px;margin:14px 0 6px}
+.sub{color:var(--muted);font-size:13px;margin:14px 0 6px}
 /* moves */
 table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
-th{font-weight:500;color:var(--muted);text-align:left;font-size:12px;padding:6px 8px;border-bottom:1px solid var(--line)}
+th{font-weight:500;color:var(--muted);text-align:left;font-size:13px;padding:6px 8px;border-bottom:1px solid var(--line)}
 td{padding:7px 8px;border-bottom:1px solid var(--soft);vertical-align:middle}
 td.c,th.c{text-align:center}
-td .en{color:var(--muted);font-size:11px;margin-left:6px}
-.cat{font-size:11px;color:var(--muted)}
+td .en{color:var(--muted);font-size:12px;margin-left:6px}
+.cat{font-size:12px;color:var(--muted)}
 .rec{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
 .rec .card{border:1px solid var(--line);border-radius:4px;padding:12px 14px}
-.rec .why{font-size:11px;color:var(--muted);margin-bottom:6px}
+.rec .why{font-size:12px;color:var(--muted);margin-bottom:6px}
 .rec .nm{font-weight:500}
-.rec .st{color:var(--muted);font-size:12px;margin-top:4px}
-.opt{font-size:12px;color:var(--muted);display:flex;gap:16px;align-items:center;margin-bottom:12px}
+.rec .st{color:var(--muted);font-size:13px;margin-top:4px}
+.opt{font-size:13px;color:var(--muted);display:flex;gap:16px;align-items:center;margin-bottom:12px}
 .opt label{cursor:pointer;display:flex;gap:6px;align-items:center}
 details{margin-top:10px}
 summary{cursor:pointer;color:var(--muted);padding:8px 0;list-style:none}
@@ -113,51 +114,70 @@ details[open] summary:before{content:"−"}
 .nav a{flex:none;padding:14px 12px 12px;color:var(--muted);border-bottom:2px solid transparent;white-space:nowrap}
 .nav a.on{color:var(--fg);border-bottom-color:var(--fg)}
 .nav .brand{color:var(--fg);font-weight:600;padding-left:0;margin-right:12px}
-.ver{color:var(--muted);font-size:12px;margin-top:40px;border-top:1px solid var(--line);padding-top:12px}
+.ver{color:var(--muted);font-size:13px;margin-top:40px;border-top:1px solid var(--line);padding-top:12px}
 /* tab pages */
 .tab-head{margin:0 0 6px;font-size:22px;font-weight:600}
 .tab-desc{color:var(--muted);margin:0 0 24px}
 .filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:18px}
 .filters input[type=text],.filters select{font:inherit;padding:7px 10px;border:1px solid var(--line);border-radius:4px;background:var(--bg);color:var(--fg)}
 .filters input[type=text]{flex:1;min-width:180px}
-.filters label{font-size:12px;color:var(--muted);display:flex;gap:6px;align-items:center;cursor:pointer}
-.chip.sm{font-size:12px;padding:2px 9px}
+.filters label{font-size:13px;color:var(--muted);display:flex;gap:6px;align-items:center;cursor:pointer}
+.chip.sm{font-size:13px;padding:2px 9px}
 .list .it{border-bottom:1px solid var(--soft)}
 .list .it-h{display:grid;gap:10px;align-items:center;padding:9px 4px;cursor:pointer}
 .list .it-h:hover{background:var(--soft)}
 .list .it-b{padding:6px 4px 16px;display:none}
 .list .it.open .it-b{display:block}
-.list .muted{color:var(--muted);font-size:12px}
+.list .muted{color:var(--muted);font-size:14px}
 .mon-chips{display:flex;flex-wrap:wrap;gap:6px}
-.mon-chip{display:inline-flex;align-items:center;gap:4px;padding:2px 9px 2px 3px;border:1px solid var(--line);border-radius:3px;cursor:pointer;font-size:12px}
+.mon-chip{white-space:nowrap;display:inline-flex;align-items:center;gap:4px;padding:2px 9px 2px 3px;border:1px solid var(--line);border-radius:3px;cursor:pointer;font-size:13px}
 .mon-chip img{width:36px;height:36px;margin:-4px 0;image-rendering:pixelated}
 .mon-chip:hover{border-color:var(--fg)}
 .recipe{border:1px solid var(--line);border-radius:4px;padding:10px 12px;margin:6px 8px 6px 0;display:inline-block;vertical-align:top;max-width:100%}
-.recipe .rw{font-size:12px;color:var(--muted);margin-bottom:6px}
+.recipe .rw{font-size:13px;color:var(--muted);margin-bottom:6px}
 .grid3{display:grid;grid-template-columns:repeat(3,76px);gap:3px;margin-bottom:6px}
-.grid3 div{height:54px;flex-direction:column;gap:1px;border:1px solid var(--line);border-radius:3px;font-size:10px;line-height:1.2;display:flex;align-items:center;justify-content:center;text-align:center;padding:2px;background:var(--soft);overflow:hidden}
+.grid3 div{height:54px;flex-direction:column;gap:1px;border:1px solid var(--line);border-radius:3px;font-size:11px;line-height:1.2;display:flex;align-items:center;justify-content:center;text-align:center;padding:2px;background:var(--soft);overflow:hidden}
 .grid3 div:empty{background:none}
 .ico{width:22px;height:22px;object-fit:cover;object-position:top;image-rendering:pixelated;vertical-align:middle;margin-right:5px;flex:none}
 .grid3 .ico{width:26px;height:26px;margin:0}
 .recipe .ri .ico{width:16px;height:16px;margin-right:3px}
 .clk{cursor:pointer}
 .grid3 .clk:hover,.ri .clk:hover{outline:1px solid var(--fg);outline-offset:1px}
-.srcbox{display:inline-block;vertical-align:top;border:1px solid var(--fg);border-radius:4px;padding:10px 12px;margin:6px 8px 6px 0;max-width:440px;background:var(--bg);font-size:13px}
+.srcbox{display:inline-block;vertical-align:top;border:1px solid var(--fg);border-radius:4px;padding:10px 12px;margin:6px 8px 6px 0;max-width:440px;background:var(--bg);font-size:14px}
 .srcbox > b{display:block;margin-bottom:4px}
-.srcbox .x{float:right;cursor:pointer;color:var(--muted);font-size:12px;margin-left:10px}
+.srcbox .x{float:right;cursor:pointer;color:var(--muted);font-size:13px;margin-left:10px}
 .srcbox .sub{margin-top:10px}
-.recipe .ri{font-size:12px}
+.recipe .ri{font-size:13px}
 .sp-row td{vertical-align:top}
+.sl{display:grid;grid-template-columns:120px 1fr;gap:2px 14px;padding:6px 0}
+.sl > *{grid-column:2}
+.sl > .sl-h{grid-column:1;grid-row:1 / span 3;color:var(--muted);font-size:14px;white-space:nowrap}
+.sl + .sl{border-top:1px dashed var(--line)}
+.filters select{max-width:100%}
+/* 폰: 출현 표는 세로로 쌓고, 기술 목록은 이름·타입·위력·TM만 */
+@media(max-width:700px){
+  .sp-row td{display:block;width:auto!important;padding:4px 0}
+  .sp-row td:first-child{padding-top:14px;border:0}
+  .sl{grid-template-columns:1fr}
+  .sl > *,.sl > .sl-h{grid-column:1;grid-row:auto}
+  #ml .it-h{grid-template-columns:1fr 56px 36px 34px!important;gap:8px}
+  #ml .it-h > :nth-child(3),#ml .it-h > :nth-child(5),#ml .it-h > :nth-child(6){display:none}
+  #ml .it-h > :first-child .muted{display:block}
+  #il .it-h{grid-template-columns:1fr auto!important;gap:2px 10px}
+  #il .it-h > :nth-child(3){grid-column:1 / -1}
+  #al .it-h{grid-template-columns:1fr auto!important;gap:2px 10px}
+  #al .it-h > :nth-child(2){grid-column:1 / -1;grid-row:2}
+}
 .sp-row .bi .t{background:#eee;color:var(--fg)}
-.bucket{font-size:12px;white-space:nowrap}
+.bucket{font-size:13px;white-space:nowrap}
+h2 .bucket{font-size:inherit}
 .b-common{color:#555}.b-uncommon{color:#2a7ab0}.b-rare{color:#8e44ad}.b-ultra-rare{color:#c0392b}
-.cond{font-size:12px;color:var(--muted)}
+.cond{font-size:13px;color:var(--muted)}
 .cond b{font-weight:500;color:var(--fg)}
-.bio{display:inline-block;background:var(--soft);border-radius:3px;padding:1px 7px;margin:2px 4px 2px 0;font-size:12px;color:var(--fg);cursor:default}
+.bio{display:block;font-size:14px;color:var(--fg);cursor:default}
 .bio b{font-weight:500}
 .bio .muted{color:var(--muted);font-weight:400}
-.bio code{font:11px ui-monospace,Consolas,monospace;color:var(--muted)}
-.dim{display:inline-block;font-size:11px;padding:0 6px;border-radius:3px;margin:2px 4px 2px 0;border:1px solid var(--line);color:var(--muted)}
+.dim{display:inline-block;font-size:12px;padding:0 6px;border-radius:3px;margin:2px 4px 2px 0;border:1px solid var(--line);color:var(--muted)}
 .dim-ow{color:#2e7d32;border-color:#a5d6a7}.dim-nether{color:#b03a2e;border-color:#f1b0a8}.dim-end{color:#6a4c93;border-color:#cbb8e6}
 .tchart{border-collapse:collapse;font-size:11px}
 .tchart th,.tchart td{border:1px solid #fff;padding:0;text-align:center;width:34px;height:30px}
@@ -170,7 +190,7 @@ details[open] summary:before{content:"−"}
 .guide p,.guide li{line-height:1.7}
 .guide h4{font-size:14px;font-weight:600;margin:22px 0 4px}
 .guide .tcard{display:inline-block;vertical-align:top;max-width:262px;margin:0 14px 16px 0}
-.guide .tcard > .muted{font-size:13px;margin:2px 0 4px}
+.guide .tcard > .muted{font-size:14px;margin:2px 0 4px}
 .guide table{max-width:560px}
 .crow{display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:520px;padding:6px 0;border-bottom:1px solid var(--line)}
 .crow input[type=number]{width:64px;font:inherit;padding:3px 6px;border:1px solid var(--line);border-radius:4px;background:var(--bg);color:var(--fg)}
@@ -571,17 +591,18 @@ const NETHER = new Set(['nether_wastes','soul_sand_valley','crimson_forest','war
 const END = new Set(['the_end','end_highlands','end_midlands','small_end_islands','end_barrens','the_void']);
 const DIMS = {ow: '오버월드', nether: '네더', end: '엔드'};
 const dimOf = i => { const id = D.cfg.biomes[i][0]; return NETHER.has(id) ? 'nether' : END.has(id) ? 'end' : 'ow'; };
-// 줄마다: [차원] 묶음 이름 (실제 바이옴들)  — 제외 조건까지 반영된 s[6] 기준
+// 묶음마다 한 줄: 묶음 이름 + 실제 바이옴들 (제외 조건까지 반영된 s[6] 기준). 영어 ID는 마우스 올리면
+// 바닐라 바이옴이 하나도 없는 묶음(바이옴 모드 전용)은 이 모드팩에선 안 나오니 뺌. 오버월드는 기본이라 차원 표시는 네더·엔드만
 function whereHtml(s) {
   if (s[5][0] === '바이옴 무관') return '<span class="bio"><b>바이옴 무관</b> <span class="muted">조건의 구조물 안이면 어디든</span></span>';
-  const dims = Object.keys(DIMS).filter(d => s[6].some(i => dimOf(i) === d));
-  const chips = s[5].map(l => {
-    // 바이옴마다 F3 화면에 뜨는 영어 ID를 같이 표시 (F3엔 minecraft: 접두어가 붙음)
+  const dims = Object.keys(DIMS).filter(d => d !== 'ow' && s[6].some(i => dimOf(i) === d));
+  const rows = s[5].map(l => {
     const mem = (D.blabel[l] || []).filter(i => s[6].includes(i)).map(i => D.cfg.biomes[i]);
-    const inner = !mem.length ? '바닐라엔 없음 · 바이옴 모드 전용' : mem.length === 1 && mem[0][1] === l ? `<code>${mem[0][0]}</code>` : mem.map(([id, ko]) => `${esc(ko)} <code>${id}</code>`).join(', ');
-    return `<span class="bio"><b>${esc(l)}</b> <span class="muted">${inner}</span></span>`;
+    if (!mem.length) return '';
+    const inner = mem.length === 1 && mem[0][1] === l ? '' : mem.map(([, ko]) => esc(ko)).join(', ');
+    return `<span class="bio" title="F3 바이옴 ID: ${esc(mem.map(([id]) => id).join(', '))}"><b>${esc(l)}</b>${inner ? ` <span class="muted">${inner}</span>` : ''}</span>`;
   }).join('');
-  return (dims.length ? dims.map(d => `<span class="dim dim-${d}">${DIMS[d]}</span>`).join('') : '<span class="dim">모드 바이옴 전용</span>') + chips;
+  return dims.map(d => `<span class="dim dim-${d}">${DIMS[d]}</span>`).join('') + (rows || '<span class="bio muted">바이옴 모드 전용 (이 모드팩엔 없음)</span>');
 }
 // 아이템 그림 (build.js가 img/<ns>/<id>.png 로 복사해 둠)
 const IC = new Set(D.ic);
@@ -647,7 +668,7 @@ function spawnSection(k, m) {
     return note;
   }
   const rows = list.sort((a, b) => a[1] - b[1] || Object.keys(BUCKET).indexOf(a[2]) - Object.keys(BUCKET).indexOf(b[2]))
-    .map(s => `<tr class="sp-row"><td>${bucketHtml(s[2])}</td><td class="c">${esc(s[3])}</td><td>${esc(s[4])}</td><td>${whereHtml(s)}</td><td class="cond">${condHtml(s)}</td></tr>`).join('');
+    .map(s => `<tr class="sp-row"><td style="white-space:nowrap">${bucketHtml(s[2])}</td><td class="c" style="white-space:nowrap">${esc(s[3])}</td><td style="white-space:nowrap">${esc(s[4])}</td><td>${whereHtml(s)}</td><td class="cond">${condHtml(s)}</td></tr>`).join('');
   return note + `<table><thead><tr><th>희귀도</th><th class="c">레벨</th><th>위치</th><th>어디 (차원 · 바이옴)</th><th>조건</th></tr></thead><tbody>${rows}</tbody></table>
     <p class="desc" style="margin-top:8px">희귀도 %는 그 등급이 뽑힐 확률.</p>`;
 }
@@ -660,7 +681,7 @@ TABS.spawn = () => {
   const opt = (arr) => arr.map(([id, ko]) => `<option value="${id}">${esc(ko)} · ${id}</option>`).join('');
   const bs = D.cfg.biomes.filter(([id]) => id !== 'the_void').sort((a, b) => a[1].localeCompare(b[1]));
   const sp0 = new URLSearchParams(location.hash.split('?')[1] || ''), sel = sp0.get('b') || '';
-  $view.innerHTML = `<h1 class="tab-head">출현</h1><p class="tab-desc">내가 있는 바이옴을 고르면 거기서 나오는 포켓몬. F3 화면 Biome 줄의 영어 ID(예: minecraft:beach)와 맞춰보면 됨.</p>
+  $view.innerHTML = `<h1 class="tab-head">출현</h1><p class="tab-desc">내가 있는 바이옴을 고르면 거기서 나오는 포켓몬. 바이옴 이름에 마우스를 올리면 F3 화면 Biome 줄의 영어 ID가 보임.</p>
   <div class="filters">
     <select id="sb"><option value="">전체 바이옴</option><optgroup label="오버월드">${opt(bs.filter(([id]) => !NETHER.has(id) && !END.has(id)))}</optgroup><optgroup label="네더">${opt(bs.filter(([id]) => NETHER.has(id)))}</optgroup><optgroup label="엔드">${opt(bs.filter(([id]) => END.has(id)))}</optgroup></select>
     <select id="sg"><option value="">지상·지하 전체</option><option value="up">지상</option><option value="down">지하·동굴</option></select>
@@ -684,9 +705,9 @@ TABS.spawn = () => {
       const by = new Map(); hits.filter(s => s[2] === b).forEach(s => { if (!by.has(s[0])) by.set(s[0], []); by.get(s[0]).push(s); });
       return [b, [...by.entries()].sort((x, y) => M[x[0]].n - M[y[0]].n)];
     }).filter(([, a]) => a.length);
-    const line = s => `<div><span class="muted" style="display:inline-block;min-width:96px;white-space:nowrap">Lv ${esc(s[3])} · ${esc(s[4])}</span>${bv ? condHtml(s) : whereHtml(s) + `<div style="margin:2px 0 6px 100px">${condHtml(s)}</div>`}</div>`;
+    const line = s => `<div class="sl"><span class="sl-h">Lv ${esc(s[3])} · ${esc(s[4])}</span>${bv ? "" : `<div>${whereHtml(s)}</div>`}${bv || s[7].length || s[8].length ? `<div class="cond">${condHtml(s)}</div>` : ""}</div>`;
     $('sres').innerHTML = groups.length ? groups.map(([b, arr]) => `<section style="margin-bottom:28px"><h2>${bucketHtml(b)} · ${arr.length}종</h2>
-      <table><tbody>${arr.map(([k, ss]) => `<tr class="sp-row"><td style="width:200px">${monChip(k)}</td><td class="cond">${[...new Map(ss.map(s => [line(s), s])).keys()].join('')}</td></tr>`).join('')}</tbody></table></section>`).join('')
+      <table><tbody>${arr.map(([k, ss]) => `<tr class="sp-row"><td style="width:170px">${monChip(k)}</td><td>${[...new Map(ss.map(s => [line(s), s])).keys()].join('')}</td></tr>`).join('')}</tbody></table></section>`).join('')
       : (q ? (search($('sq').value).map(x => `<div class="row" style="grid-template-columns:200px 1fr;align-items:center">${monChip(x.k)}<span class="cond">${SP_BY[x.k] ? '지금 고른 바이옴·필터에선 안 나옴. 바이옴을 "전체"로 바꾸고 체크박스를 켜봐' : esc(noSpawnReason(x.k))}</span></div>`).join('') || '<p class="empty">그런 이름의 포켓몬 없음</p>') : '<p class="empty">조건에 맞는 출현 없음</p>');
   };
   ['sb', 'sg', 'st', 'sp', 'ss', 'sx'].forEach(id => $(id).addEventListener('change', () => { if (id === 'sb') history.replaceState(null, '', '#/spawn?b=' + $('sb').value); draw(); }));

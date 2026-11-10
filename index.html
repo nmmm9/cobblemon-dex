@@ -172,6 +172,8 @@ details[open] summary:before{content:"−"}
 .guide .tcard{display:inline-block;vertical-align:top;max-width:262px;margin:0 14px 16px 0}
 .guide .tcard > .muted{font-size:13px;margin:2px 0 4px}
 .guide table{max-width:560px}
+.crow{display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:520px;padding:6px 0;border-bottom:1px solid var(--line)}
+.crow input[type=number]{width:64px;font:inherit;padding:3px 6px;border:1px solid var(--line);border-radius:4px;background:var(--bg);color:var(--fg)}
 .kv{display:grid;grid-template-columns:140px 1fr;gap:6px 14px}
 .kv dt{color:var(--muted)}
 .kv dd{margin:0}
@@ -180,7 +182,7 @@ details[open] summary:before{content:"−"}
 <body>
 <nav class="nav"><div class="nav-in">
   <a class="brand" href="#">코블몬 도감</a>
-  <a data-tab="" href="#">도감</a><a data-tab="spawn" href="#/spawn">출현</a><a data-tab="moves" href="#/moves">기술</a><a data-tab="abilities" href="#/abilities">특성</a><a data-tab="items" href="#/items">아이템</a><a data-tab="types" href="#/types">상성표</a><a data-tab="guide" href="#/guide">가이드</a>
+  <a data-tab="" href="#">도감</a><a data-tab="spawn" href="#/spawn">출현</a><a data-tab="moves" href="#/moves">기술</a><a data-tab="abilities" href="#/abilities">특성</a><a data-tab="items" href="#/items">아이템</a><a data-tab="types" href="#/types">상성표</a><a data-tab="guide" href="#/guide">가이드</a><a data-tab="calc" href="#/calc">계산기</a>
 </div></nav>
 <div class="wrap">
   <div class="search" id="dexbar">
@@ -657,7 +659,7 @@ const TABS = {};
 TABS.spawn = () => {
   const opt = (arr) => arr.map(([id, ko]) => `<option value="${id}">${esc(ko)} · ${id}</option>`).join('');
   const bs = D.cfg.biomes.filter(([id]) => id !== 'the_void').sort((a, b) => a[1].localeCompare(b[1]));
-  const sp0 = new URLSearchParams(location.hash.split('?')[1] || ''), sel = sp0.has('b') ? sp0.get('b') : 'plains';
+  const sp0 = new URLSearchParams(location.hash.split('?')[1] || ''), sel = sp0.get('b') || '';
   $view.innerHTML = `<h1 class="tab-head">출현</h1><p class="tab-desc">내가 있는 바이옴을 고르면 거기서 나오는 포켓몬. F3 화면 Biome 줄의 영어 ID(예: minecraft:beach)와 맞춰보면 됨.</p>
   <div class="filters">
     <select id="sb"><option value="">전체 바이옴</option><optgroup label="오버월드">${opt(bs.filter(([id]) => !NETHER.has(id) && !END.has(id)))}</optgroup><optgroup label="네더">${opt(bs.filter(([id]) => NETHER.has(id)))}</optgroup><optgroup label="엔드">${opt(bs.filter(([id]) => END.has(id)))}</optgroup></select>
@@ -833,6 +835,42 @@ TABS.guide = () => {
   <p>재료를 누르면 그 재료 얻는 법, 이름을 누르면 상자·보상 같은 다른 입수처와 염색 등 나머지 제작법. 칸 수·비용은 모드팩 기본 설정값.</p>
   ${D.tools.map(([g, note, rows]) => `<h4>${esc(g)}</h4>${note ? `<p>${esc(note)}</p>` : ''}${tcards(rows)}`).join('')}
   </div>`;
+};
+
+// ---- 계산기: 만들 것 × 개수 -> 모을 재료 합계 ----
+TABS.calc = () => {
+  const $ = id => document.getElementById(id), cnt = s => +(s.match(/×(\d+)$/)?.[1] || 1);
+  const NM = {}; Object.values(D.recipes).flat().forEach(r => r.ik.forEach((k, j) => NM[k] ??= r.i[j].replace(/ ×\d+$/, '')));
+  const name = k => D.items[k]?.[0] || NM[k] || k;
+  const byName = {}; Object.keys(D.recipes).forEach(k => { const n = name(k); byName[byName[n] ? `${n} (${k})` : n] = k; });
+  // 중간 재료를 풀지: 모드 아이템만. 재료 한 가지짜리(광석→돌, 블록→조각, 사탕 합치기)는 거꾸로 가는 거라 안 풂
+  const expand = (k, path) => { if (k.startsWith('minecraft:') || path.includes(k)) return null; const r = mainRecipes(k)[0], ks = [...new Set(r?.ik || [])]; return r && (ks.length > 1 || ks[0].startsWith('minecraft:')) ? r : null; };
+  let list = (new URLSearchParams(location.hash.split('?')[1] || '').get('l') || '').split(',').map(s => s.split('*')).filter(([k]) => D.recipes[k]).map(([k, q]) => [k, Math.max(1, +q || 1)]);
+  $view.innerHTML = `<h1 class="tab-head">계산기</h1><p class="tab-desc">만들 아이템과 개수를 넣으면 모아야 할 재료 합계. 한 번에 여러 개 나오는 조합(볼은 4개)은 조합 횟수를 올림해서 계산.</p>
+  <div class="filters"><input type="text" id="cq" list="cdl" placeholder="만들 아이템 이름 (예: 몬스터볼, 철 배낭)"><datalist id="cdl">${Object.keys(byName).map(n => `<option value="${esc(n)}">`).join('')}</datalist>
+  <label class="muted"><input type="checkbox" id="cd" checked> 배낭·기능 틀 같은 중간 재료도 풀기</label></div>
+  <div id="cr"></div><div id="co" style="margin-top:28px"></div>`;
+  const save = () => history.replaceState(null, '', '#/calc' + (list.length ? '?l=' + list.map(x => x.join('*')).join(',') : ''));
+  const run = () => {
+    const raw = new Map(), made = new Map(), left = new Map(), deep = $('cd').checked;
+    const need = (k, q, nm, path) => {
+      const use = Math.min(left.get(k) || 0, q); left.set(k, (left.get(k) || 0) - use); q -= use; if (!q) return;
+      const r = path.length ? deep && expand(k, path) : mainRecipes(k)[0];
+      if (!r) { const a = raw.get(nm) || [k, 0]; a[1] += q; return raw.set(nm, a); }
+      const t = Math.ceil(q / r.n); left.set(k, left.get(k) + t * r.n - q);
+      r.ik.forEach((ik, j) => need(ik, cnt(r.i[j]) * t, r.i[j].replace(/ ×\d+$/, ''), [...path, k]));
+      const m = made.get(k) || [0, r]; m[0] += t; made.set(k, m);
+    };
+    list.forEach(([k, q]) => need(k, q, name(k), []));
+    $('co').innerHTML = list.length ? `<div class="mu"><div><h3>모을 재료</h3>${[...raw].map(([nm, [k, q]]) => `<div class="crow"><span${itAttr(k, nm)}>${ico(k)}${esc(nm)}</span><b>${q}</b></div>`).join('')}</div>
+      <div><h3>조합 순서</h3>${[...made].map(([k, [t, r]]) => `<div class="crow"><span>${ico(k)}${esc(name(k))}</span><span class="muted">${esc(r.w)} ${t}번 → ${t * r.n}개${left.get(k) ? ` (${left.get(k)}개 남음)` : ''}</span></div>`).join('')}</div></div>` : '<p class="empty">위에서 만들 아이템을 고르면 여기에 재료가 나옴</p>';
+  };
+  const draw = () => { $('cr').innerHTML = list.map(([k, q], i) => `<div class="crow"><span>${ico(k)}${esc(name(k))}</span><span><input type="number" min="1" value="${q}" data-i="${i}"> 개 <button class="x" data-del="${i}">빼기</button></span></div>`).join(''); run(); };
+  $('cq').addEventListener('input', e => { const k = byName[e.target.value]; if (!k) return; const x = list.find(y => y[0] === k); x ? x[1]++ : list.push([k, 1]); e.target.value = ''; save(); draw(); });
+  $('cr').addEventListener('input', e => { const i = e.target.dataset.i; if (i == null) return; list[i][1] = Math.max(1, +e.target.value || 1); save(); run(); });
+  $('cr').addEventListener('click', e => { const i = e.target.dataset.del; if (i == null) return; list.splice(i, 1); save(); draw(); });
+  $('cd').addEventListener('change', run);
+  draw();
 };
 
 document.getElementById('ver').textContent =`데이터: ${D.cfg.version} 인스턴스의 모드·데이터팩 파일 (기술 수치는 Pokémon Showdown). 서버 설정이나 추가 데이터팩에 따라 다를 수 있음.`;

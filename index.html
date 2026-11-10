@@ -55,6 +55,9 @@ h2{font-size:16px;font-weight:600;color:var(--fg);margin:0 0 14px;padding-bottom
 .how{font-size:13px;color:var(--muted);max-width:200px;position:relative;padding-left:20px}
 .how:before{content:"→";position:absolute;left:0;color:#bbb}
 .evo-scroll{overflow-x:auto;padding-bottom:6px}
+/* 갈래 진화: 조건 칸 너비를 맞춰 카드 줄을 세우고, 5갈래 이상(이브이)은 2열로 */
+.branches:has(> .branch + .branch) > .branch > .how{flex:none;width:190px}
+@media(min-width:1000px){.branches:has(> .branch:nth-child(5)){display:grid;grid-template-columns:auto auto;justify-content:start;gap:12px 40px}}
 /* stats */
 .stats{display:grid;grid-template-columns:52px 40px 1fr;gap:8px 14px;align-items:center;max-width:620px}
 .stats .k{color:var(--muted)}
@@ -115,6 +118,18 @@ summary::-webkit-details-marker{display:none}
 summary:before{content:"+";display:inline-block;width:16px;color:#bbb}
 details[open] summary:before{content:"−"}
 .empty{color:var(--muted);padding:8px}
+/* 상세 페이지: 섹션을 카드로 묶고, 넓은 화면에선 12칸 격자 (c4·c8·c6 = 차지하는 칸 수) */
+.dex h2{font-size:18px;border:0;padding:0;margin:0 0 16px}
+.dex .stats{max-width:none}
+@media(max-width:700px){.dex > section{border-top:1px solid var(--line);padding-top:24px}}
+@media(min-width:701px){
+  .dex{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:16px}
+  .dex > section{grid-column:1 / -1;margin:0;padding:22px 24px;border:1px solid var(--line);border-radius:8px}
+}
+@media(min-width:1000px){
+  .dex > .c4{grid-column:span 4}.dex > .c8{grid-column:span 8}.dex > .c6{grid-column:span 6}
+  .dex > .top{align-self:start}
+}
 /* nav */
 .nav{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--line)}
 .nav-in{max-width:1280px;margin:0 auto;padding:0 16px;display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
@@ -162,7 +177,7 @@ details[open] summary:before{content:"−"}
 .sl > .sl-h{grid-column:1;grid-row:1 / span 3;color:var(--muted);font-size:14px;white-space:nowrap}
 .sl + .sl{border-top:1px dashed var(--line)}
 th{white-space:nowrap}
-@media(min-width:701px){.sp5 td:nth-child(5){min-width:170px}}
+@media(min-width:701px){.sp5 td:nth-child(5){min-width:170px}.sp5 td:nth-child(4){width:48%}}
 .filters select{max-width:100%}
 /* 폰: 출현 표는 세로로 쌓고, 기술 목록은 이름·타입·위력·TM만 */
 @media(max-width:700px){
@@ -192,6 +207,8 @@ h2 .bucket{font-size:inherit}
 .cond b{font-weight:500;color:var(--fg)}
 .bio{display:block;font-size:14px;color:var(--fg);cursor:default}
 .bio b{font-weight:500}
+.bio-d{display:inline-block;margin:0;vertical-align:top}
+.bio-d summary{padding:0}
 .bio .muted{color:var(--muted);font-weight:400}
 .dim{display:inline-block;font-size:12px;padding:0 6px;border-radius:3px;margin:2px 4px 2px 0;border:1px solid var(--line);color:var(--muted)}
 .dim-ow{color:#2e7d32;border-color:#a5d6a7}.dim-nether{color:#b03a2e;border-color:#f1b0a8}.dim-end{color:#6a4c93;border-color:#cbb8e6}
@@ -556,7 +573,12 @@ function render(k) {
     </div>
     <div class="head-rec">${abilHtml(m)}</div>
   </div>
-  <section><h2>상성</h2>
+  <div class="dex">
+  <section class="c4"><h2>기본 능력치<small>종족값</small></h2>${roleHtml(m.stats, m.stats[1] !== m.raw[1] ? '특성으로 공격 ' + (m.stats[1] / m.raw[1]) + '배 반영' : '')}<div class="stats">
+    ${m.raw.map((v, i) => `<span class="k">${STAT[i]}</span><span class="v">${v}</span><div class="bar"><i style="width:${v / 255 * 100}%"></i></div>`).join('')}
+    <span class="k tot">합계</span><span class="v tot">${tot}</span><span class="tot"></span>
+  </div><p class="desc" style="margin-top:14px">공격 = 물리 기술의 세기 · 특공 = 특수 기술의 세기 · 방어 = 물리 기술을 버티는 힘 · 특방 = 특수 기술을 버티는 힘 · 스피드 = 높은 쪽이 먼저 공격</p></section>
+  <section class="c8"><h2>상성</h2>
   <div class="search vs-search"><input id="oq" placeholder="상대 포켓몬 입력 → 1:1 상성 (예: 한카리아스)" autocomplete="off"><div class="drop" id="odrop"></div></div>
   ${o ? compareHtml(m, o) : ''}
   <p class="lead">${esc(muSummary(m, def))}</p>
@@ -564,24 +586,20 @@ function render(k) {
     <div><h3>맞을 때</h3><p class="desc">상대가 이 타입 기술을 쓰면 ${esc(m.ko)}가 받는 데미지</p>${MULT.filter(([x]) => def[x]).map(([x, l, c]) => `<div class="row"><span class="m ${c}">${l}</span><div>${def[x].map(t => tchip(t, 1)).join('')}</div></div>`).join('') || '<div class="empty">약점도 덜 아픈 타입도 없음 (전부 ×1)</div>'}</div>
     <div><h3>때릴 때</h3><p class="desc">자기 타입 기술로 때릴 때 상대가 받는 데미지. 자기 타입과 같은 기술은 위력 1.5배</p>${off}</div>
   </div></section>
-  <section><h2>어디서 잡나</h2>${spawnSection(k, m)}</section>
   <section><h2>진화</h2><div class="evo-scroll">${evoHtml(tree(root(k)), k)}</div></section>
+  <section><h2>어디서 잡나</h2>${spawnSection(k, m)}</section>
   ${gimmickSection(m)}
-  <section><h2>기본 능력치<small>종족값</small></h2>${roleHtml(m.stats, m.stats[1] !== m.raw[1] ? '특성으로 공격 ' + (m.stats[1] / m.raw[1]) + '배 반영' : '')}<div class="stats">
-    ${m.raw.map((v, i) => `<span class="k">${STAT[i]}</span><span class="v">${v}</span><div class="bar"><i style="width:${v / 255 * 100}%"></i></div>`).join('')}
-    <span class="k tot">합계</span><span class="v tot">${tot}</span><span class="tot"></span>
-  </div><p class="desc" style="margin-top:14px">공격 = 물리 기술의 세기 · 특공 = 특수 기술의 세기 · 방어 = 물리 기술을 버티는 힘 · 특방 = 특수 기술을 버티는 힘 · 스피드 = 높은 쪽이 먼저 공격</p></section>
   <section><h2>추천 기술<small>다 키웠을 때 기준 4개</small></h2>
     <div class="opt"><label><input type="checkbox" id="recall"> 기술머신·가르침·알 기술까지 포함</label><span>${m.stats[1] >= m.stats[3] ? '공격이 더 높아서 물리' : '특공이 더 높아서 특수'} 기술 위주로 고름</span></div>
     <div id="rec">${recHtml(m, false)}</div>
   </section>
-  <section><h2>레벨업 기술</h2>${moveTable(m.lv, true)}</section>
-  <section><h2>그 외 기술</h2><p class="desc">레벨업 말고 다른 방법으로 배우는 기술. 가르침 기술은 원작에서 NPC가 가르쳐주는 기술(튜터), 알 기술은 원작에서 교배로 물려받는 기술.</p>
+  <section class="c6"><h2>레벨업 기술</h2>${moveTable(m.lv, true)}</section>
+  <section class="c6 top"><h2>그 외 기술</h2><p class="desc">레벨업 말고 다른 방법으로 배우는 기술. 가르침 기술은 원작에서 NPC가 가르쳐주는 기술(튜터), 알 기술은 원작에서 교배로 물려받는 기술.</p>
     <details><summary>기술머신 (${m.tm.length})</summary>${moveTable(m.tm)}</details>
     <details><summary>가르침 기술 (${m.tutor.length})</summary>${moveTable(m.tutor)}</details>
     <details><summary>알 기술 (${m.egg.length})</summary>${moveTable(m.egg)}</details>
     <details><summary>기타 · 예전 게임 기술 (${m.other.length})</summary>${moveTable(m.other)}</details>
-  </section>`;
+  </section></div>`;
   document.getElementById('recall').addEventListener('change', e => { document.getElementById('rec').innerHTML = recHtml(m, e.target.checked); });
   bindSearch(document.getElementById('oq'), document.getElementById('odrop'), setOpp);
   document.getElementById('oclear')?.addEventListener('click', () => setOpp(null));
@@ -630,7 +648,8 @@ function whereHtml(s) {
     const mem = (D.blabel[l] || []).filter(i => s[6].includes(i)).map(i => D.cfg.biomes[i]);
     if (!mem.length) return '';
     const inner = mem.length === 1 && mem[0][1] === l ? '' : mem.map(([, ko]) => esc(ko)).join(', ');
-    return `<span class="bio" title="F3 바이옴 ID: ${esc(mem.map(([id]) => id).join(', '))}"><b>${esc(l)}</b>${inner ? ` <span class="muted">${inner}</span>` : ''}</span>`;
+    // 바이옴이 12곳 넘는 묶음(오버월드 전체 등)은 글자 벽이 되므로 접어 둠
+    return `<span class="bio" title="F3 바이옴 ID: ${esc(mem.map(([id]) => id).join(', '))}"><b>${esc(l)}</b>${!inner ? '' : mem.length > 12 ? ` <details class="bio-d"><summary>바이옴 ${mem.length}곳 보기</summary><span class="muted">${inner}</span></details>` : ` <span class="muted">${inner}</span>`}</span>`;
   }).join('');
   return dims.map(d => `<span class="dim dim-${d}">${DIMS[d]}</span>`).join('') + (rows || '<span class="bio muted">바이옴 모드 전용 (이 모드팩엔 없음)</span>');
 }

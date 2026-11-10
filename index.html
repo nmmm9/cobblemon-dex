@@ -26,6 +26,11 @@ button,input,select,textarea{font:inherit;letter-spacing:inherit}
 .head img{width:140px;height:140px;object-fit:contain;flex:none;image-rendering:auto}
 .head h1{margin:0;font-size:28px;font-weight:600;letter-spacing:-.01em;line-height:1.2}
 .head h1 small{font-size:14px;color:var(--muted);font-weight:400;margin-left:8px}
+.head > div:nth-child(2){flex:1;min-width:0}
+.head-rec{flex:none;width:340px}
+.head-rec .ab:last-child{margin-bottom:0}
+.head-rec .chip{cursor:default}
+@media(max-width:860px){.head{flex-wrap:wrap}.head-rec{width:100%}}
 .head .num{color:var(--muted);font-variant-numeric:tabular-nums;margin-bottom:4px}
 .meta{margin-top:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 18px}
 .meta b{font-weight:500;color:var(--fg)}
@@ -156,11 +161,19 @@ details[open] summary:before{content:"−"}
 .sl > *{grid-column:2}
 .sl > .sl-h{grid-column:1;grid-row:1 / span 3;color:var(--muted);font-size:14px;white-space:nowrap}
 .sl + .sl{border-top:1px dashed var(--line)}
+th{white-space:nowrap}
+@media(min-width:701px){.sp5 td:nth-child(5){min-width:170px}}
 .filters select{max-width:100%}
 /* 폰: 출현 표는 세로로 쌓고, 기술 목록은 이름·타입·위력·TM만 */
 @media(max-width:700px){
-  .sp-row td{display:block;width:auto!important;padding:4px 0}
-  .sp-row td:first-child{padding-top:14px;border:0}
+  #sres .sp-row td{display:block;width:auto!important;padding:4px 0}
+  #sres .sp-row td:first-child{padding-top:14px;border:0}
+  .sp5,.sp5 tbody{display:block}
+  .sp5 thead{display:none}
+  .sp5 tr{display:grid;grid-template-columns:auto auto 1fr;gap:2px 12px;padding:10px 0;border-bottom:1px solid var(--soft)}
+  .sp5 td{border:0;padding:0;text-align:left}
+  .sp5 td:nth-child(2)::before{content:"Lv "}
+  .sp5 td:nth-child(4),.sp5 td:nth-child(5){grid-column:1 / -1}
   .sl{grid-template-columns:1fr}
   .sl > *,.sl > .sl-h{grid-column:1;grid-row:auto}
   #ml .it-h{grid-template-columns:1fr 56px 36px 34px!important;gap:8px}
@@ -366,6 +379,12 @@ function abilityRec(m) {
   const why = flat ? (m.abil.length > 1 ? '특성 간 차이 거의 없음. 아무거나 OK' : '특성이 하나뿐') : best.s >= 4 ? '거의 항상 이득인 특성' : best.s === 3 ? '무난하게 좋은 쪽' : '그나마 나은 쪽';
   return {best: best.id, why: why + (WEATHER.has(best.id) ? ' (날씨·필드 조건 필요)' : '')};
 }
+// 헤더 오른쪽: 추천 특성·성격 카드
+function headRecHtml(m) {
+  const r = abilityRec(m), n = natureRec(m.stats), a = m.abil.find(x => x.id === r.best), [ko, desc] = D.abilities[r.best] || [r.best, ''], many = m.abil.length > 1;
+  return `<div class="head-rec"><div class="ab on"><div class="ab-h"><span class="chip cur">${many ? '추천 특성' : '특성'}</span><b>${esc(ko)}</b>${a?.h ? '<span class="badge">숨겨진 특성</span>' : ''}</div><div class="ab-d">${esc(desc)}</div>${many ? `<div class="ab-w">${esc(r.why)}</div>` : ''}</div>
+    <div class="ab on"><div class="ab-h"><span class="chip cur">추천 성격</span><b>${esc(D.natures[n.main])}</b><span class="ab-e">${natEff(n.main)}</span></div><div class="ab-w">${esc(n.why)}</div></div></div>`;
+}
 function abilHtml(m) {
   const r = abilityRec(m), n = natureRec(m.stats);
   const rows = m.abil.map(a => { const [ko, desc] = D.abilities[a.id] || [a.id, '']; const rec = a.id === r.best && m.abil.length > 1;
@@ -513,7 +532,7 @@ function render(k) {
   $drop.classList.remove('on'); $q.value = '';
   document.title = `${fullKo(m)} · 코블몬 도감`;
   const forms = D.order.filter(x => M[x].n === m.n && (M[x].en === m.en));
-  const def = defense(m), tot = m.raw.reduce((a, b) => a + b, 0), recA = abilityRec(m).best, recN = natureRec(m.stats).main;
+  const def = defense(m), tot = m.raw.reduce((a, b) => a + b, 0);
   const off = m.types.map(t => {
     const se = TYPES.filter(d => CH[t][d] === 2), nv = TYPES.filter(d => CH[t][d] === .5), im = TYPES.filter(d => CH[t][d] === 0);
     return `<div class="sub">${tchip(t, 1)} 기술을 쓰면</div>
@@ -530,9 +549,9 @@ function render(k) {
         ${m.bo ? '<span class="badge">배틀 중 폼</span>' : ''}${m.imp ? '' : '<span class="badge">코블몬 미구현</span>'}</h1>
       <div>${m.types.map(t => tchip(t)).join('')}</div>
       <div class="meta"><span>포획률 <b>${m.catch}</b></span><span>종족값 합 <b>${tot}</b></span><span>${esc(role(m.stats).main)}</span></div>
-      <div class="meta" style="margin-top:4px"><span title="${esc(D.abilities[recA]?.[1] || '')}">${m.abil.length > 1 ? '추천 특성' : '특성'} <b>${esc(D.abilities[recA]?.[0] || recA)}</b></span><span>추천 성격 <b>${esc(D.natures[recN])}</b> ${natEff(recN)}</span></div>
       ${forms.length > 1 ? `<div class="chips">${forms.map(x => `<span class="chip ${x === k ? 'cur' : ''}" data-go="${x}">${esc(M[x].form || '기본')}</span>`).join('')}</div>` : ''}
     </div>
+    ${headRecHtml(m)}
   </div>
   <section><h2>상성</h2>
   <div class="search vs-search"><input id="oq" placeholder="상대 포켓몬 입력 → 1:1 상성 (예: 한카리아스)" autocomplete="off"><div class="drop" id="odrop"></div></div>
@@ -678,7 +697,7 @@ function spawnSection(k, m) {
   }
   const rows = list.sort((a, b) => a[1] - b[1] || Object.keys(BUCKET).indexOf(a[2]) - Object.keys(BUCKET).indexOf(b[2]))
     .map(s => `<tr class="sp-row"><td style="white-space:nowrap">${bucketHtml(s[2])}</td><td class="c" style="white-space:nowrap">${esc(s[3])}</td><td style="white-space:nowrap">${esc(s[4])}</td><td>${whereHtml(s)}</td><td class="cond">${condHtml(s)}</td></tr>`).join('');
-  return note + `<table><thead><tr><th>희귀도</th><th class="c">레벨</th><th>위치</th><th>어디 (차원 · 바이옴)</th><th>조건</th></tr></thead><tbody>${rows}</tbody></table>
+  return note + `<table class="sp5"><thead><tr><th>희귀도</th><th class="c">레벨</th><th>위치</th><th>어디 (차원 · 바이옴)</th><th>조건</th></tr></thead><tbody>${rows}</tbody></table>
     <p class="desc" style="margin-top:8px">희귀도 %는 그 등급이 뽑힐 확률.</p>`;
 }
 

@@ -195,13 +195,21 @@ h2 .bucket{font-size:inherit}
 .bio .muted{color:var(--muted);font-weight:400}
 .dim{display:inline-block;font-size:12px;padding:0 6px;border-radius:3px;margin:2px 4px 2px 0;border:1px solid var(--line);color:var(--muted)}
 .dim-ow{color:#2e7d32;border-color:#a5d6a7}.dim-nether{color:#b03a2e;border-color:#f1b0a8}.dim-end{color:#6a4c93;border-color:#cbb8e6}
-.tchart{border-collapse:collapse;font-size:11px}
-.tchart th,.tchart td{border:1px solid #fff;padding:0;text-align:center;width:34px;height:30px}
-.tchart th{font-weight:500}
-.tchart th .t{margin:0;padding:1px 3px;font-size:10px}
-.tchart th.rh{text-align:right;padding-right:4px;width:auto}
-.c2{background:#d6f0dc;color:#1e7b3a;font-weight:600}.c05{background:#f6dcd8;color:#a93226}.c0{background:#333;color:#fff}
-.tc-wrap{overflow-x:auto}
+.tchart{width:auto;border-collapse:separate;border-spacing:2px;font-size:13px}
+.tchart th,.tchart td{border:0;padding:0;text-align:center;width:46px;height:34px;border-radius:3px}
+.tchart td{background:var(--soft);transition:opacity .12s}
+.tchart th{font-weight:500;background:var(--bg)}
+.tchart th[data-k]{cursor:pointer}
+.tchart th .t{display:block;width:46px;margin:0;padding:3px 0;font-size:12px;transition:opacity .12s}
+.tchart th.rh{position:sticky;left:0;z-index:1;padding-right:4px}
+.tchart .tc-c{font-size:12px;font-weight:400;color:var(--muted);line-height:1.35;text-align:right;padding-right:6px}
+.tchart tbody tr:hover td{box-shadow:inset 0 0 0 99px rgba(0,0,0,.035)}
+.tchart td.c2{background:#dcf2e1;color:#1e7b3a;font-weight:600}.tchart td.c05{background:#fae1dd;color:#a93226}.tchart td.c0{background:#222;color:#fff}
+.tchart.sel td:not(.on){opacity:.12}.tchart.sel td.c0:not(.on){opacity:.05}
+.tchart.sel th:not(.on) .t{opacity:.2}
+.tchart th.cur .t{outline:2px solid var(--fg);outline-offset:1px}
+.tc-wrap{overflow-x:auto;padding:3px 0}
+@media(max-width:700px){.tchart th,.tchart td{width:36px;height:30px}.tchart th .t{width:38px;font-size:11px;padding:2px 0}}
 .guide h3{font-size:16px;font-weight:600;margin:32px 0 10px}
 .guide p,.guide li{line-height:1.7;max-width:900px}
 .guide h4{font-size:14px;font-weight:600;margin:22px 0 4px}
@@ -829,8 +837,8 @@ TABS.types = () => {
   const cell = e => e === 2 ? '<td class="c2">2</td>' : e === .5 ? '<td class="c05">½</td>' : e === 0 ? '<td class="c0">0</td>' : '<td></td>';
   $view.innerHTML = `<h1 class="tab-head">상성표</h1><p class="tab-desc">왼쪽 = 공격 기술 타입, 위 = 맞는 포켓몬 타입.</p>
   <section><h2>방어 타입 계산기</h2><div class="filters"><select id="d1">${TYPES.map(t => `<option value="${t}">${TK[t]}</option>`).join('')}</select><select id="d2"><option value="">(단일 타입)</option>${TYPES.map(t => `<option value="${t}">${TK[t]}</option>`).join('')}</select></div><div id="dres"></div></section>
-  <section><h2>전체 표</h2><div class="tc-wrap"><table class="tchart"><thead><tr><th></th>${TYPES.map(t => `<th>${tchip(t, 1)}</th>`).join('')}</tr></thead>
-  <tbody>${TYPES.map(a => `<tr><th class="rh">${tchip(a, 1)}</th>${TYPES.map(d => cell(CH[a][d] ?? 1)).join('')}</tr>`).join('')}</tbody></table></div></section>`;
+  <section><h2>전체 표</h2><p class="desc">2 = 효과 굉장 (2배) · ½ = 효과 별로 (절반) · 0 = 효과 없음 · 빈칸 = 보통 (1배). 타입을 누르면 그 줄만 강조, 다시 누르면 해제.</p><div class="tc-wrap"><table class="tchart"><thead><tr><th class="tc-c">방어 →<br>공격 ↓</th>${TYPES.map((t, j) => `<th data-k="c${j}">${tchip(t, 1)}</th>`).join('')}</tr></thead>
+  <tbody>${TYPES.map((a, i) => `<tr><th class="rh" data-k="r${i}">${tchip(a, 1)}</th>${TYPES.map(d => cell(CH[a][d] ?? 1)).join('')}</tr>`).join('')}</tbody></table></div></section>`;
   const draw = () => {
     const ts = [document.getElementById('d1').value, document.getElementById('d2').value].filter(Boolean);
     const g = defense({types: [...new Set(ts)]});
@@ -838,6 +846,18 @@ TABS.types = () => {
   };
   ['d1', 'd2'].forEach(id => document.getElementById(id).addEventListener('change', draw));
   draw();
+  // 타입 머리칸 클릭: 그 줄(공격 = 가로, 방어 = 세로)과, 그 줄에서 값이 있는 칸의 맞은편 타입만 남기고 흐리게
+  const tb = $view.querySelector('.tchart'), hit = (a, d) => (CH[TYPES[a]][TYPES[d]] ?? 1) !== 1; let sel = null;
+  tb.addEventListener('click', e => {
+    const th = e.target.closest('th[data-k]'); if (!th) return;
+    sel = sel === th.dataset.k ? null : th.dataset.k;
+    const i = sel && +sel.slice(1), row = sel?.[0] === 'r';
+    tb.classList.toggle('sel', !!sel);
+    [...tb.rows].forEach((tr, r) => [...tr.cells].forEach((c, j) => {
+      c.classList.toggle('cur', !!sel && c.dataset.k === sel);
+      c.classList.toggle('on', !!sel && (row ? r === i + 1 || (!r && j > 0 && hit(i, j - 1)) : j === i + 1 || (!j && r > 0 && hit(r - 1, i))));
+    }));
+  });
 };
 
 // ---- 가이드 ----

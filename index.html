@@ -37,6 +37,7 @@ button,input,select,textarea{font:inherit;letter-spacing:inherit}
 .t{display:inline-block;font-size:13px;font-weight:500;color:#fff;padding:2px 9px;border-radius:3px;line-height:1.5;margin:2px 3px 2px 0}
 .t.sm{font-size:12px;padding:1px 7px}
 section{margin-bottom:40px}
+h2 small{font-size:13px;font-weight:400;color:var(--muted);margin-left:8px}
 h2{font-size:16px;font-weight:600;color:var(--fg);margin:0 0 14px;padding-bottom:8px;border-bottom:1px solid var(--line)}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .chip{padding:3px 10px;border:1px solid var(--line);border-radius:3px;cursor:pointer}
@@ -69,7 +70,7 @@ h2{font-size:16px;font-weight:600;color:var(--fg);margin:0 0 14px;padding-bottom
 .mu{display:grid;grid-template-columns:1fr 1fr;gap:28px}
 @media(max-width:700px){.mu{grid-template-columns:1fr}.head{gap:16px}.head img{width:96px;height:96px}}
 .mu h3{font-size:14px;font-weight:500;margin:0 0 10px}
-.row{display:grid;grid-template-columns:104px 1fr;gap:10px;align-items:start;margin-bottom:8px}
+.row{display:grid;grid-template-columns:118px 1fr;gap:10px;align-items:start;margin-bottom:8px}
 .row .m{font-variant-numeric:tabular-nums;color:var(--muted);padding-top:3px;font-size:13px;white-space:nowrap}
 .lead{margin:0 0 18px;padding:10px 14px;background:var(--soft);border-radius:4px}
 .vs-search{margin:0 0 16px}
@@ -329,37 +330,38 @@ function role(stats) {
   const [hp, atk, def, spa, spd, spe] = stats, avg = stats.reduce((a, b) => a + b) / 6;
   const off = Math.max(atk, spa), bulk = Math.max(Math.sqrt(hp * def), Math.sqrt(hp * spd));
   let main;
-  if (off >= bulk * 1.15) main = atk >= spa * 1.15 ? '물리 어태커' : spa >= atk * 1.15 ? '특수 어태커' : '양 어태커';
-  else if (bulk >= off * 1.15) main = def >= spd * 1.15 ? '물리 막이' : spd >= def * 1.15 ? '특수 막이' : '양 막이';
-  else main = '밸런스형';
+  if (off >= bulk * 1.15) main = atk >= spa * 1.15 ? '물리 공격형' : spa >= atk * 1.15 ? '특수 공격형' : '양쪽 공격형';
+  else if (bulk >= off * 1.15) main = def >= spd * 1.15 ? '물리 방어형' : spd >= def * 1.15 ? '특수 방어형' : '양쪽 방어형';
+  else main = '균형형';
   const tags = [];
-  if (spe >= 100 || spe >= avg * 1.25) tags.push('고속'); else if (spe <= 45 || spe <= avg * 0.6) tags.push('저속');
-  if (hp >= avg * 1.35) tags.push('고체력');
+  if (spe >= 100 || spe >= avg * 1.25) tags.push('빠름'); else if (spe <= 45 || spe <= avg * 0.6) tags.push('느림');
+  if (hp >= avg * 1.35) tags.push('HP 높음');
   const pick = (f, dir) => stats.map((v, i) => [v, i]).filter(([v]) => f(v)).sort((a, b) => dir * (b[0] - a[0])).map(([, i]) => STAT[i]);
   return {main, tags, hi: pick(v => v >= avg * 1.15, 1), lo: pick(v => v <= avg * 0.75, -1)};
 }
+const ROLE_TIP = {'물리 공격형': '공격이 높아서 물리 기술로 때리는 타입', '특수 공격형': '특공이 높아서 특수 기술로 때리는 타입', '양쪽 공격형': '공격·특공이 비슷해서 물리·특수 기술을 다 쓸 수 있음', '물리 방어형': 'HP·방어가 높아서 물리 기술을 잘 버팀', '특수 방어형': 'HP·특방이 높아서 특수 기술을 잘 버팀', '양쪽 방어형': '물리·특수 기술을 둘 다 잘 버팀', '균형형': '때리는 힘과 버티는 힘이 비슷함'};
 function roleHtml(stats) {
   const r = role(stats);
-  const note = [r.hi.length ? '강점 ' + r.hi.join('·') : '', r.lo.length ? '약점 ' + r.lo.join('·') : ''].filter(Boolean).join(' / ');
-  return `<div class="role"><span class="chip cur">${r.main}</span>${r.tags.map(t => `<span class="chip">${t}</span>`).join('')}<span class="note">${note}${stats[1] !== undefined && arguments[1] ? ' · ' + arguments[1] : ''}</span></div>`;
+  const note = [r.hi.length ? '높은 능력치 ' + r.hi.join('·') : '', r.lo.length ? '낮은 능력치 ' + r.lo.join('·') : ''].filter(Boolean).join(' / ');
+  return `<div class="role"><span class="chip cur" title="${ROLE_TIP[r.main] || ''}">${r.main}</span>${r.tags.map(t => `<span class="chip">${t}</span>`).join('')}<span class="note">${note}${stats[1] !== undefined && arguments[1] ? ' · ' + arguments[1] : ''}</span></div>`;
 }
 
 // ---------- nature / ability ----------
 // [올리는 스탯, 내리는 스탯] (STAT 인덱스). 없으면 무보정
 const NAT = {hardy:[],lonely:[1,2],brave:[1,5],adamant:[1,3],naughty:[1,4],bold:[2,1],docile:[],relaxed:[2,5],impish:[2,3],lax:[2,4],timid:[5,1],hasty:[5,2],serious:[],jolly:[5,3],naive:[5,4],modest:[3,1],mild:[3,2],quiet:[3,5],bashful:[],rash:[3,4],calm:[4,1],gentle:[4,2],sassy:[4,5],careful:[4,3],quirky:[]};
-const natEff = n => NAT[n].length ? `${STAT[NAT[n][0]]} ↑ ${STAT[NAT[n][1]]} ↓` : '보정 없음';
+const natEff = n => NAT[n].length ? `${STAT[NAT[n][0]]} ↑ ${STAT[NAT[n][1]]} ↓` : '변화 없음';
 function natureRec(stats) {
-  const r = role(stats), fast = r.tags.includes('고속'), phys = stats[1] >= stats[3];
+  const r = role(stats), fast = r.tags.includes('빠름'), phys = stats[1] >= stats[3];
   const dump = phys ? '특공' : '공격';
   let main, alt, why;
   switch (r.main) {
-    case '물리 어태커': main = fast ? 'jolly' : 'adamant'; alt = fast ? 'adamant' : 'jolly'; why = fast ? '스피드로 선공 잡는 게 핵심. 안 쓰는 특공을 깎음' : '공격을 올리고 안 쓰는 특공을 깎음'; break;
-    case '특수 어태커': main = fast ? 'timid' : 'modest'; alt = fast ? 'modest' : 'timid'; why = fast ? '스피드로 선공 잡는 게 핵심. 안 쓰는 공격을 깎음' : '특공을 올리고 안 쓰는 공격을 깎음'; break;
-    case '양 어태커': main = fast ? 'naive' : (phys ? 'adamant' : 'modest'); alt = fast ? 'hasty' : 'hardy'; why = fast ? '공격·특공 둘 다 쓰니 스피드만 올림' : `더 높은 쪽(${phys ? '공격' : '특공'})을 올림. 둘 다 쓸 거면 무보정도 OK`; break;
-    case '물리 막이': main = phys ? 'impish' : 'bold'; alt = phys ? 'bold' : 'impish'; why = `방어를 올리고 안 쓰는 ${dump}을 깎음`; break;
-    case '특수 막이': main = phys ? 'careful' : 'calm'; alt = phys ? 'calm' : 'careful'; why = `특방을 올리고 안 쓰는 ${dump}을 깎음`; break;
-    case '양 막이': { const lowDef = stats[2] <= stats[4]; main = lowDef ? (phys ? 'impish' : 'bold') : (phys ? 'careful' : 'calm'); alt = lowDef ? (phys ? 'careful' : 'calm') : (phys ? 'impish' : 'bold'); why = `더 낮은 쪽(${lowDef ? '방어' : '특방'})을 메움. 안 쓰는 ${dump}을 깎음`; break; }
-    default: main = fast ? (phys ? 'jolly' : 'timid') : (phys ? 'adamant' : 'modest'); alt = fast ? (phys ? 'adamant' : 'modest') : (phys ? 'jolly' : 'timid'); why = `${phys ? '공격' : '특공'}이 더 높으니 그쪽 어태커로. 안 쓰는 ${dump}을 깎음`;
+    case '물리 공격형': main = fast ? 'jolly' : 'adamant'; alt = fast ? 'adamant' : 'jolly'; why = fast ? '스피드를 올려서 먼저 공격하는 게 중요. 안 쓰는 특공을 낮춤' : '공격을 올리고 안 쓰는 특공을 낮춤'; break;
+    case '특수 공격형': main = fast ? 'timid' : 'modest'; alt = fast ? 'modest' : 'timid'; why = fast ? '스피드를 올려서 먼저 공격하는 게 중요. 안 쓰는 공격을 낮춤' : '특공을 올리고 안 쓰는 공격을 낮춤'; break;
+    case '양쪽 공격형': main = fast ? 'naive' : (phys ? 'adamant' : 'modest'); alt = fast ? 'hasty' : 'hardy'; why = fast ? '공격·특공 둘 다 쓰니 스피드만 올림' : `더 높은 쪽(${phys ? '공격' : '특공'})을 올림. 둘 다 쓸 거면 변화 없는 성격도 OK`; break;
+    case '물리 방어형': main = phys ? 'impish' : 'bold'; alt = phys ? 'bold' : 'impish'; why = `방어를 올리고 안 쓰는 ${dump}을 낮춤`; break;
+    case '특수 방어형': main = phys ? 'careful' : 'calm'; alt = phys ? 'calm' : 'careful'; why = `특방을 올리고 안 쓰는 ${dump}을 낮춤`; break;
+    case '양쪽 방어형': { const lowDef = stats[2] <= stats[4]; main = lowDef ? (phys ? 'impish' : 'bold') : (phys ? 'careful' : 'calm'); alt = lowDef ? (phys ? 'careful' : 'calm') : (phys ? 'impish' : 'bold'); why = `더 낮은 쪽(${lowDef ? '방어' : '특방'})을 보완. 안 쓰는 ${dump}을 낮춤`; break; }
+    default: main = fast ? (phys ? 'jolly' : 'timid') : (phys ? 'adamant' : 'modest'); alt = fast ? (phys ? 'adamant' : 'modest') : (phys ? 'jolly' : 'timid'); why = `${phys ? '공격' : '특공'}이 더 높으니 그쪽 공격형으로. 안 쓰는 ${dump}을 낮춤`;
   }
   return {main, alt, why};
 }
@@ -376,16 +378,16 @@ function abilityRec(m) {
   scored.sort((a, b) => b.s - a.s || a.h - b.h || a.i - b.i);
   const best = scored[0], flat = scored.every(x => x.s === best.s);
   const why = flat ? (m.abil.length > 1 ? '특성 간 차이 거의 없음. 아무거나 OK' : '특성이 하나뿐') : best.s >= 4 ? '거의 항상 이득인 특성' : best.s === 3 ? '무난하게 좋은 쪽' : '그나마 나은 쪽';
-  return {best: best.id, why: why + (WEATHER.has(best.id) ? ' (날씨·필드 조건 필요)' : '')};
+  return {best: best.id, why: why + (WEATHER.has(best.id) ? ' (특정 날씨일 때만 발동)' : '')};
 }
 function abilHtml(m) {
   const r = abilityRec(m), n = natureRec(m.stats);
   const rows = m.abil.map(a => { const [ko, desc] = D.abilities[a.id] || [a.id, '']; const rec = a.id === r.best && m.abil.length > 1;
-    return `<div class="ab ${rec ? 'on' : ''}"><div class="ab-h">${rec ? '<span class="chip cur">추천</span>' : ''}<b>${esc(ko)}</b>${a.h ? '<span class="badge">숨겨진 특성</span>' : ''}${WEATHER.has(a.id) ? '<span class="badge">날씨·필드</span>' : ''}</div><div class="ab-d">${esc(desc)}</div>${rec ? `<div class="ab-w">${esc(r.why)}</div>` : ''}</div>`; }).join('');
+    return `<div class="ab ${rec ? 'on' : ''}"><div class="ab-h">${rec ? '<span class="chip cur">추천</span>' : ''}<b>${esc(ko)}</b>${a.h ? '<span class="badge">숨겨진 특성</span>' : ''}${WEATHER.has(a.id) ? '<span class="badge">날씨 필요</span>' : ''}</div><div class="ab-d">${esc(desc)}</div>${rec ? `<div class="ab-w">${esc(r.why)}</div>` : ''}</div>`; }).join('');
   const natRow = (id, label) => `<div class="ab ${label === '추천' ? 'on' : ''}"><div class="ab-h"><span class="chip ${label === '추천' ? 'cur' : ''}">${label}</span><b>${esc(D.natures[id])}</b><span class="ab-e">${natEff(id)}</span></div>${label === '추천' ? `<div class="ab-w">${esc(n.why)}</div>` : ''}</div>`;
   const table = `<table><thead><tr><th>성격</th><th>올라감 (×1.1)</th><th>내려감 (×0.9)</th></tr></thead><tbody>${Object.keys(NAT).map(k => `<tr><td>${esc(D.natures[k])}</td><td>${NAT[k].length ? STAT[NAT[k][0]] : '—'}</td><td>${NAT[k].length ? STAT[NAT[k][1]] : '—'}</td></tr>`).join('')}</tbody></table>`;
-  return `<div class="mu"><div><h3>특성</h3><p class="desc">${m.abil.length > 1 ? '잡을 때 이 중 하나가 랜덤. 숨겨진 특성은 확률 낮음' : ''}</p>${rows}</div>
-    <div><h3>성격</h3><p class="desc">성격은 한 스탯 +10%, 다른 스탯 −10%. 박하로 바꿀 수 있음</p>${natRow(n.main, '추천')}${natRow(n.alt, '대안')}<details><summary>성격 25종 전체</summary>${table}</details></div></div>`;
+  return `<div class="mu"><div><h3>특성</h3><p class="desc">특성은 포켓몬이 가진 자동 효과.${m.abil.length > 1 ? ' 잡을 때 이 중 하나로 정해지고, 숨겨진 특성은 드물게 나옴' : ''}</p>${rows}</div>
+    <div><h3>성격</h3><p class="desc">성격에 따라 능력치 하나가 10% 오르고 하나가 10% 내려감. 민트 아이템으로 바꿀 수 있음</p>${natRow(n.main, '추천')}${natRow(n.alt, '대안')}<details><summary>성격 25종 전체</summary>${table}</details></div></div>`;
 }
 
 // ---------- matchups ----------
@@ -394,7 +396,7 @@ function defense(m) {
   for (const t of TYPES) { const e = eff(t, m.types); if (e !== 1) (g[e] ??= []).push(t); }
   return g;
 }
-const MULT = [[4,'치명적 ×4','bad'],[2,'약점 ×2','bad'],[.5,'반감 ×½','good'],[.25,'강한 반감 ×¼','good'],[0,'무효 ×0','good']];
+const MULT = [[4,'매우 아픔 ×4','bad'],[2,'약점 ×2','bad'],[.5,'덜 아픔 ×½','good'],[.25,'거의 안 아픔 ×¼','good'],[0,'안 맞음 ×0','good']];
 function muSummary(m, def) {
   const bad = [...(def[4] || []), ...(def[2] || [])], no = def[0] || [];
   const s = [];
@@ -429,7 +431,7 @@ function recommend(m, all) {
   const cands = allCands.filter(c => !bias || c.mv[3] === bias);
   const picks = [], used = new Set(), covered = new Set();
   const add = (c, why) => { picks.push({...c, why}); used.add(c.id); TYPES.forEach(d => { if (eff(c.mv[2], [d]) >= 2) covered.add(d); }); };
-  for (const t of m.types) { const c = cands.find(x => x.mv[2] === t && !used.has(x.id)); if (c) add(c, '자속'); }
+  for (const t of m.types) { const c = cands.find(x => x.mv[2] === t && !used.has(x.id)); if (c) add(c, '자기 타입 · 위력 1.5배'); }
   while (picks.length < 3) {
     let best = null, bs = 0;
     for (const c of cands) {
@@ -439,7 +441,7 @@ function recommend(m, all) {
       if (v > bs) { bs = v; best = {c, nw}; }
     }
     if (!best) break;
-    add(best.c, best.nw.length ? '견제 · ' + best.nw.slice(0, 3).map(d => TK[d]).join(', ') : '화력');
+    add(best.c, best.nw.length ? best.nw.slice(0, 3).map(d => TK[d]).join(', ') + ' 타입 상대용' : '위력 높음');
   }
   const phys = m.stats[1] >= m.stats[3];
   const status = pool.filter(id => MV[id][3] === 'T' && !used.has(id));
@@ -447,19 +449,19 @@ function recommend(m, all) {
     const b = MV[id][8].split(',');
     return {id, v: (b.includes(phys ? 'atk' : 'spa') ? 2 : 0) + (b.includes('spe') ? 1 : 0) + (b.includes('def') || b.includes('spd') ? 0.5 : 0)};
   }).filter(x => x.v >= 2).sort((a, b) => b.v - a.v)[0];
-  if (setup) picks.push({id: setup.id, mv: MV[setup.id], why: '강화'});
+  if (setup) picks.push({id: setup.id, mv: MV[setup.id], why: '능력치 올리기'});
   else {
     const heal = status.find(id => MV[id][7].includes('h'));
     if (heal) picks.push({id: heal, mv: MV[heal], why: '회복'});
     else {
       const types = new Set(picks.map(p => p.mv[2]));
       const c = cands.find(x => !used.has(x.id) && !types.has(x.mv[2])) || cands.find(x => !used.has(x.id));
-      if (c) picks.push({...c, why: '화력'});
+      if (c) picks.push({...c, why: '위력 높음'});
     }
   }
   // 자리가 남으면: 반대 분류 공격기 → 아무 변화기
-  for (const c of allCands) { if (picks.length >= 4) break; if (!picks.some(p => p.id === c.id)) picks.push({...c, why: '화력'}); }
-  for (const id of status) { if (picks.length >= 4) break; if (!picks.some(p => p.id === id)) picks.push({id, mv: MV[id], why: '보조'}); }
+  for (const c of allCands) { if (picks.length >= 4) break; if (!picks.some(p => p.id === c.id)) picks.push({...c, why: '위력 높음'}); }
+  for (const id of status) { if (picks.length >= 4) break; if (!picks.some(p => p.id === id)) picks.push({id, mv: MV[id], why: '보조 기술'}); }
   return picks.slice(0, 4);
 }
 function recHtml(m, all) {
@@ -470,7 +472,7 @@ function recHtml(m, all) {
 
 // ---------- 1:1 compare ----------
 const fmt = e => ({4:'×4', 2:'×2', 1:'×1', 0.5:'×½', 0.25:'×¼', 0:'×0'})[e] ?? '×' + e;
-const MLABEL = e => e >= 4 ? '×4 치명타' : e >= 2 ? '×2 효과 굉장' : e === 1 ? '×1 보통' : e === 0 ? '×0 무효' : e <= 0.25 ? '×¼ 거의 안 박힘' : '×½ 반감';
+const MLABEL = e => e >= 4 ? '×4 효과 굉장' : e >= 2 ? '×2 효과 굉장' : e === 1 ? '×1 보통' : e === 0 ? '×0 효과 없음' : e <= 0.25 ? '×¼ 효과 별로' : '×½ 효과 별로';
 const mcls = (e, mine) => e === 1 ? '' : (e > 1) === mine ? 'good' : 'bad'; // mine: 내가 때리는 쪽이면 배수 높을수록 good
 function bestMoves(a, b, n = 3) { // a의 레벨업 기술 중 b에게 가장 아픈 것
   const ids = [...new Set(a.lv.map(x => x[1]))].filter(id => MV[id] && !MV[id][7].includes('n') && !GIMMICK.has(id));
@@ -480,13 +482,13 @@ function bestMoves(a, b, n = 3) { // a의 레벨업 기술 중 b에게 가장 �
 function compareHtml(m, o) {
   const mine = m.types.map(t => ({t, e: eff(t, o.types)})), theirs = o.types.map(t => ({t, e: eff(t, m.types)}));
   const myBest = Math.max(...mine.map(x => x.e)), opBest = Math.max(...theirs.map(x => x.e));
-  const spd = m.stats[5] > o.stats[5] ? '내가 선공' : m.stats[5] < o.stats[5] ? '상대가 선공' : '동속';
+  const spd = m.stats[5] > o.stats[5] ? '내가 먼저 공격' : m.stats[5] < o.stats[5] ? '상대가 먼저 공격' : '스피드 같음';
   const verdict = myBest > opBest ? '유리' : myBest < opBest ? '불리' : '비등';
   const vcol = {유리: '#27ae60', 불리: '#c0392b', 비등: '#777'}[verdict];
   const rows = (arr, isMine) => arr.map(x => `<div class="row"><span class="m ${mcls(x.e, isMine)}">${MLABEL(x.e)}</span><div>${tchip(x.t, 1)} 기술${isMine ? '로 때리면' : '에 맞으면'}</div></div>`).join('');
-  const mvs = (arr, isMine) => arr.length ? arr.map(x => `<div class="row"><span class="m ${mcls(x.e, isMine)}">${fmt(x.e)}</span><div>${tchip(x.mv[2], 1)} ${esc(x.mv[0])} <span class="note">${CAT[x.mv[3]]} ${x.mv[4]}</span></div></div>`).join('') : '<div class="empty">공격기 없음</div>';
+  const mvs = (arr, isMine) => arr.length ? arr.map(x => `<div class="row"><span class="m ${mcls(x.e, isMine)}">${fmt(x.e)}</span><div>${tchip(x.mv[2], 1)} ${esc(x.mv[0])} <span class="note">${CAT[x.mv[3]]} ${x.mv[4]}</span></div></div>`).join('') : '<div class="empty">공격 기술 없음</div>';
   return `<div class="vs-card">
-    <div class="vs-title"><span class="t" style="background:${vcol}">${verdict}</span><b>${esc(m.ko)}</b><span class="note">vs</span><b class="lnk" data-go="${o.id}">${esc(fullKo(o))}</b>${o.types.map(t => tchip(t, 1)).join('')}<span class="note">내 자속 최대 ${fmt(myBest)} · 상대 자속 최대 ${fmt(opBest)} · 스피드 ${m.stats[5]} vs ${o.stats[5]} → ${spd}</span><button class="x" id="oclear">상대 지우기</button></div>
+    <div class="vs-title"><span class="t" style="background:${vcol}">${verdict}</span><b>${esc(m.ko)}</b><span class="note">vs</span><b class="lnk" data-go="${o.id}">${esc(fullKo(o))}</b>${o.types.map(t => tchip(t, 1)).join('')}<span class="note">내 타입 기술 최대 ${fmt(myBest)} · 상대 타입 기술 최대 ${fmt(opBest)} · 스피드 ${m.stats[5]} vs ${o.stats[5]} → ${spd}</span><button class="x" id="oclear">상대 지우기</button></div>
     <div class="mu">
       <div><h3>내가 때릴 때</h3>${rows(mine, true)}<div class="sub">내 레벨업 기술 중 가장 아픈 것</div>${mvs(bestMoves(m, o), true)}</div>
       <div><h3>상대가 때릴 때</h3>${rows(theirs, false)}<div class="sub">상대 레벨업 기술 중 조심할 것</div>${mvs(bestMoves(o, m), false)}</div>
@@ -541,7 +543,7 @@ function render(k) {
       <h1>${esc(m.ko)}${m.form ? ` <span style="font-weight:400">${esc(m.form)}</span>` : ''}<small>${esc(m.en)}</small><button class="fav ${FAV.includes(k) ? "on" : ""}" data-fav="${k}">${favLabel(k)}</button>
         ${m.bo ? '<span class="badge">배틀 중 폼</span>' : ''}${m.imp ? '' : '<span class="badge">코블몬 미구현</span>'}</h1>
       <div>${m.types.map(t => tchip(t)).join('')}</div>
-      <div class="meta"><span>포획률 <b>${m.catch}</b></span><span>종족값 합 <b>${tot}</b></span><span>${esc(role(m.stats).main)}</span></div>
+      <div class="meta"><span title="3~255. 숫자가 클수록 잘 잡힘">포획률 <b>${m.catch}</b> (${m.catch >= 150 ? '잡기 쉬움' : m.catch >= 75 ? '보통' : m.catch >= 30 ? '잡기 어려움' : '매우 어려움'})</span><span>능력치 합 <b>${tot}</b></span><span title="${ROLE_TIP[role(m.stats).main] || ''}">${esc(role(m.stats).main)}</span></div>
       ${forms.length > 1 ? `<div class="chips">${forms.map(x => `<span class="chip ${x === k ? 'cur' : ''}" data-go="${x}">${esc(M[x].form || '기본')}</span>`).join('')}</div>` : ''}
     </div>
     <div class="head-rec">${abilHtml(m)}</div>
@@ -551,26 +553,26 @@ function render(k) {
   ${o ? compareHtml(m, o) : ''}
   <p class="lead">${esc(muSummary(m, def))}</p>
   <div class="mu">
-    <div><h3>맞을 때</h3><p class="desc">상대가 이 타입 기술을 쓰면 ${esc(m.ko)}가 받는 데미지</p>${MULT.filter(([x]) => def[x]).map(([x, l, c]) => `<div class="row"><span class="m ${c}">${l}</span><div>${def[x].map(t => tchip(t, 1)).join('')}</div></div>`).join('') || '<div class="empty">약점·반감 없음 (전부 ×1)</div>'}</div>
-    <div><h3>때릴 때</h3><p class="desc">${esc(m.ko)}의 자속 기술이 상대 타입에게 주는 데미지</p>${off}</div>
+    <div><h3>맞을 때</h3><p class="desc">상대가 이 타입 기술을 쓰면 ${esc(m.ko)}가 받는 데미지</p>${MULT.filter(([x]) => def[x]).map(([x, l, c]) => `<div class="row"><span class="m ${c}">${l}</span><div>${def[x].map(t => tchip(t, 1)).join('')}</div></div>`).join('') || '<div class="empty">약점도 덜 아픈 타입도 없음 (전부 ×1)</div>'}</div>
+    <div><h3>때릴 때</h3><p class="desc">자기 타입 기술로 때릴 때 상대가 받는 데미지. 자기 타입과 같은 기술은 위력 1.5배</p>${off}</div>
   </div></section>
   <section><h2>어디서 잡나</h2>${spawnSection(k, m)}</section>
   <section><h2>진화</h2><div class="evo-scroll">${evoHtml(tree(root(k)), k)}</div></section>
   ${gimmickSection(m)}
-  <section><h2>종족값</h2>${roleHtml(m.stats, m.stats[1] !== m.raw[1] ? '특성으로 공격 ' + (m.stats[1] / m.raw[1]) + '배 반영' : '')}<div class="stats">
+  <section><h2>기본 능력치<small>종족값</small></h2>${roleHtml(m.stats, m.stats[1] !== m.raw[1] ? '특성으로 공격 ' + (m.stats[1] / m.raw[1]) + '배 반영' : '')}<div class="stats">
     ${m.raw.map((v, i) => `<span class="k">${STAT[i]}</span><span class="v">${v}</span><div class="bar"><i style="width:${v / 255 * 100}%"></i></div>`).join('')}
     <span class="k tot">합계</span><span class="v tot">${tot}</span><span class="tot"></span>
-  </div></section>
-  <section><h2>추천 최종 기술</h2>
-    <div class="opt"><label><input type="checkbox" id="recall"> 기술머신·튜터·교배 기술 포함</label><span>종족값 기준 ${m.stats[1] >= m.stats[3] ? '물리' : '특수'} 어태커로 계산</span></div>
+  </div><p class="desc" style="margin-top:14px">공격 = 물리 기술의 세기 · 특공 = 특수 기술의 세기 · 방어 = 물리 기술을 버티는 힘 · 특방 = 특수 기술을 버티는 힘 · 스피드 = 높은 쪽이 먼저 공격</p></section>
+  <section><h2>추천 기술<small>다 키웠을 때 기준 4개</small></h2>
+    <div class="opt"><label><input type="checkbox" id="recall"> 기술머신·가르침·알 기술까지 포함</label><span>${m.stats[1] >= m.stats[3] ? '공격이 더 높아서 물리' : '특공이 더 높아서 특수'} 기술 위주로 고름</span></div>
     <div id="rec">${recHtml(m, false)}</div>
   </section>
   <section><h2>레벨업 기술</h2>${moveTable(m.lv, true)}</section>
-  <section><h2>그 외 기술</h2>
+  <section><h2>그 외 기술</h2><p class="desc">레벨업 말고 다른 방법으로 배우는 기술. 가르침 기술은 원작에서 NPC가 가르쳐주는 기술(튜터), 알 기술은 원작에서 교배로 물려받는 기술.</p>
     <details><summary>기술머신 (${m.tm.length})</summary>${moveTable(m.tm)}</details>
-    <details><summary>튜터 (${m.tutor.length})</summary>${moveTable(m.tutor)}</details>
-    <details><summary>교배 (${m.egg.length})</summary>${moveTable(m.egg)}</details>
-    <details><summary>기타·과거작 (${m.other.length})</summary>${moveTable(m.other)}</details>
+    <details><summary>가르침 기술 (${m.tutor.length})</summary>${moveTable(m.tutor)}</details>
+    <details><summary>알 기술 (${m.egg.length})</summary>${moveTable(m.egg)}</details>
+    <details><summary>기타 · 예전 게임 기술 (${m.other.length})</summary>${moveTable(m.other)}</details>
   </section>`;
   document.getElementById('recall').addEventListener('change', e => { document.getElementById('rec').innerHTML = recHtml(m, e.target.checked); });
   bindSearch(document.getElementById('oq'), document.getElementById('odrop'), setOpp);
@@ -743,14 +745,14 @@ function learners(id) {
   for (const k of D.order) {
     const m = M[k];
     const lv = m.lv.find(x => x[1] === id);
-    const how = lv ? `Lv.${lv[0]}` : m.tm.includes(id) ? 'TM' : m.tutor.includes(id) ? '튜터' : m.egg.includes(id) ? '교배' : null;
+    const how = lv ? `Lv.${lv[0]}` : m.tm.includes(id) ? 'TM' : m.tutor.includes(id) ? '가르침' : m.egg.includes(id) ? '알 기술' : null;
     if (how) out.push([k, how]);
   }
   return (LEARN[id] = out);
 }
 TABS.moves = () => {
   const ids = Object.keys(MV).filter(id => !MV[id][7].includes('n')).sort((a, b) => MV[a][0].localeCompare(MV[b][0]));
-  $view.innerHTML = `<h1 class="tab-head">기술</h1><p class="tab-desc">행을 누르면 설명·TM 제작법·배우는 포켓몬. TM은 TMCraft 모드: 조합대에서 빈 디스크 + 재료로 제작.</p>
+  $view.innerHTML = `<h1 class="tab-head">기술</h1><p class="tab-desc">행을 누르면 설명·기술머신(TM) 제작법·배우는 포켓몬. 물리는 공격, 특수는 특공 수치로 때리는 기술이고, 변화는 데미지 없이 효과만 줌. PP는 쓸 수 있는 횟수.</p>
   <div class="filters"><input type="text" id="mq" placeholder="기술 이름 (한글/영문)">
     <select id="mt"><option value="">타입 전체</option>${TYPES.map(t => `<option value="${t}">${TK[t]}</option>`).join('')}</select>
     <select id="mc"><option value="">분류 전체</option><option value="P">물리</option><option value="S">특수</option><option value="T">변화</option></select>
@@ -779,7 +781,7 @@ TABS.moves = () => {
 TABS.abilities = () => {
   const own = {}; D.order.forEach(k => M[k].abil.forEach(a => (own[a.id] ??= []).push([k, a.h])));
   const ids = Object.keys(D.abilities).filter(id => own[id]).sort((a, b) => D.abilities[a][0].localeCompare(D.abilities[b][0]));
-  $view.innerHTML = `<h1 class="tab-head">특성</h1><p class="tab-desc">행을 누르면 그 특성을 가진 포켓몬. ★ = 추천 점수 높은 특성.</p>
+  $view.innerHTML = `<h1 class="tab-head">특성</h1><p class="tab-desc">특성은 포켓몬이 가진 자동 효과. 행을 누르면 그 특성을 가진 포켓몬. ★ = 대체로 좋은 특성.</p>
   <div class="filters"><input type="text" id="aq" placeholder="특성 이름 또는 설명 키워드 (예: 회복, 스피드)"></div><div class="list" id="al"></div>`;
   const cols = 'grid-template-columns:160px 1fr 50px';
   const draw = () => {
@@ -787,7 +789,7 @@ TABS.abilities = () => {
     const rows = ids.filter(id => qmatch(q, ...D.abilities[id]));
     document.getElementById('al').innerHTML = rows.map(id => `<div class="it" data-id="${id}"><div class="it-h" style="${cols}"><span>${esc(D.abilities[id][0])}${(ABIL_SCORE[id] ?? 2) >= 4 ? ' ★' : ''}</span><span class="muted">${esc(D.abilities[id][1])}</span><span class="muted">${own[id].length}</span></div><div class="it-b"></div></div>`).join('') || '<p class="empty">없음</p>';
   };
-  bindList(document.getElementById('al'), id => `<div class="mon-chips">${own[id].map(([k, h]) => monChip(k).replace('</span>', h ? ' <span class="muted">숨특</span></span>' : '</span>')).join('')}</div>`);
+  bindList(document.getElementById('al'), id => `<div class="mon-chips">${own[id].map(([k, h]) => monChip(k).replace('</span>', h ? ' <span class="muted">숨겨진 특성</span></span>' : '</span>')).join('')}</div>`);
   document.getElementById('aq').addEventListener('input', draw);
   draw();
 };
@@ -864,7 +866,7 @@ TABS.guide = () => {
   <p>코블벌스는 TMCraft 모드로 TM을 만듦. 조합대에서 빈 디스크(구리·철·금·다이아몬드·에메랄드·네더라이트)에 타입 주얼 같은 재료를 더해 제작. 레시피가 있는 기술은 ${tmAll}개. 기술별 재료는 기술 탭에서 "TM 있는 것만" 체크. 배울 수 있는 포켓몬은 도감의 "그 외 기술" TM 목록 기준.</p>
   <h3>5. 성장·육성</h3>
   <dl class="kv">${['exp_candy_xs', 'exp_candy_s', 'exp_candy_m', 'exp_candy_l', 'exp_candy_xl', 'rare_candy', 'hp_up', 'health_feather', 'health_mochi', 'adamant_mint', 'ability_capsule', 'ability_patch'].filter(id => IT[id]).map(id => `<dt>${esc(IT[id][0])}</dt><dd>${tip(id)}</dd>`).join('')}</dl>
-  <p>민트는 성격 보정만 바꾸고 실제 성격은 그대로. 어떤 성격이 좋은지는 도감의 "특성 · 성격" 섹션 추천 참고.</p>
+  <p>민트는 능력치 오르내림만 바꾸고 성격 이름은 그대로. 어떤 성격이 좋은지는 도감의 "특성 · 성격" 섹션 추천 참고.</p>
   <h3>6. 회복</h3>
   <dl class="kv">${['potion', 'super_potion', 'hyper_potion', 'max_potion', 'full_restore'].filter(id => IT[id]).map(id => `<dt>${esc(IT[id][0])}</dt><dd>${tip(id)}</dd>`).join('')}</dl>
   <p>회복약은 양조기·모닥불 냄비로 만듦. 아이템 탭 "회복약"에서 제작법 확인.</p>

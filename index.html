@@ -41,6 +41,7 @@ h2{font-size:16px;font-weight:600;color:var(--fg);margin:0 0 14px;padding-bottom
 .evo{display:flex;align-items:center;gap:16px}
 .node{min-width:120px;padding:10px 12px;border:1px solid var(--line);border-radius:4px;cursor:pointer;text-align:center}
 .node.cur{border-color:var(--fg);box-shadow:inset 0 0 0 1px var(--fg)}
+.node img{display:block;width:64px;height:64px;margin:-6px auto -2px;image-rendering:pixelated}
 .node .ko{font-weight:500}
 .node .fm{font-size:12px;color:var(--muted)}
 .node .ty{margin-top:4px}
@@ -74,6 +75,8 @@ h2{font-size:16px;font-weight:600;color:var(--fg);margin:0 0 14px;padding-bottom
 .vs-title b{font-weight:500}
 .vs-title .lnk{cursor:pointer;text-decoration:underline;text-underline-offset:3px}
 .vs-title .note{color:var(--muted);font-size:13px}
+.fav{margin-left:12px;vertical-align:middle;font:inherit;font-size:13px;font-weight:400;color:var(--muted);background:none;border:1px solid var(--line);border-radius:3px;padding:3px 9px;cursor:pointer}
+.fav.on{color:var(--fg);border-color:var(--fg)}
 .x{margin-left:auto;font:inherit;font-size:13px;color:var(--muted);background:none;border:1px solid var(--line);border-radius:3px;padding:3px 8px;cursor:pointer}
 .row .note{color:var(--muted);font-size:13px;margin-left:4px}
 .ab{padding:10px 12px;border:1px solid var(--line);border-radius:4px;margin-bottom:8px}
@@ -215,6 +218,10 @@ h2 .bucket{font-size:inherit}
 <script src="data.js"></script>
 <script>
 const D = window.DEX, M = D.mons, MV = D.moves, TK = D.types;
+// 즐겨찾기: 이 브라우저(localStorage)에만 저장. 사이트 주소마다 따로
+let FAV = []; try { FAV = JSON.parse(localStorage.getItem("dex-fav") || "[]").filter(k => M[k]); } catch {}
+const favLabel = k => FAV.includes(k) ? "★ 즐겨찾기" : "☆ 즐겨찾기";
+const homeHtml = () => `<p class="hint">예: 리자몽, 이브이, charizard, 6</p><section style="margin-top:36px"><h2>즐겨찾기</h2>${FAV.length ? `<div class="mon-chips">${FAV.map(monChip).join("")}</div>` : '<p class="hint">포켓몬 페이지에서 이름 옆 ☆ 즐겨찾기를 누르면 여기에 모임. 이 브라우저에만 저장됨.</p>'}</section>`;
 const TYPES = Object.keys(TK);
 const COLOR = {normal:'#9fa19f',fire:'#e56c2b',water:'#3f8fd8',electric:'#e8b81e',grass:'#5fa83a',ice:'#59b9c8',fighting:'#c0392b',poison:'#9b5ab5',ground:'#b8893a',flying:'#8aa2e0',psychic:'#e06098',bug:'#8fa31b',rock:'#a89a6b',ghost:'#6a5a9c',dragon:'#5a4fcf',dark:'#5a4a42',steel:'#7f8fa0',fairy:'#e09ac0'};
 // attacker -> {defender: mult}; omitted = 1
@@ -299,7 +306,7 @@ function tree(k, seen = new Set()) {
 }
 function evoHtml(t, cur) {
   const m = M[t.k];
-  const node = `<div class="node ${t.k === cur ? 'cur' : ''}" data-go="${t.k}"><div class="ko">${esc(m.ko)}</div>${m.form ? `<div class="fm">${esc(m.form)}</div>` : ''}<div class="ty">${m.types.map(x => tchip(x, 1)).join('')}</div></div>`;
+  const node = `<div class="node ${t.k === cur ? 'cur' : ''}" data-go="${t.k}"><img loading="lazy" src="${sprite(m.n)}" alt="" onerror="this.style.visibility='hidden'"><div class="ko">${esc(m.ko)}</div>${m.form ? `<div class="fm">${esc(m.form)}</div>` : ''}<div class="ty">${m.types.map(x => tchip(x, 1)).join('')}</div></div>`;
   if (!t.kids.length) return `<div class="evo">${node}</div>`;
   return `<div class="evo">${node}<div class="branches">${t.kids.map(c => `<div class="branch"><div class="how">${esc(c.how)}</div>${evoHtml(c.node, cur)}</div>`).join('')}</div></div>`;
 }
@@ -499,14 +506,14 @@ function eff6(m) {
 }
 function render(k) {
   const m0 = M[k];
-  if (!m0) { $view.innerHTML = '<p class="hint">예: 리자몽, 이브이, charizard, 6</p>'; return; }
+  if (!m0) { $view.innerHTML = homeHtml(); document.title = "코블몬 도감"; return; }
   const m = {...m0, stats: eff6(m0), raw: m0.stats};
   CUR = k;
   const o = OPP ? {...M[OPP], id: OPP, stats: eff6(M[OPP])} : null;
   $drop.classList.remove('on'); $q.value = '';
   document.title = `${fullKo(m)} · 코블몬 도감`;
   const forms = D.order.filter(x => M[x].n === m.n && (M[x].en === m.en));
-  const def = defense(m), tot = m.raw.reduce((a, b) => a + b, 0);
+  const def = defense(m), tot = m.raw.reduce((a, b) => a + b, 0), recA = abilityRec(m).best, recN = natureRec(m.stats).main;
   const off = m.types.map(t => {
     const se = TYPES.filter(d => CH[t][d] === 2), nv = TYPES.filter(d => CH[t][d] === .5), im = TYPES.filter(d => CH[t][d] === 0);
     return `<div class="sub">${tchip(t, 1)} 기술을 쓰면</div>
@@ -519,10 +526,11 @@ function render(k) {
     <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${m.n}.png" alt="" onerror="this.style.visibility='hidden'">
     <div>
       <div class="num">#${String(m.n).padStart(4, '0')}</div>
-      <h1>${esc(m.ko)}${m.form ? ` <span style="font-weight:400">${esc(m.form)}</span>` : ''}<small>${esc(m.en)}</small>
+      <h1>${esc(m.ko)}${m.form ? ` <span style="font-weight:400">${esc(m.form)}</span>` : ''}<small>${esc(m.en)}</small><button class="fav ${FAV.includes(k) ? "on" : ""}" data-fav="${k}">${favLabel(k)}</button>
         ${m.bo ? '<span class="badge">배틀 중 폼</span>' : ''}${m.imp ? '' : '<span class="badge">코블몬 미구현</span>'}</h1>
       <div>${m.types.map(t => tchip(t)).join('')}</div>
       <div class="meta"><span>포획률 <b>${m.catch}</b></span><span>종족값 합 <b>${tot}</b></span><span>${esc(role(m.stats).main)}</span></div>
+      <div class="meta" style="margin-top:4px"><span title="${esc(D.abilities[recA]?.[1] || '')}">${m.abil.length > 1 ? '추천 특성' : '특성'} <b>${esc(D.abilities[recA]?.[0] || recA)}</b></span><span>추천 성격 <b>${esc(D.natures[recN])}</b> ${natEff(recN)}</span></div>
       ${forms.length > 1 ? `<div class="chips">${forms.map(x => `<span class="chip ${x === k ? 'cur' : ''}" data-go="${x}">${esc(M[x].form || '기본')}</span>`).join('')}</div>` : ''}
     </div>
   </div>
@@ -559,6 +567,7 @@ function render(k) {
   window.scrollTo(0, 0);
 }
 $view.addEventListener('click', e => { const d = e.target.closest('[data-go]'); if (d) go(d.dataset.go); });
+$view.addEventListener('click', e => { const b = e.target.closest('[data-fav]'); if (!b) return; const k = b.dataset.fav, i = FAV.indexOf(k); i < 0 ? FAV.push(k) : FAV.splice(i, 1); try { localStorage.setItem('dex-fav', JSON.stringify(FAV)); } catch {} b.textContent = favLabel(k); b.classList.toggle('on', i < 0); });
 $view.addEventListener('click', e => {
   if (e.target.closest('.srcbox .x')) return e.target.closest('.srcbox').remove();
   const c = e.target.closest('[data-it]');

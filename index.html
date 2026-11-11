@@ -380,7 +380,7 @@ h2 .bucket{font-size:inherit}
 .tchart th,.tchart td{border:0;padding:0;text-align:center;width:46px;height:34px;border-radius:3px}
 .tchart td{background:var(--soft);transition:opacity .12s}
 .tchart th{font-weight:500;background:var(--bg)}
-.tchart th[data-k]{cursor:pointer}
+.tchart th[data-k],.tchart td{cursor:pointer}
 .tchart th .t{display:block;width:46px;margin:0;padding:3px 0;font-size:12px;transition:opacity .12s}
 .tchart th.rh{position:sticky;left:0;z-index:1;padding-right:4px}
 .tchart .tc-c{font-size:12px;font-weight:400;color:var(--muted);line-height:1.35;text-align:right;padding-right:6px}
@@ -492,11 +492,16 @@ function route() {
   const tab = h.startsWith('/') ? h.slice(1).split('?')[0] : '';
   document.querySelectorAll('.nav a[data-tab]').forEach(a => a.classList.toggle('on', a.dataset.tab === tab));
   document.getElementById('dexbar').style.display = tab ? 'none' : '';
-  if (tab) { (TABS[tab] || TABS.guide)(); window.scrollTo(0, 0); return; }
+  // 뒤로가기로 돌아온 탭은 떠날 때 적어 둔 스크롤 위치로 (지금은 출현 탭만 적음). 탭이 그리면서 state를 덮어쓰기 전에 먼저 읽음
+  if (tab) { const y = history.state?.y || 0; (TABS[tab] || TABS.guide)(); window.scrollTo(0, y); return; }
   const [me, opp] = h.split('~'); OPP = opp && M[opp] ? opp : null;
   render(me);
 }
 window.addEventListener('hashchange', route);
+// 출현 탭이 넣어 두는 저장 함수. 다른 페이지로 넘어가는 클릭 직전(캡처 단계)과 스크롤이 멈췄을 때 부름
+let leaveSave = () => {}, leaveT;
+document.addEventListener('click', () => leaveSave(), true);
+window.addEventListener('scroll', () => { clearTimeout(leaveT); leaveT = setTimeout(() => leaveSave(), 200); }, {passive: true});
 
 // ---------- evolution family ----------
 function root(k) { const seen = new Set(); while (M[k].pre && M[M[k].pre] && !seen.has(k)) { seen.add(k); k = M[k].pre; } return k; }
@@ -933,14 +938,23 @@ TABS.spawn = () => {
       <table><tbody>${arr.map(([k, ss]) => `<tr class="sp-row"><td style="width:170px">${monChip(k)}</td><td class="sp-ty">${M[k].types.map(x => tchip(x, 1)).join('')}</td><td>${[...new Map(ss.map(s => [line(s, !b), s])).keys()].join('')}</td></tr>`).join('')}</tbody></table></section>`).join('')
       : (q ? (search($('sq').value).map(x => `<div class="row" style="grid-template-columns:200px 1fr;align-items:center">${monChip(x.k)}<span class="cond">${SP_BY[x.k] ? '지금 고른 바이옴·필터에선 안 나옴. 바이옴을 "전체"로 바꾸고 체크박스를 켜봐' : esc(noSpawnReason(x.k))}</span></div>`).join('') || '<p class="empty">그런 이름의 포켓몬 없음</p>') : '<p class="empty">조건에 맞는 출현 없음</p>');
   };
-  ['sb', 'sg', 'st', 'sp', 'ss', 'sx'].forEach(id => $(id).addEventListener('change', () => { if (id === 'sb') history.replaceState(null, '', '#/spawn?b=' + $('sb').value); draw(); }));
-  $('sq').addEventListener('input', draw);
+  const paintTy = () => {
+    $('sy').classList.toggle('has', tys.size > 0); $('syc').hidden = !tys.size;
+    $('sy').querySelectorAll('.t').forEach(x => { const on = tys.has(x.dataset.t); x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); });
+  };
+  // 필터 · 스크롤을 지금 히스토리 항목에 저장 → 상세 페이지를 보고 뒤로가기 하면 그대로 (탭 메뉴로 새로 들어오면 처음 상태)
+  const FL = ['sb', 'sg', 'st', 'sp', 'sq', 'ss', 'sx'], prop = id => $(id).type === 'checkbox' ? 'checked' : 'value';
+  const save = () => { if (location.hash.startsWith('#/spawn')) try { history.replaceState({y: scrollY, f: FL.map(id => $(id)[prop(id)]), ty: [...tys]}, ''); } catch (e) {} }; // 사파리는 30초에 100번 넘으면 던짐
+  const st0 = history.state;
+  if (st0?.f) { FL.forEach((id, i) => { $(id)[prop(id)] = st0.f[i]; }); st0.ty.forEach(x => tys.add(x)); paintTy(); }
+  leaveSave = save;
+  const redraw = () => { draw(); save(); };
+  ['sb', 'sg', 'st', 'sp', 'ss', 'sx'].forEach(id => $(id).addEventListener('change', () => { if (id === 'sb') history.replaceState(null, '', '#/spawn?b=' + $('sb').value); redraw(); }));
+  $('sq').addEventListener('input', redraw);
   $('sy').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
     if (b.id === 'syc') tys.clear(); else tys.has(b.dataset.t) ? tys.delete(b.dataset.t) : tys.add(b.dataset.t);
-    $('sy').classList.toggle('has', tys.size > 0); $('syc').hidden = !tys.size;
-    $('sy').querySelectorAll('.t').forEach(x => { const on = tys.has(x.dataset.t); x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); });
-    draw();
+    paintTy(); redraw();
   });
   draw();
 };
@@ -1037,7 +1051,7 @@ TABS.types = () => {
   const cell = e => e === 2 ? '<td class="c2">2</td>' : e === .5 ? '<td class="c05">½</td>' : e === 0 ? '<td class="c0">0</td>' : '<td></td>';
   $view.innerHTML = `<h1 class="tab-head">상성표</h1><p class="tab-desc">왼쪽 = 공격 기술 타입, 위 = 맞는 포켓몬 타입.</p>
   <section><h2>방어 타입 계산기</h2><div class="filters"><select id="d1">${TYPES.map(t => `<option value="${t}">${TK[t]}</option>`).join('')}</select><select id="d2"><option value="">(단일 타입)</option>${TYPES.map(t => `<option value="${t}">${TK[t]}</option>`).join('')}</select></div><div id="dres"></div></section>
-  <section><h2>전체 표</h2><p class="desc">2 = 효과 굉장 (2배) · ½ = 효과 별로 (절반) · 0 = 효과 없음 · 빈칸 = 보통 (1배). 타입을 누르면 그 줄만 강조 (여러 개 선택 가능), 다시 누르면 해제. <button class="x" id="tclr" hidden>선택 해제</button></p><div class="tc-wrap"><table class="tchart"><thead><tr><th class="tc-c">방어 →<br>공격 ↓</th>${TYPES.map((t, j) => `<th data-k="c${j}">${tchip(t, 1)}</th>`).join('')}</tr></thead>
+  <section><h2>전체 표</h2><p class="desc">2 = 효과 굉장 (2배) · ½ = 효과 별로 (절반) · 0 = 효과 없음 · 빈칸 = 보통 (1배). 타입이나 표 안의 칸을 누르면 그 줄만 강조 (여러 개 선택 가능), 다시 누르면 해제. <button class="x" id="tclr" hidden>선택 해제</button></p><div class="tc-wrap"><table class="tchart"><thead><tr><th class="tc-c">방어 →<br>공격 ↓</th>${TYPES.map((t, j) => `<th data-k="c${j}">${tchip(t, 1)}</th>`).join('')}</tr></thead>
   <tbody>${TYPES.map((a, i) => `<tr><th class="rh" data-k="r${i}">${tchip(a, 1)}</th>${TYPES.map(d => cell(CH[a][d] ?? 1)).join('')}</tr>`).join('')}</tbody></table></div></section>`;
   const draw = () => {
     const ts = [document.getElementById('d1').value, document.getElementById('d2').value].filter(Boolean);
@@ -1046,7 +1060,7 @@ TABS.types = () => {
   };
   ['d1', 'd2'].forEach(id => document.getElementById(id).addEventListener('change', draw));
   draw();
-  // 타입 머리칸 클릭(여러 개): 고른 줄(공격 = 가로, 방어 = 세로)과, 그 줄에서 값이 있는 칸의 맞은편 타입만 남기고 흐리게
+  // 타입 머리칸 클릭(여러 개. 표 안의 칸을 누르면 그 칸의 가로줄): 고른 줄(공격 = 가로, 방어 = 세로)과, 그 줄에서 값이 있는 칸의 맞은편 타입만 남기고 흐리게
   const tb = $view.querySelector('.tchart'), clr = document.getElementById('tclr'), hit = (a, d) => (CH[TYPES[a]][TYPES[d]] ?? 1) !== 1, sel = new Set();
   const paint = () => {
     const pick = p => [...sel].filter(k => k[0] === p).map(k => +k.slice(1)), rs = pick('r'), cs = pick('c');
@@ -1056,7 +1070,7 @@ TABS.types = () => {
       c.classList.toggle('on', r && j ? rs.includes(r - 1) || cs.includes(j - 1) : !r ? j > 0 && (cs.includes(j - 1) || rs.some(i => hit(i, j - 1))) : rs.includes(r - 1) || cs.some(i => hit(r - 1, i)));
     }));
   };
-  tb.addEventListener('click', e => { const k = e.target.closest('th[data-k]')?.dataset.k; if (!k) return; sel.delete(k) || sel.add(k); paint(); });
+  tb.addEventListener('click', e => { const td = e.target.closest('td'), k = td ? 'r' + (td.parentNode.rowIndex - 1) : e.target.closest('th[data-k]')?.dataset.k; if (!k) return; sel.delete(k) || sel.add(k); paint(); });
   clr.addEventListener('click', () => { sel.clear(); paint(); });
 };
 

@@ -9,12 +9,14 @@ const fs = require('fs'), path = require('path');
 const VERSION = 'COBBLEVERSE 1.7.42 · 코블몬 1.7.3';
 const RAW = path.join(__dirname, 'raw');
 const LAYERS = fs.readdirSync(path.join(RAW, 'cv')).sort().map(d => path.join(RAW, 'cv', d));
+// raw/cvx/N_*: 지방 추가 데이터팩(성도·호연·신오). 챔피언을 이겨야 켜지는 것이라 전설 탭(구조물·조합법)에서만 읽고 다른 탭에는 안 섞음
+const XLAYERS = fs.existsSync(path.join(RAW, 'cvx')) ? fs.readdirSync(path.join(RAW, 'cvx')).sort().map(d => path.join(RAW, 'cvx', d)) : [];
 const readJ = f => JSON.parse(fs.readFileSync(f, 'utf8').replace(/^﻿/, ''));
 const walkJson = dir => { const out = []; if (!fs.existsSync(dir)) return out; (function w(d) { for (const f of fs.readdirSync(d)) { const q = path.join(d, f); if (fs.statSync(q).isDirectory()) w(q); else if (f.endsWith('.json')) out.push(q); } })(dir); return out; };
 // data/<ns>/<kind>/** 를 레이어 순으로 겹침 (같은 상대경로는 뒤가 이김) -> [{ns, rel, f}]
-const dataFiles = (kind, onlyNs) => {
+const dataFiles = (kind, onlyNs, withExtra) => {
   const m = new Map();
-  for (const L of LAYERS) {
+  for (const L of withExtra ? [...LAYERS, ...XLAYERS] : LAYERS) {
     const d = path.join(L, 'data');
     if (fs.existsSync(d)) for (const ns of fs.readdirSync(d)) {
       if (onlyNs && ns !== onlyNs) continue;
@@ -25,9 +27,9 @@ const dataFiles = (kind, onlyNs) => {
   return [...m.values()];
 };
 // 태그는 레이어끼리 합쳐짐 (replace:true면 앞 내용 버림). 바닐라 바이옴 태그는 raw/mc_tags
-const tagValues = (ns, kind, p) => {
+const tagValues = (ns, kind, p, withExtra) => {
   let vals = [];
-  const srcs = [...(ns === 'minecraft' && kind === 'worldgen/biome' ? [path.join(RAW, 'mc_tags', p + '.json')] : []), ...LAYERS.map(L => path.join(L, 'data', ns, 'tags', kind, p + '.json'))];
+  const srcs = [...(ns === 'minecraft' && kind === 'worldgen/biome' ? [path.join(RAW, 'mc_tags', p + '.json')] : []), ...(withExtra ? [...LAYERS, ...XLAYERS] : LAYERS).map(L => path.join(L, 'data', ns, 'tags', kind, p + '.json'))];
   for (const f of srcs) if (fs.existsSync(f)) { const j = readJ(f); if (j.replace) vals = []; vals.push(...j.values); }
   return vals;
 };
@@ -42,6 +44,7 @@ for (const lc of ['en_us', 'ko_kr']) for (const L of LAYERS) {
     try { Object.assign(lang, readJ(f)); } catch { Object.assign(lang, JSON.parse(fs.readFileSync(f, 'utf8').replace(/^﻿/, '').replace(/"\s*\n(\s*)"/g, '",\n$1"'))); }
   }
 }
+lang['item.legendarymonuments.origin_ingot'] ??= 'Origin Ingot'; // 모드에 아이템은 있는데 이름(언어 파일)이 빠져 있음
 const mcLang = readJ(path.join(RAW, 'mc_ko_kr.json'));
 const sd = readJ(path.join(RAW, 'moves.json'));
 
@@ -238,11 +241,11 @@ for (const id of used) {
 }
 
 // ---------- recipes ----------
-const RTYPE = { 'minecraft:crafting_shaped': '조합대', 'minecraft:crafting_shapeless': '조합대', 'minecraft:smelting': '화로', 'minecraft:blasting': '용광로', 'minecraft:smoking': '훈연기', 'minecraft:campfire_cooking': '모닥불', 'minecraft:stonecutting': '석재 절단기', 'minecraft:smithing_transform': '대장장이 작업대', 'cobblemon:brewing_stand': '양조기', 'cobblemon:cooking_pot': '모닥불 냄비', 'cobblemon:cooking_pot_shapeless': '모닥불 냄비',
+const RTYPE = { 'minecraft:crafting_shaped': '조합대', 'minecraft:crafting_shapeless': '조합대', 'minecraft:smelting': '화로', 'minecraft:blasting': '용광로', 'minecraft:smoking': '훈연기', 'minecraft:campfire_cooking': '모닥불', 'minecraft:stonecutting': '석재 절단기', 'minecraft:smithing_transform': '대장장이 작업대', 'cobblemon:brewing_stand': '양조기', 'cobblemon:cooking_pot': '모닥불 냄비', 'cobblemon:cooking_pot_shapeless': '모닥불 냄비', 'lumymon:stark_forging': '강철산 용광로',
   // 배낭 모드: 모양은 일반 조합대 레시피와 같고, 이전 배낭의 내용물을 유지하는 것만 다름
   'sophisticatedbackpacks:basic_backpack': '조합대', 'sophisticatedbackpacks:backpack_upgrade': '조합대', 'sophisticatedcore:upgrade_next_tier': '조합대', 'sophisticatedbackpacks:smithing_backpack_upgrade': '대장장이 작업대' };
 // 작업대 이름 -> 그 작업대 아이템 (레시피 머리글 그림용)
-const STATION = { 조합대: 'minecraft:crafting_table', 화로: 'minecraft:furnace', 용광로: 'minecraft:blast_furnace', 훈연기: 'minecraft:smoker', 모닥불: 'minecraft:campfire', '석재 절단기': 'minecraft:stonecutter', '대장장이 작업대': 'minecraft:smithing_table', 양조기: 'minecraft:brewing_stand', '모닥불 냄비': 'cobblemon:campfire_pot_red' };
+const STATION = { 조합대: 'minecraft:crafting_table', 화로: 'minecraft:furnace', 용광로: 'minecraft:blast_furnace', 훈연기: 'minecraft:smoker', 모닥불: 'minecraft:campfire', '석재 절단기': 'minecraft:stonecutter', '대장장이 작업대': 'minecraft:smithing_table', 양조기: 'minecraft:brewing_stand', '모닥불 냄비': 'cobblemon:campfire_pot_red', '강철산 용광로': 'lumymon:stark_forge' };
 // 아이템 키: 코블몬 건 접두어 없이, 애드온 건 "ns:id"
 const ikey = id => id.replace(/^cobblemon:/, '');
 const ITEM_NS = ['cobblemon', 'mega_showdown', 'zamega', 'legendarymonuments'];
@@ -319,7 +322,7 @@ function recipeOf(r) {
 Object.values(STATION).forEach(icon);
 // 모든 레시피를 결과물별로 모아둠 (바닐라·TMCraft 포함)
 const allR = new Map();
-for (const { f } of dataFiles('recipe')) {
+for (const { f } of dataFiles('recipe', null, true)) {
   const r = readJ(f), out = r.result?.id || r.result?.item;
   if (out && RTYPE[r.type]) { const k = ikey(out); if (!allR.has(k)) allR.set(k, []); allR.get(k).push(r); }
 }
@@ -361,6 +364,11 @@ const GYM_TRADES = dataFiles('trades', 'lumymon').flatMap(({ f }) => readJ(f).ti
   .map(t => [t.cost_a.name, t.result.functions?.find(x => x.destination)?.destination]).filter(([, tag]) => tag);
 const GYM_TABLES = ['kanto', 'nether', 'end'].map(r => `lumymon:${r}_cartography_table`);
 const GYM_ITEMS = [...GYM_TRADES.map(t => t[0]), ...GYM_TABLES];
+// ---------- 전설 포켓몬: legends.js(손으로 쓴 내용)에 나오는 아이템도 레시피 수집 대상 ----------
+const LG = require('./legends.js');
+const LG_COMMON = ['poke_radar', 'locator_chip', 'battle_seeker', 'nether_cartography_table', 'end_cartography_table', 'distortion_cartography_table'].map(x => 'lumymon:' + x);
+const LG_ITEMS = [...new Set([...[...JSON.stringify(LG).matchAll(/\{([a-z_]+:[a-z0-9_]+)\}/g)].map(m => m[1]),
+  ...LG.list.flatMap(e => [e.radar, ...e.need.map(n => n[0]), ...(e.gim || []).map(g => g[0]), ...(e.via || []).map(v => v[2])]), ...LG.plates.map(p => 'mega_showdown:' + p[0]), ...LG_COMMON].filter(Boolean))];
 
 // ---------- TM (TMCraft: 조합대에서 빈 디스크 + 재료로 tm_<기술> 제작. 코블벌스 데이터팩이 레시피를 덮어씀) ----------
 for (const { rel, f } of dataFiles('recipe', 'tmcraft')) {
@@ -373,7 +381,7 @@ for (const { rel, f } of dataFiles('recipe', 'tmcraft')) {
   const queue = [...allR.keys()].filter(k => ITEM_NS.includes(nsOf(k)));
   Object.values(moves).forEach(m => m[10]?.ik.forEach(k => k && queue.push(k)));
   TOOLS.forEach(([, , rows]) => rows.forEach(([id]) => queue.push(id)));
-  queue.push(...GYM_ITEMS);
+  queue.push(...GYM_ITEMS, ...LG_ITEMS);
   const done = new Set();
   while (queue.length) {
     const k = queue.pop();
@@ -419,6 +427,12 @@ for (const [, , rows] of TOOLS) for (const [id] of rows) {
 
 // 관장 탐색 아이템·지도 제작대 (lumymon도 위 목록에 안 잡힘)
 for (const id of GYM_ITEMS) { items[id] ??= [itemKo(id), '관장 찾기', (lang[`tooltip.lumymon.${id.split(':')[1]}`] ?? '').replace(/§./g, '')]; icon(id); }
+// 전설 탭 아이템 (소환 아이템·레이더 등). 이름이 없으면 legends.js 오타라서 멈춤
+for (const id of LG_ITEMS) {
+  const [ns, n] = id.split(':');
+  if (!lang[`item.${ns}.${n}`] && !lang[`block.${ns}.${n}`]) throw new Error('legends.js: 없는 아이템 ' + id);
+  items[ikey(id)] ??= [itemKo(id), '전설 포켓몬', (lang[`tooltip.${ns}.${n}`] ?? '').replace(/§./g, '')]; icon(id);
+}
 
 // ---------- fossils / berries ----------
 for (const { f } of dataFiles('fossils', 'cobblemon')) {
@@ -599,6 +613,46 @@ const gyms = GYM_TRADES.map(([item, tag]) => {
   };
 }).sort((a, b) => topLv(a.tr[0][1]) - topLv(b.tr[0][1]));
 
+// ---------- 전설 포켓몬: 구조물 파일에서 바이옴·차원, 트레이너 파일에서 이름·레벨을 채움 ----------
+// Terralith 바이옴은 한국어 번역이 없어서 직접 옮김 (게임 F3 화면에는 terralith:snowy_badlands 처럼 영어 id로 나옴)
+const TERRA_KO = { snowy_badlands: '눈 덮인 악지', lush_desert: '무성한 사막', alpine_highlands: '고산 고원', blooming_plateau: '꽃 핀 고원', sakura_grove: '벚꽃 숲', sakura_valley: '벚꽃 계곡', glacial_chasm: '빙하 협곡', arid_highlands: '메마른 고원', wintry_lowlands: '겨울 저지대', cold_shrubland: '추운 관목지', hot_shrubland: '더운 관목지', steppe: '스텝 초원', desert_oasis: '사막 오아시스' };
+const lgStruct = Object.fromEntries(dataFiles('worldgen/structure', null, true).map(x => [x.ns + ':' + x.rel.replace(/\.json$/, ''), x.f]));
+const titleEn = id => id.split(/[:/]/).pop().replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+const lgBiomes = b => {
+  if (!b.startsWith('#')) return [b.includes(':') ? b : 'minecraft:' + b];
+  if (b === '#cobblemon:is_overworld') return [b];
+  const [ns, p] = b.slice(1).split(':');
+  return tagValues(ns, 'worldgen/biome', p, true).flatMap(v => lgBiomes(typeof v === 'string' ? v : v.id));
+};
+const lgWhere = st => {
+  if (!lgStruct[st]) throw new Error('legends.js: 없는 구조물 ' + st);
+  const bs = [].concat(readJ(lgStruct[st]).biomes).flatMap(lgBiomes);
+  if (!bs.length) throw new Error('legends.js: 바이옴을 못 읽음 ' + st);
+  const ko = b => b.startsWith('#') ? '오버월드 어디든' : b.includes('distortion') ? '왜곡세계' : b.startsWith('terralith:') ? (TERRA_KO[b.slice(10)] ?? titleEn(b)) : biomeKo(b.split(':')[1]);
+  const en = b => b.startsWith('#') ? '' : b.includes('distortion') ? 'Distortion World' : titleEn(b) + (b.startsWith('terralith:') ? ' (Terralith)' : '');
+  const dim = bs.some(b => /nether_wastes|crimson|warped|soul_sand|basalt/.test(b)) ? '네더' : bs.some(b => /:(end_|small_end_|the_end)/.test(b)) ? '엔드' : bs.some(b => b.includes('distortion')) ? '왜곡세계' : '';
+  return { st, bi: bs.map(ko).join(' · '), en: bs.map(en).filter(Boolean).join(' · '), dim };
+};
+// {@트레이너} -> "게임 표기 이름 · 최고 Lv N", {ns:item} -> {아이템 키}
+const lgT = s => s.replace(/\{@([a-z0-9_]+)\}/g, (m, id) => { if (!rctTrainers[id]) throw new Error('legends.js: 없는 트레이너 ' + id); const [n, team] = teamOf(id); return `${n} · 최고 Lv ${topLv(team)}`; })
+  .replace(/\{([a-z_]+:[a-z0-9_]+)\}/g, (m, id) => `{${ikey(id)}}`);
+// 레이드 굴 보스 중 전설 계열 (6·7단계). 폼만 다른 보스는 같은 종으로 묶음
+const raidBoss = {};
+for (const { f } of dataFiles('raid/boss', 'cobblemonraiddens')) {
+  const j = readJ(f), k = String(j.pokemon?.species ?? '').replace(/^cobblemon:/, ''), tier = { TIER_SIX: 6, TIER_SEVEN: 7 }[j.raid_tier];
+  if (tier && mons[k]?.lab) (raidBoss[tier] ??= new Set()).add(k);
+}
+const legends = {
+  stages: LG.stages, common: LG_COMMON.map(ikey), plates: LG.plates.map(([p, w]) => ['mega_showdown:' + p, w]),
+  raid: Object.fromEntries(Object.entries(raidBoss).map(([t, s]) => [t, [...s].sort((a, b) => mons[a].n - mons[b].n)])),
+  list: LG.list.map(e => {
+    for (const k of e.mons) if (!mons[k]) throw new Error('legends.js: 없는 포켓몬 ' + k);
+    return { id: e.id, s: e.s, mons: e.mons, place: e.place, ...(e.st && { w: lgWhere(e.st) }), ...(e.radar && { radar: ikey(e.radar) }), ...(e.find && { find: lgT(e.find) }),
+      ...(e.via && { via: e.via.map(([n, st, r]) => [n, lgWhere(st), ikey(r)]) }), need: e.need.map(([i, x]) => [ikey(i), lgT(x)]), steps: e.steps.map(lgT), lv: e.lv, shiny: e.shiny,
+      ...(e.note && { note: e.note.map(lgT) }), ...(e.gim && { gim: e.gim.map(([i, x]) => [ikey(i), lgT(x)]) }) };
+  }),
+};
+
 // ---------- 얻는 법: 포켓몬 드롭 · 블록 캐기 · 몹 처치 · 상자/보상 (루트 테이블) ----------
 const src = {}; // item key -> {d: [[포켓몬 키, 확률]], b: [블록], e: [몹], l: [상자·보상]}
 const addSrc = (k, t, v) => { const a = ((src[k] ??= {})[t] ??= []); if (!a.some(x => JSON.stringify(x) === JSON.stringify(v))) a.push(v); };
@@ -657,7 +711,7 @@ if (bad) process.exit(1);
 
 const order = Object.keys(mons).sort((a, b) => mons[a].n - mons[b].n || (mons[a].form ? 1 : 0) - (mons[b].form ? 1 : 0) || a.localeCompare(b));
 const types = Object.fromEntries(TYPES.map(t => [t, typeKo(t)]));
-const out = `window.DEX=${JSON.stringify({ types, moves, mons, order, abilities, natures, items, recipes, src, tools: TOOLS, ic: [...ICONS], st: Object.fromEntries(Object.entries(STATION).map(([w, id]) => [w, ikey(id)])), spawns, cfg, blabel, gyms, gt: GYM_TABLES })};`;
+const out = `window.DEX=${JSON.stringify({ types, moves, mons, order, abilities, natures, items, recipes, src, tools: TOOLS, ic: [...ICONS], st: Object.fromEntries(Object.entries(STATION).map(([w, id]) => [w, ikey(id)])), spawns, cfg, blabel, gyms, gt: GYM_TABLES, legends })};`;
 fs.writeFileSync(path.join(__dirname, 'data.js'), out);
 const cats = {}; Object.values(items).forEach(i => cats[i[1]] = (cats[i[1]] || 0) + 1);
 console.log(`Cobblemon ${VERSION}: mons ${order.length} (species ${Object.keys(species).length}), moves ${Object.keys(moves).length}, tm ${Object.values(moves).filter(m => m[10]).length}, items ${Object.keys(items).length}, recipes ${Object.keys(recipes).length}, spawns ${spawns.length}, data.js ${(out.length / 1048576).toFixed(1)} MB`);

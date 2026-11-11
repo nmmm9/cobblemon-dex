@@ -221,6 +221,41 @@ details[open] summary:before{content:"−"}
 .gy .gy-t .t{margin:1px 2px}
 .gy .mon-chip small{color:var(--muted)}
 @media(min-width:900px){.gy .gym{grid-template-columns:minmax(0,1fr) 290px}}
+/* 전설 포켓몬 탭 (요약 카드 · 한 줄 답 · 목차는 배틀 기초 탭 스타일을 같이 씀). 항목은 접힌 줄 = 이름 | 구조물 | 소환 아이템 */
+.lgd h3 small{font-size:13px;font-weight:400;margin-left:8px}
+.lgd .lg-list{max-width:1040px;border-bottom:1px solid var(--line);margin-top:14px}
+.lgd details.lg{margin:0;border-top:1px solid var(--line);scroll-margin-top:70px}
+.lgd .lg > summary{display:flex;align-items:center;gap:4px 14px;padding:9px 0;color:var(--fg)}
+.lgd .lg > summary:hover{background:var(--soft)}
+.lgd .lg-n{flex:0 0 250px;display:flex;align-items:center;min-width:0}
+.lgd .lg-n img,.lgd .lg-w td img{width:36px;height:36px;margin:-6px 2px -6px -4px;image-rendering:pixelated;flex:none;vertical-align:middle}
+.lgd .lg-n b{font-weight:600}
+.lgd .lg-p{flex:1 1 0;min-width:0;font-size:14px}
+.lgd .lg-i{flex:0 0 220px;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lgd .lg-b{display:grid;gap:14px 36px;padding:6px 0 26px 16px}
+.lgd .lg-b .kv{grid-template-columns:84px minmax(0,1fr);gap:12px 14px;max-width:none;margin:0;align-self:start;align-content:start}
+.lgd .lg-b ul,.lgd .lg-b ol{margin:0;padding-left:20px}
+.lgd .lg-b li{line-height:1.7;max-width:none}
+.lgd .lg-b li + li,.lgd .lg-b dd > div + div{margin-top:4px}
+.lgd .lg-b .tgrid{margin:0;align-content:start}
+.lgd .lg-b details{margin:0}
+.lgd .lg-b details table{max-width:420px}
+.lgd b.clk{font-weight:500;white-space:nowrap}
+.lgd b.clk .ico{margin-right:3px}
+.lgd code{background:var(--soft);border-radius:3px;padding:2px 6px;font-size:13px;overflow-wrap:anywhere}
+.lgd .badge{margin-left:0}
+.lgd .lg-w{max-width:920px}
+.lgd .lg-w tr.clk:hover td{background:var(--soft)}
+.lgd .mon-chips{max-width:920px}
+@media(min-width:1000px){.lgd .lg-b{grid-template-columns:minmax(0,1fr) 290px}}
+@media(max-width:700px){
+  .lgd .lg > summary{flex-wrap:wrap}
+  .lgd .lg-n{flex:1 1 calc(100% - 34px)}
+  .lgd .lg-p,.lgd .lg-i{flex:1 1 100%;padding-left:20px;font-size:13px;color:var(--muted)}
+  .lgd .lg-b{padding-left:0}
+  .lgd .lg-w th,.lgd .lg-w td{padding-left:4px;padding-right:4px;font-size:13px}
+  .lgd .lg-w td b{display:inline-block}
+}
 /* nav */
 .nav{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--line)}
 .nav-in{max-width:1280px;margin:0 auto;padding:0 16px;display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
@@ -359,7 +394,7 @@ h2 .bucket{font-size:inherit}
 <body>
 <nav class="nav"><div class="nav-in">
   <a class="brand" href="#">코블몬 도감</a>
-  <a data-tab="" href="#">도감</a><a data-tab="spawn" href="#/spawn">출현</a><a data-tab="moves" href="#/moves">기술</a><a data-tab="abilities" href="#/abilities">특성</a><a data-tab="items" href="#/items">아이템</a><a data-tab="types" href="#/types">상성표</a><a data-tab="guide" href="#/guide">가이드</a><a data-tab="calc" href="#/calc">계산기</a><a data-tab="battle" href="#/battle">배틀 기초</a><a data-tab="gym" href="#/gym">관장 위치</a>
+  <a data-tab="" href="#">도감</a><a data-tab="spawn" href="#/spawn">출현</a><a data-tab="moves" href="#/moves">기술</a><a data-tab="abilities" href="#/abilities">특성</a><a data-tab="items" href="#/items">아이템</a><a data-tab="types" href="#/types">상성표</a><a data-tab="guide" href="#/guide">가이드</a><a data-tab="calc" href="#/calc">계산기</a><a data-tab="battle" href="#/battle">배틀 기초</a><a data-tab="gym" href="#/gym">관장 위치</a><a data-tab="legend" href="#/legend">전설 포켓몬</a>
 </div></nav>
 <div class="wrap">
   <div class="search" id="dexbar">
@@ -739,6 +774,7 @@ const bucketHtml = b => `<span class="bucket b-${b}" title="이 희귀도 등급
 const SP = D.spawns, SP_BY = {};
 SP.forEach(s => (SP_BY[s[0]] ??= []).push(s));
 const LAB = {legendary: '전설', mythical: '환상', ultra_beast: '울트라비스트', paradox: '패러독스'};
+const lgOf = k => D.legends.list.find(e => e.mons.includes(k)); // 전설 포켓몬 탭에 만나는 법이 있는 포켓몬
 function noSpawnReason(k) {
   const m = M[k];
   const ro = w => { const c = (w.charCodeAt(w.length - 1) - 0xAC00) % 28; return w + (c > 0 && c !== 8 ? '으로' : '로'); }; // 받침(ㄹ 제외) 있으면 으로
@@ -831,7 +867,7 @@ function spawnSection(k, m) {
   if (!list.length) {
     // 변신 폼이면 기본 폼으로, 아니면 진화 전으로 링크
     const to = m.form && (m.gm || m.bo) ? D.order.find(x => M[x].en === m.en && !M[x].form) : m.pre, pre = to && M[to];
-    note += m.fossil ? '' : `<p class="lead">${esc(noSpawnReason(k))}${pre ? ` <b class="lnk" data-go="${to}" style="cursor:pointer;text-decoration:underline">${esc(fullKo(pre))} 보기</b>` : ''}</p>`;
+    note += m.fossil ? '' : `<p class="lead">${esc(noSpawnReason(k))}${pre ? ` <b class="lnk" data-go="${to}" style="cursor:pointer;text-decoration:underline">${esc(fullKo(pre))} 보기</b>` : ''}${lgOf(k) ? ` <a href="#/legend?${lgOf(k).id}" style="text-decoration:underline">만나는 법 보기</a>` : ''}</p>`;
     return note;
   }
   const rows = list.sort((a, b) => a[1] - b[1] || Object.keys(BUCKET).indexOf(a[2]) - Object.keys(BUCKET).indexOf(b[2]))
@@ -1346,6 +1382,124 @@ TABS.gym = () => {
   <h3>다음 지방</h3>
   <p>성도 · 호연 · 신오 지방은 관동 챔피언 ${josa(esc(G.at(-1).tr.at(-1)[0]), '을', '를')} 이긴 뒤에 열려요. 처음 한 명이 이기면 새 체육관이 추가되는데, 서버(월드)를 한 번 껐다 켜야 적용돼요.</p></div>`;
   $view.querySelector('.gt').addEventListener('click', e => { const j = e.target.closest('tr[data-jump]')?.dataset.jump; if (j) document.getElementById(j).scrollIntoView({behavior: 'smooth'}); });
+};
+
+// ---- 전설 포켓몬: 만나는 법 · 기믹 (build.js의 legends = legends.js에 구조물 바이옴·트레이너 레벨을 채운 것) ----
+TABS.legend = () => {
+  const L = D.legends, IT = D.items, nm = k => esc(IT[k]?.[0] || k);
+  const chip = k => IT[k] ? `<b${itAttr(k, IT[k][0])}>${ico(k)}${nm(k)}</b>` : esc(k);
+  // 낱말 끝에 받침이 있는지 (한글·숫자만 판단, 모르면 null)
+  const bat = w => { const c = (w.match(/[가-힣0-9](?=[^가-힣0-9]*$)/) || [])[0]; return !c ? null : /\d/.test(c) ? '013678'.includes(c) : (c.charCodeAt(0) - 0xAC00) % 28 > 0; };
+  const eul = w => bat(w) === null ? '을(를)' : bat(w) ? '을' : '를';
+  // 본문의 {아이템 키} -> 누르면 얻는 법이 뜨는 아이템 이름. 뒤의 "을(를)"은 이름 받침에 맞춤
+  const T = s => esc(s).replace(/\{([^}]+)\}(을\(를\))?/g, (m, k, j) => chip(k) + (j ? eul(IT[k]?.[0] || '') : ''));
+  const where = w => `${w.dim ? `<span class="badge">${w.dim}</span> ` : ''}${esc(w.bi)}${w.en ? ` <span class="muted">${esc(w.en)}</span>` : ''}`;
+  const TABLE = { 네더: 'lumymon:nether_cartography_table', 엔드: 'lumymon:end_cartography_table', '왜곡세계': 'lumymon:distortion_cartography_table' };
+  const cmd = w => `<code>/locate structure ${esc(w.st)}</code>${w.dim ? ` <span class="muted">${w.dim}에서 입력</span>` : ''}`;
+  const radar = (r, w) => `${chip(r)}${eul(IT[r]?.[0] || '')} 빈 지도와 함께 ${w.dim ? `${chip(TABLE[w.dim])}에 넣어요. ${w.dim}에 놓고 써야 해요.` : '지도 제작대에 넣어요.'}`;
+  const names = e => e.mons.map(k => esc(fullKo(M[k]))).join(' · ');
+  const box = (n, t, d) => `<div class="sbox"><i>${n}</i><b>${t}</b><span>${d}</span></div>`;
+  const lv = (id, tag, t, note) => `<h2 class="lv" id="lg-${id}"><span>${tag}</span>${t}<small>${note}</small></h2>`;
+  const TOC = [['a', '처음 볼 것', [['how', '소환하는 법'], ['find', '구조물 찾는 법']]], ['b', '구조물에서 소환', L.stages.map(([k, t]) => [k, t])], ['c', '다른 방법', [['wild', '야생 출현'], ['raid', '레이드 굴'], ['form', '폼 체인지 아이템']]]];
+
+  const entry = e => {
+    const cards = [...new Set([e.radar, ...(e.via || []).map(v => v[2]), ...e.need.map(n => n[0])])].filter(k => k && D.recipes[k]);
+    const find = [e.w && (e.radar ? radar(e.radar, e.w) : '전용 레이더가 없어요. 이 바이옴을 돌아다니며 찾아요.'), e.w && cmd(e.w), e.find && T(e.find),
+      ...(e.via || []).map(([n, w, r]) => `<span class="muted">먼저 갈 곳</span> <b>${esc(n)}</b> ${where(w)}<br>${chip(r)} · ${cmd(w)}`)].filter(Boolean);
+    const rows = [
+      ['어디서', `<b>${esc(e.place)}</b>${e.w ? `<br>${where(e.w)}` : ''}`],
+      find.length && ['찾는 법', find.map(x => `<div>${x}</div>`).join('')],
+      ['필요한 것', e.need.length ? `<ul>${e.need.map(([k, x]) => `<li>${chip(k)} <span class="muted">—</span> ${T(x)}</li>`).join('')}</ul>` : '소환 아이템이 필요 없어요.'],
+      e.id === 'arceus' && ['플레이트', `<details><summary>플레이트 18장 위치 보기</summary><table><tbody>${L.plates.map(([k, w]) => `<tr><td>${chip(k)}</td><td>${esc(w)}</td></tr>`).join('')}</tbody></table></details>`],
+      ['순서', `<ol>${e.steps.map(s => `<li>${T(s)}</li>`).join('')}</ol>`],
+      (e.lv || e.shiny) && ['나오는 모습', [e.lv && `Lv ${esc(e.lv)}`, e.shiny && `이로치 ${esc(e.shiny)}`].filter(Boolean).join(' <span class="muted">·</span> ')],
+      e.note && ['알아둘 것', `<ul>${e.note.map(s => `<li>${T(s)}</li>`).join('')}</ul>`],
+      e.gim && ['폼 · 기믹', `<ul>${e.gim.map(([k, x]) => `<li>${chip(k)} <span class="muted">—</span> ${T(x)}</li>`).join('')}</ul>`],
+      ['도감', `<div class="mon-chips">${e.mons.map(monChip).join('')}</div>`],
+    ].filter(Boolean);
+    return `<details class="lg" id="lg-${e.id}"><summary><span class="lg-n">${e.mons.slice(0, 3).map(k => `<img loading="lazy" src="${sprite(M[k].n)}" alt="" onerror="this.style.visibility='hidden'">`).join('')}<b>${names(e)}</b></span>
+      <span class="lg-p">${esc(e.place)}${e.w ? ` <span class="muted">${e.w.dim ? e.w.dim + ' · ' : ''}${esc(e.w.bi)}</span>` : ''}</span>
+      <span class="lg-i">${e.need.length ? ico(e.need[0][0]) + nm(e.need[0][0]) : '<span class="muted">아이템 없음</span>'}</span></summary>
+      <div class="lg-b"><dl class="kv">${rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>${cards.length ? tcards(cards.map(k => [k])) : ''}</div></details>`;
+  };
+
+  // 야생 출현: 출현 데이터에서 전설 계열만. 구조물 주변에서만 나오는 것(성도 3성수 등)은 위 목록에 있어서 뺌
+  const inRaid = new Set(Object.values(L.raid).flat());
+  const wild = labs => D.spawns.filter(s => labs.includes(M[s[0]]?.lab) && !s[7].some(c => c.startsWith('구조물')));
+  const wildTable = rows => `<table class="lg-w"><thead><tr><th>포켓몬</th><th>바이옴</th><th>조건</th><th class="c">레벨</th></tr></thead><tbody>${rows.map(s => `<tr class="clk" data-go="${s[0]}"><td><img loading="lazy" src="${sprite(M[s[0]].n)}" alt="" onerror="this.style.visibility='hidden'"><b>${esc(fullKo(M[s[0]]))}</b>${inRaid.has(s[0]) ? ' <span class="badge">레이드</span>' : ''}</td><td>${esc(s[5].join(' · '))}${s[4] && s[4] !== '땅' ? ` <span class="muted">${esc(s[4])}</span>` : ''}</td><td>${esc([s[2] !== 'ultra-rare' && BUCKET[s[2]] + ' 등급', ...s[7]].filter(Boolean).join(', ')) || '<span class="muted">—</span>'}</td><td class="c">${esc(s[3])}</td></tr>`).join('')}</tbody></table>`;
+  const FORM = [['mega_showdown:reveal_glass', '토네로스 · 볼트로스 · 랜드로스 · 러브로스를 영물폼으로 바꿔요.'], ['mega_showdown:dna_splicer', '큐레무를 레시라무나 제크로무와 합체시켜요 (화이트큐레무 · 블랙큐레무).'], ['mega_showdown:prison_bottle', '후파를 굴레를 벗어난 모습으로 바꿔요.'],
+    ['mega_showdown:zygarde_cube'], ['mega_showdown:reassembly_unit'], ['mega_showdown:rusted_sword', '자시안에게 지니게 하면 검왕의 모습이 돼요.'], ['mega_showdown:rusted_shield', '자마젠타에게 지니게 하면 방패왕의 모습이 돼요.'],
+    ['mega_showdown:wellspring_mask'], ['mega_showdown:hearthflame_mask'], ['mega_showdown:cornerstone_mask'], ['scroll_of_darkness'], ['scroll_of_waters']];
+  const n = new Set(L.list.flatMap(e => e.mons.map(k => M[k].n))).size; // 폼이 달라도 같은 종은 한 번만 셈
+
+  $view.innerHTML = `<div class="guide bt lgd"><h1 class="tab-head">전설 포켓몬</h1><p class="tab-desc">코블벌스에서 전설 · 환상의 포켓몬을 만나는 법이에요. 줄을 누르면 자세한 방법이 펼쳐져요.</p>
+  <div class="sum">
+    <div class="sc"><i>방법 1</i><b>구조물에서 불러내요</b><span>1~4세대 전설은 대부분 전용 구조물의 제단에 소환 아이템을 써서 만나요. ${n}종이 이 방법이에요.</span></div>
+    <div class="sc"><i>방법 2</i><b>야생에서 드물게 나와요</b><span>5세대 이후 전설은 정해진 바이옴에서 "매우 희귀" 등급으로 그냥 나와요.</span></div>
+    <div class="sc"><i>방법 3</i><b>레이드 굴 보스로 나와요</b><span>7단계 레이드 보스를 쓰러뜨리면 Lv 100으로 잡을 기회가 생겨요.</span></div>
+  </div>
+  <div class="toc"><div class="toc-in">${TOC.map(([g, t, items]) => `<span class="tj g" data-jump="lg-${g}">${t}</span>${items.map(([id, s]) => `<span class="tj s" data-jump="lg-${id}">${s}</span>`).join('')}`).join('')}</div></div>
+
+  ${lv('a', '기본', '처음 볼 것', '소환 방법은 전부 비슷해요')}
+  <h3 id="lg-how">어떻게 소환해요?</h3>
+  <p class="ans">구조물을 찾고, 소환 아이템을 구해서, 제단에 우클릭하면 돼요.</p>
+  <div class="sgrid f4">
+    ${box(1, '구조물 찾기', '전설마다 전용 구조물이 있어요. 정해진 바이옴에만 생겨요.')}
+    ${box(2, '소환 아이템 구하기', '구조물 안의 상자, 트레이너 보상, 조합 중 하나로 얻어요.')}
+    ${box(3, '제단에 쓰기', '아이템을 든 채 제단을 우클릭하면 포켓몬이 나타나요.')}
+    ${box(4, '배틀해서 잡기', '야생 포켓몬처럼 싸워서 볼을 던져요.')}
+  </div>
+  <ul>
+    <li>소환 아이템은 쓸 때마다 1개가 없어져요. 다시 구하면 또 소환할 수 있어요.</li>
+    <li>같은 포켓몬이 근처(약 60칸)에 이미 있으면 소환되지 않아요. 먼저 잡거나 쓰러뜨려요.</li>
+    <li>레벨과 개체값은 소환할 때마다 무작위로 정해져요. 이로치는 대부분 2% 확률이에요.</li>
+    <li>성도 · 호연 · 신오의 구조물은 그 지방이 열린 뒤 새로 만들어지는 땅에만 생겨요. 이미 다녀온 곳에는 없으니 멀리 나가야 해요.</li>
+  </ul>
+  <h3 id="lg-find">구조물은 어떻게 찾아요?</h3>
+  <p class="ans">포켓몬별 레이더를 빈 지도와 함께 지도 제작대에 넣으면 구조물 지도가 나와요.</p>
+  <ul>
+    <li>지도 제작대 쓰는 법은 <a class="lnk" href="#/gym">관장 위치 탭</a>과 같아요. 오버월드 구조물은 어느 지방의 지도 제작대든 돼요.</li>
+    <li>네더 · 엔드 · 왜곡세계의 구조물은 그 차원 전용 지도 제작대를 그 차원에 놓고 써야 해요.</li>
+    <li>${chip('lumymon:battle_seeker')}를 같이 넣으면 가장 가까운 곳 말고 그다음 구조물을 찾아주고, 탐색 범위도 넓어져요. 이미 다녀온 구조물을 건너뛸 때 써요.</li>
+    <li>레이더가 없는 구조물도 있어요. 그때는 바이옴을 돌아다니며 찾거나, 명령어 권한이 있으면 <code>/locate structure 구조물이름</code>을 써요. 구조물 이름은 아래 각 항목에 있어요.</li>
+  </ul>
+  <h4>레이더 재료와 차원별 지도 제작대</h4>
+  ${tcards(L.common.map(k => [k]))}
+
+  ${lv('b', '방법 1', '구조물에서 소환', '지방이 열리는 순서대로')}
+  ${L.stages.map(([k, t, when, desc]) => `<h3 id="lg-${k}">${esc(t)} <small class="muted">${esc(when)}</small></h3><p>${esc(desc)}</p><div class="lg-list">${L.list.filter(e => e.s === k).map(entry).join('')}</div>`).join('')}
+
+  ${lv('c', '방법 2 · 3', '다른 방법', '5세대 이후 전설')}
+  <h3 id="lg-wild">야생에서는 누가 나와요?</h3>
+  <p class="ans">아래 전설은 구조물 없이, 조건이 맞는 바이옴에서 그냥 나타나요.</p>
+  <p>따로 적혀 있지 않으면 전부 "매우 희귀" 등급이라 오래 기다려야 해요. 줄을 누르면 도감으로 가요. <span class="badge" style="margin-left:0">레이드</span> 표시는 레이드 굴 보스로도 나온다는 뜻이에요.</p>
+  ${wildTable(wild(['legendary', 'mythical']))}
+  <details class="ref"><summary>울트라비스트 · 패러독스 포켓몬 <span class="muted">전설은 아니지만 비슷하게 드문 포켓몬</span></summary>${wildTable(wild(['ultra_beast', 'paradox']))}</details>
+
+  <h3 id="lg-raid">레이드 굴은 어떻게 해요?</h3>
+  <p class="ans">오버월드에 드물게 생기는 레이드 굴에서 보스를 쓰러뜨리면 그 포켓몬을 잡을 기회가 생겨요.</p>
+  <ul>
+    <li>굴의 단계는 1~7단계 중 무작위예요. 전설은 7단계에서만 나오고, 7단계 굴은 100개 중 2개꼴이에요.</li>
+    <li>7단계 보스는 Lv 100이고 체력이 30배예요. 잡으면 Lv 100에 개체값 6개가 모두 최고예요.</li>
+    <li>최대 4명이 같이 들어가고, 한 사람이 포켓몬 1마리만 써요. 준 피해가 전체의 16%를 넘어야 보상을 받아요.</li>
+    <li>굴은 2시간마다 보스와 단계가 바뀌고, 그 사이 3번까지 깰 수 있어요.</li>
+    <li>7단계 보스 중에서도 전설은 드물게 걸려요. 수치는 모드팩 기본 설정이라 서버마다 다를 수 있어요.</li>
+  </ul>
+  <h4>7단계 보스로 나오는 전설 · 환상</h4><div class="mon-chips">${(L.raid[7] || []).map(monChip).join('')}</div>
+  <h4>6단계 보스로 나오는 울트라비스트 · 패러독스 <small class="muted">보스 Lv 90</small></h4><div class="mon-chips">${(L.raid[6] || []).map(monChip).join('')}</div>
+
+  <h3 id="lg-form">모습을 바꾸는 아이템은 뭐가 있어요?</h3>
+  <p class="ans">전설 중에는 아이템으로 모습이나 타입이 바뀌는 포켓몬이 많아요.</p>
+  <p>구조물에서 소환하는 전설의 아이템(주홍구슬 · 큰백금옥 등)은 위 각 항목의 "폼 · 기믹"에 있어요. 아래는 야생 · 레이드로 만나는 전설의 아이템이에요. 이름을 누르면 얻는 법이 떠요.</p>
+  ${tcards(FORM)}
+  </div>`;
+  $view.querySelector('.toc').addEventListener('click', e => {
+    const el = document.getElementById(e.target.dataset.jump);
+    if (el) el.scrollIntoView({behavior: 'smooth'});
+  });
+  // #/legend?articuno 처럼 들어오면 그 항목을 펼쳐서 보여줌 (도감 상세의 "만나는 법 보기")
+  const open = document.getElementById('lg-' + (location.hash.split('?')[1] || ''));
+  if (open && open.tagName === 'DETAILS') { open.open = true; setTimeout(() => open.scrollIntoView(), 0); } // 화면 전환 뒤 맨 위로 올리는 처리가 끝난 다음에 이동
 };
 
 // ---- 계산기: 만들 것 × 개수 -> 모을 재료 합계 ----

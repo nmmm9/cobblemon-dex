@@ -17,3 +17,9 @@ for f in "mods/Cobblemon-fabric-1.7.3+1.21.1.jar" "mods/cobblemon-additions-4.1.
   n=$((n+1)); name=$(printf "%02d_%s" $n "$(basename "$f" | sed -E 's/[-_+ ].*//')")
   7z x "$P/$f" -o"$OUT/$name" data "assets/*/lang/ko_kr.json" "assets/*/lang/en_us.json" $ART -r- -y >/dev/null && echo "$name ok"
 done
+# 지방 추가 데이터팩 (관동 챔피언 이후 차례로 켜짐): 전설 탭의 구조물·조합법 용도로만 raw/cvx/ 에 따로 둠. 다른 탭 데이터에는 안 섞임
+n=0
+rm -rf "$OUT/../cvx"
+for r in Johto Hoenn Sinnoh; do
+  n=$((n+1)); 7z x "$P/datapacks/extra/COBBLEVERSE-$r-DP.zip" -o"$OUT/../cvx/${n}_$r" data -r- -y >/dev/null && echo "cvx/${n}_$r ok"
+done

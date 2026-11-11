@@ -322,6 +322,7 @@ details[open] summary:before{content:"−"}
 .recipe .ri{font-size:13px}
 .recipe .ri span{display:inline-block;max-width:100%}
 .sp-row td{vertical-align:top}
+.sp-row td.sp-ty{width:1%;white-space:nowrap;padding-top:12px;padding-right:22px}
 .sl{display:grid;grid-template-columns:120px 1fr;gap:2px 14px;padding:6px 0}
 .sl > *{grid-column:2}
 .sl > .sl-h{grid-column:1;grid-row:1 / span 3;color:var(--muted);font-size:14px;white-space:nowrap}
@@ -333,7 +334,7 @@ th{white-space:nowrap}
 /* 폰: 출현 표는 세로로 쌓고, 기술 목록은 이름·타입·위력·TM만 */
 @media(max-width:700px){
   #sres .sp-row td{display:block;width:auto!important;padding:4px 0}
-  #sres .sp-row td:first-child{padding-top:14px;border:0}
+  #sres .sp-row td:first-child,#sres .sp-row td.sp-ty{display:inline-block;padding:14px 8px 0 0;border:0;vertical-align:middle}
   .sp5,.sp5 tbody{display:block}
   .sp5 thead{display:none}
   .sp5 tr{display:grid;grid-template-columns:auto auto 1fr;gap:2px 12px;padding:10px 0;border-bottom:1px solid var(--soft)}
@@ -911,7 +912,7 @@ TABS.spawn = () => {
     }).filter(([, a]) => a.length);
     const line = s => `<div class="sl"><span class="sl-h">Lv ${esc(s[3])} · ${esc(s[4])}</span>${bv ? "" : `<div>${whereHtml(s)}</div>`}${bv || s[7].length || s[8].length ? `<div class="cond">${condHtml(s)}</div>` : ""}</div>`;
     $('sres').innerHTML = groups.length ? groups.map(([b, arr]) => `<section style="margin-bottom:28px"><h2>${bucketHtml(b)} · ${arr.length}종</h2>
-      <table><tbody>${arr.map(([k, ss]) => `<tr class="sp-row"><td style="width:170px">${monChip(k)}</td><td>${[...new Map(ss.map(s => [line(s), s])).keys()].join('')}</td></tr>`).join('')}</tbody></table></section>`).join('')
+      <table><tbody>${arr.map(([k, ss]) => `<tr class="sp-row"><td style="width:170px">${monChip(k)}</td><td class="sp-ty">${M[k].types.map(x => tchip(x, 1)).join('')}</td><td>${[...new Map(ss.map(s => [line(s), s])).keys()].join('')}</td></tr>`).join('')}</tbody></table></section>`).join('')
       : (q ? (search($('sq').value).map(x => `<div class="row" style="grid-template-columns:200px 1fr;align-items:center">${monChip(x.k)}<span class="cond">${SP_BY[x.k] ? '지금 고른 바이옴·필터에선 안 나옴. 바이옴을 "전체"로 바꾸고 체크박스를 켜봐' : esc(noSpawnReason(x.k))}</span></div>`).join('') || '<p class="empty">그런 이름의 포켓몬 없음</p>') : '<p class="empty">조건에 맞는 출현 없음</p>');
   };
   ['sb', 'sg', 'st', 'sp', 'sy', 'ss', 'sx'].forEach(id => $(id).addEventListener('change', () => { if (id === 'sb') history.replaceState(null, '', '#/spawn?b=' + $('sb').value); draw(); }));

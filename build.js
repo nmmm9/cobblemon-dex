@@ -356,6 +356,12 @@ const TOOLS = [
     ['obc:bottle_cap_speed_withered', '타고난 스피드를 0으로. 느린 쪽이 먼저 공격하는 트릭룸 전술용']]],
 ];
 
+// ---------- 관장 위치 (코블벌스): 지도 안내인 거래표 = [탐색 아이템, 체육관 구조물 태그]. 탐색 아이템·지도 제작대도 레시피 수집 대상 ----------
+const GYM_TRADES = dataFiles('trades', 'lumymon').flatMap(({ f }) => readJ(f).tiers.flatMap(t => t.groups.flatMap(g => g.trades)))
+  .map(t => [t.cost_a.name, t.result.functions?.find(x => x.destination)?.destination]).filter(([, tag]) => tag);
+const GYM_TABLES = ['kanto', 'nether', 'end'].map(r => `lumymon:${r}_cartography_table`);
+const GYM_ITEMS = [...GYM_TRADES.map(t => t[0]), ...GYM_TABLES];
+
 // ---------- TM (TMCraft: 조합대에서 빈 디스크 + 재료로 tm_<기술> 제작. 코블벌스 데이터팩이 레시피를 덮어씀) ----------
 for (const { rel, f } of dataFiles('recipe', 'tmcraft')) {
   const id = rel.match(/^tm_([a-z0-9]+).json$/)?.[1];
@@ -367,6 +373,7 @@ for (const { rel, f } of dataFiles('recipe', 'tmcraft')) {
   const queue = [...allR.keys()].filter(k => ITEM_NS.includes(nsOf(k)));
   Object.values(moves).forEach(m => m[10]?.ik.forEach(k => k && queue.push(k)));
   TOOLS.forEach(([, , rows]) => rows.forEach(([id]) => queue.push(id)));
+  queue.push(...GYM_ITEMS);
   const done = new Set();
   while (queue.length) {
     const k = queue.pop();
@@ -409,6 +416,9 @@ for (const [, , rows] of TOOLS) for (const [id] of rows) {
   items[id] ??= [nm === n ? itemKo(id.replace(/_[a-z]+$/, '')) : nm, '가방·도구', (lang[lk + '.tooltip'] ?? '').replace(/§./g, '')];
   icon(id);
 }
+
+// 관장 탐색 아이템·지도 제작대 (lumymon도 위 목록에 안 잡힘)
+for (const id of GYM_ITEMS) { items[id] ??= [itemKo(id), '관장 찾기', (lang[`tooltip.lumymon.${id.split(':')[1]}`] ?? '').replace(/§./g, '')]; icon(id); }
 
 // ---------- fossils / berries ----------
 for (const { f } of dataFiles('fossils', 'cobblemon')) {
@@ -563,6 +573,30 @@ const cfg = {
   biomes: MC_BIOMES.map(b => [b, biomeKo(b)]),
 };
 
+// ---------- 관장 위치: 체육관 구조물(바이옴·높이) + RCT 트레이너(팀). 거래표의 구조물 태그 이름이 <지방>_<관장>_gym ----------
+const ELITE_KO = { Lorelei: '칸나', Bruno: '시바', Agatha: '국화', Lance: '목호', Blue: '그린' }; // 사천왕·챔피언은 탐색 아이템이 없어서 한국어 이름을 직접 적음
+const GYM_BIOME = { '#minecraft:has_structure/ancient_city': 'minecraft:deep_dark' }; // raw/mc_tags에 has_structure 태그가 없음
+const DIM_KO = { 'minecraft:the_nether': '네더', 'minecraft:the_end': '엔드' };
+const rctTrainers = Object.fromEntries(dataFiles('trainers', 'rctmod').map(x => [x.rel.replace(/\.json$/, ''), x.f]));
+const gymStruct = Object.fromEntries(dataFiles('worldgen/structure', 'cobbleverse').map(x => [x.rel.replace(/\.json$/, ''), x.f]));
+const teamOf = id => { const t = readJ(rctTrainers[id]); return [t.name?.literal ?? id, t.team.map(p => [resolveResult([p.species.replace(/^cobblemon:/, ''), ...(p.aspects || [])].join(' ')) ?? p.species, p.level])]; };
+const topLv = team => Math.max(...team.map(p => p[1]));
+const gyms = GYM_TRADES.map(([item, tag]) => {
+  const region = tag.split(':')[1].split('_')[0], st = tagValues('cobbleverse', 'worldgen/structure', tag.split(':')[1])[0], sid = st.split(':')[1];
+  const s = readJ(gymStruct[sid]), y = s.start_height?.absolute ?? 0;
+  // 관장은 <지방>_<구조물 이름>, 리그 구조물은 그 지방의 사천왕·챔피언 전부
+  const ids = rctTrainers[`${region}_${sid}`] ? [`${region}_${sid}`] : Object.keys(rctTrainers).filter(k => k.startsWith(region + '_league_') || k.startsWith(region + '_champion_'));
+  const tr = ids.map(teamOf).sort((a, b) => topLv(a[1]) - topLv(b[1]));
+  return {
+    ko: (lang[`tooltip.lumymon.${item.split(':')[1]}`] ?? '').match(/§.(.+?)§r/)?.[1] ?? tr[0][0], it: item, st,
+    bi: [].concat(s.biomes).map(b => tagLabel(GYM_BIOME[b] ?? (b.includes(':') ? b : 'minecraft:' + b))).join(' · '),
+    dim: DIM_KO[allR.get(item)?.[0]?.result?.components?.['lumymon:dimension_id']] ?? '',
+    // 지표에 맞춰 놓는 구조물은 start_height가 지표 기준, 아니면 절대 높이
+    at: s.project_start_to_heightmap ? (y < 0 ? `수면에서 ${-y}칸 아래 (물속)` : '') : s.type === 'minecraft:jigsaw' ? `지하 Y ${y} 근처` : '',
+    tr: tr.map(([n, team]) => [ELITE_KO[n] ?? n, team]),
+  };
+}).sort((a, b) => topLv(a.tr[0][1]) - topLv(b.tr[0][1]));
+
 // ---------- 얻는 법: 포켓몬 드롭 · 블록 캐기 · 몹 처치 · 상자/보상 (루트 테이블) ----------
 const src = {}; // item key -> {d: [[포켓몬 키, 확률]], b: [블록], e: [몹], l: [상자·보상]}
 const addSrc = (k, t, v) => { const a = ((src[k] ??= {})[t] ??= []); if (!a.some(x => JSON.stringify(x) === JSON.stringify(v))) a.push(v); };
@@ -621,7 +655,7 @@ if (bad) process.exit(1);
 
 const order = Object.keys(mons).sort((a, b) => mons[a].n - mons[b].n || (mons[a].form ? 1 : 0) - (mons[b].form ? 1 : 0) || a.localeCompare(b));
 const types = Object.fromEntries(TYPES.map(t => [t, typeKo(t)]));
-const out = `window.DEX=${JSON.stringify({ types, moves, mons, order, abilities, natures, items, recipes, src, tools: TOOLS, ic: [...ICONS], st: Object.fromEntries(Object.entries(STATION).map(([w, id]) => [w, ikey(id)])), spawns, cfg, blabel })};`;
+const out = `window.DEX=${JSON.stringify({ types, moves, mons, order, abilities, natures, items, recipes, src, tools: TOOLS, ic: [...ICONS], st: Object.fromEntries(Object.entries(STATION).map(([w, id]) => [w, ikey(id)])), spawns, cfg, blabel, gyms, gt: GYM_TABLES })};`;
 fs.writeFileSync(path.join(__dirname, 'data.js'), out);
 const cats = {}; Object.values(items).forEach(i => cats[i[1]] = (cats[i[1]] || 0) + 1);
 console.log(`Cobblemon ${VERSION}: mons ${order.length} (species ${Object.keys(species).length}), moves ${Object.keys(moves).length}, tm ${Object.values(moves).filter(m => m[10]).length}, items ${Object.keys(items).length}, recipes ${Object.keys(recipes).length}, spawns ${spawns.length}, data.js ${(out.length / 1048576).toFixed(1)} MB`);

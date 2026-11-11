@@ -202,6 +202,25 @@ details[open] summary:before{content:"−"}
 .bt .rk td b{color:var(--fg);font-size:15px;font-weight:600}
 .bt .rk th{border-bottom:1px solid var(--soft)}
 .bt h4 small{font-size:13px;font-weight:400;color:var(--muted);margin-left:6px}
+/* 관장 위치 탭 (카드 · 한 줄 답은 배틀 기초 탭 스타일을 같이 씀) */
+@media(min-width:1100px){.bt.gy{padding-right:0}}
+.gy .gt tbody tr{cursor:pointer}
+.gy .gt td{vertical-align:middle}
+.gy .gt .ico{margin-right:5px}
+.gy .gt td:nth-child(2),.gy .gt td:last-child{white-space:nowrap}
+@media(max-width:700px){.gy .gt .glv{display:block}.gy .gt th,.gy .gt td{padding-left:5px;padding-right:5px}}
+.gy .gt .badge,.gy .gym .badge{margin-left:0}
+.gy code{background:var(--soft);border-radius:3px;padding:2px 6px;font-size:13px;overflow-wrap:anywhere}
+.gy .gym{display:grid;gap:14px 36px;max-width:1040px;padding:26px 0 10px;border-top:1px solid var(--line);scroll-margin-top:70px}
+.gy h3 + .gym{border-top:0;padding-top:4px}
+.gy .gym h4{font-size:18px;margin:0 0 14px}
+.gy .gym h4 small{margin-left:10px}
+.gy .gym .kv{grid-template-columns:76px minmax(0,1fr);gap:12px 14px;max-width:none;margin:0}
+.gy .gym .tgrid{margin:0;align-content:start}
+.gy .gy-t{font-size:14px;margin-bottom:8px}
+.gy .gy-t .t{margin:1px 2px}
+.gy .mon-chip small{color:var(--muted)}
+@media(min-width:900px){.gy .gym{grid-template-columns:minmax(0,1fr) 290px}}
 /* nav */
 .nav{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--line)}
 .nav-in{max-width:1280px;margin:0 auto;padding:0 16px;display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
@@ -340,7 +359,7 @@ h2 .bucket{font-size:inherit}
 <body>
 <nav class="nav"><div class="nav-in">
   <a class="brand" href="#">코블몬 도감</a>
-  <a data-tab="" href="#">도감</a><a data-tab="spawn" href="#/spawn">출현</a><a data-tab="moves" href="#/moves">기술</a><a data-tab="abilities" href="#/abilities">특성</a><a data-tab="items" href="#/items">아이템</a><a data-tab="types" href="#/types">상성표</a><a data-tab="guide" href="#/guide">가이드</a><a data-tab="calc" href="#/calc">계산기</a><a data-tab="battle" href="#/battle">배틀 기초</a>
+  <a data-tab="" href="#">도감</a><a data-tab="spawn" href="#/spawn">출현</a><a data-tab="moves" href="#/moves">기술</a><a data-tab="abilities" href="#/abilities">특성</a><a data-tab="items" href="#/items">아이템</a><a data-tab="types" href="#/types">상성표</a><a data-tab="guide" href="#/guide">가이드</a><a data-tab="calc" href="#/calc">계산기</a><a data-tab="battle" href="#/battle">배틀 기초</a><a data-tab="gym" href="#/gym">관장 위치</a>
 </div></nav>
 <div class="wrap">
   <div class="search" id="dexbar">
@@ -1270,6 +1289,63 @@ TABS.battle = () => {
     if (el.tagName === 'DETAILS') el.open = true;
     el.scrollIntoView({behavior: 'smooth'});
   });
+};
+
+// ---- 관장 위치: 체육관이 생기는 바이옴 · 탐색 아이템 · 팀 (코블벌스 관동, build.js의 gyms) ----
+TABS.gym = () => {
+  const G = D.gyms, nm = k => esc(D.items[k]?.[0] || k), top = t => Math.max(...t.map(p => p[1]));
+  const lvOf = g => g.tr.length > 1 ? `${top(g.tr[0][1])}~${top(g.tr.at(-1)[1])}` : top(g.tr[0][1]);
+  const where = g => `${g.dim ? `<span class="badge">${g.dim}</span> ` : ''}${esc(g.bi)}${g.at ? ` <span class="muted">${esc(g.at)}</span>` : ''}`;
+  const mon = ([k, lv]) => M[k] ? monChip(k).replace(/<\/span>$/, ` <small>Lv ${lv}</small></span>`) : `<span class="mon-chip">${esc(k)} <small>Lv ${lv}</small></span>`;
+  // 팀의 절반 이상이 가진 타입 = 주 타입. 그 타입에 2배로 들어가는 공격 타입을 같이 보여줌 (팀이 섞여 있으면 생략)
+  const hint = team => {
+    const c = {}; team.forEach(([k]) => (M[k]?.types || []).forEach(t => c[t] = (c[t] || 0) + 1));
+    const t = Object.keys(c).sort((a, b) => c[b] - c[a])[0];
+    return t && c[t] * 2 >= team.length ? `<div class="gy-t">${tchip(t, 1)} 타입 위주 <span class="muted">→ 2배로 들어가는 기술</span> ${TYPES.filter(a => CH[a]?.[t] === 2).map(a => tchip(a, 1)).join('')}</div>` : '';
+  };
+  const box = (n, t, d) => `<div class="sbox"><i>${n}</i><b>${t}</b><span>${d}</span></div>`;
+  // 받침 있으면 a, 없으면 b를 붙임 (은/는, 을/를)
+  const josa = (w, a, b) => { const c = w.charCodeAt(w.length - 1) - 0xAC00; return w + (c >= 0 && c < 11172 && c % 28 ? a : b); };
+  const TABLE_FOR = ['오버월드 체육관용', '네더 체육관용 (네더에 놓고 사용)', '엔드의 리그용 (엔드에 놓고 사용)'];
+  $view.innerHTML = `<div class="guide bt gy"><h1 class="tab-head">관장 위치</h1><p class="tab-desc">관동 지방 관장 ${G.filter(g => g.tr.length === 1).length}명과 포켓몬 리그를 찾는 법. 관장은 돌아다니지 않고 체육관 건물 안에 있어요. 체육관은 정해진 바이옴에만 생기고, 좌표는 월드마다 달라요.</p>
+
+  <h3>한눈에 보기</h3>
+  <table class="gt"><thead><tr><th>순서</th><th>관장</th><th>체육관이 생기는 곳</th><th>탐색 아이템</th></tr></thead><tbody>
+    ${G.map((g, i) => `<tr data-jump="gy-${i}"><td>${g.tr.length > 1 ? '끝' : i + 1}</td><td><b>${esc(g.ko)}</b> <span class="muted glv">Lv ${lvOf(g)}</span></td><td>${where(g)}</td><td>${ico(g.it)}${nm(g.it)}</td></tr>`).join('')}
+  </tbody></table>
+  <p class="desc" style="margin-top:10px">줄을 누르면 그 관장 정보로 이동해요. Lv는 그 관장이 쓰는 포켓몬의 최고 레벨이에요. 관장은 순서대로만 도전할 수 있어요.</p>
+
+  <h3>찾는 법</h3>
+  <p class="ans">관장마다 "탐색 아이템"이 있어요. 그걸 지도 제작대에 넣으면 그 관장의 체육관 지도가 나와요.</p>
+  <div class="sgrid f4">
+    ${box(1, '탐색 아이템 만들기', '다음 관장의 탐색 아이템을 조합해요. 조합법은 아래 관장별 정보에 있어요.')}
+    ${box(2, '지도 제작대 놓기', `${josa(nm(D.gt[0]), '을', '를')} 만들어서 바닥에 놓고 우클릭해요.`)}
+    ${box(3, '빈 지도와 같이 넣기', '빈 지도와 탐색 아이템을 넣고 잠깐 기다리면 체육관 지도가 나와요.')}
+    ${box(4, '지도 따라가기', '지도에 찍힌 표시까지 가면 체육관이 있어요. 관장은 건물 안에 있어요.')}
+  </div>
+  <ul>
+    <li>근처에 체육관이 없으면 "반경 ○○ 블록 이내에서 시설을 찾을 수 없습니다"라고 떠요. 그 관장의 바이옴 쪽으로 옮겨서 다시 해요.</li>
+    <li>${G.filter(g => g.dim).map(g => `${g.tr.length > 1 ? josa(esc(g.ko), '은', '는') : esc(g.ko) + '의 체육관은'} ${g.dim}`).join(', ')}에 있어요. 그 차원에 가서 그 차원용 지도 제작대를 써야 해요.</li>
+    <li>빈 지도는 조합대에서 나침반을 종이 8장으로 둘러싸서 만들어요.</li>
+    <li>지도 제작대를 직업 없는 주민 옆에 두면 주민이 "관동지방 지도 안내인"이 돼요. 안내인에게 탐색 아이템과 빈 지도를 주고 지도를 받을 수도 있어요. 일부 마을에는 안내인이 이미 있어요.</li>
+    <li>명령어 권한이 있으면 <code>/locate structure ${esc(G[0].st)}</code>처럼 쳐서 좌표를 바로 볼 수 있어요. 관장별 명령어는 아래에 있어요.</li>
+  </ul>
+  <h4>지도 제작대 만드는 법</h4>
+  ${tcards(D.gt.map((k, i) => [k, TABLE_FOR[i]]))}
+
+  <h3>관장별 정보</h3>
+  ${G.map((g, i) => `<section class="gym" id="gy-${i}"><div>
+    <h4>${g.tr.length > 1 ? '' : i + 1 + '. '}${esc(g.ko)}<small>${g.tr.length > 1 ? '사천왕 4명 + 챔피언' : esc(g.tr[0][0])} · 최고 Lv ${lvOf(g)}</small></h4>
+    <dl class="kv">
+      <dt>생기는 곳</dt><dd>${where(g)}</dd>
+      <dt>명령어</dt><dd><code>/locate structure ${esc(g.st)}</code>${g.dim ? ` <span class="muted">${g.dim}에서 입력</span>` : ''}</dd>
+      ${g.tr.map(([n, team]) => `<dt>${g.tr.length > 1 ? esc(n) : '포켓몬'}</dt><dd>${hint(team)}<div class="mon-chips">${team.map(mon).join('')}</div></dd>`).join('')}
+    </dl>
+  </div>${tcards([[g.it]])}</section>`).join('')}
+
+  <h3>다음 지방</h3>
+  <p>성도 · 호연 · 신오 지방은 관동 챔피언 ${josa(esc(G.at(-1).tr.at(-1)[0]), '을', '를')} 이긴 뒤에 열려요. 처음 한 명이 이기면 새 체육관이 추가되는데, 서버(월드)를 한 번 껐다 켜야 적용돼요.</p></div>`;
+  $view.querySelector('.gt').addEventListener('click', e => { const j = e.target.closest('tr[data-jump]')?.dataset.jump; if (j) document.getElementById(j).scrollIntoView({behavior: 'smooth'}); });
 };
 
 // ---- 계산기: 만들 것 × 개수 -> 모을 재료 합계 ----

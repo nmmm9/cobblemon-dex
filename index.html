@@ -921,13 +921,16 @@ TABS.spawn = () => {
     const special = s => s[7].some(c => SPECIAL.test(c) || (c.startsWith('근처:') && !/^근처: (물|용암|나뭇잎|꽃)/.test(c)));
     const hits = SP.filter(s => (!bv || s[6].includes(bi)) && (!p || s[4] === p) && (!tys.size || M[s[0]].types.some(x => tys.has(x))) && (!g || (g === 'down') === under(s)) &&($('ss').checked || !s[7].includes('포케스낵 전용')) && ($('sx').checked || !special(s))
       && (!other || !s[7].includes(other) && !(other === '밤' && s[7].includes('해질녘·새벽'))) && qmatch(q, fullKo(M[s[0]]), M[s[0]].en));
-    const groups = Object.keys(BUCKET).map(b => {
-      const by = new Map(); hits.filter(s => s[2] === b).forEach(s => { if (!by.has(s[0])) by.set(s[0], []); by.get(s[0]).push(s); });
+    // 타입을 여러 개 골랐으면, 그중 2개를 다 가진 포켓몬을 희귀도와 상관없이 맨 위 묶음(b = '')으로 먼저
+    const both = s => tys.size > 1 && M[s[0]].types.filter(x => tys.has(x)).length > 1;
+    const grp = (b, arr) => {
+      const by = new Map(); arr.forEach(s => { if (!by.has(s[0])) by.set(s[0], []); by.get(s[0]).push(s); });
       return [b, [...by.entries()].sort((x, y) => M[x[0]].n - M[y[0]].n)];
-    }).filter(([, a]) => a.length);
-    const line = s => `<div class="sl"><span class="sl-h">Lv ${esc(s[3])} · ${esc(s[4])}</span>${bv ? "" : `<div>${whereHtml(s)}</div>`}${bv || s[7].length || s[8].length ? `<div class="cond">${condHtml(s)}</div>` : ""}</div>`;
-    $('sres').innerHTML = groups.length ? groups.map(([b, arr]) => `<section style="margin-bottom:28px"><h2>${bucketHtml(b)} · ${arr.length}종</h2>
-      <table><tbody>${arr.map(([k, ss]) => `<tr class="sp-row"><td style="width:170px">${monChip(k)}</td><td class="sp-ty">${M[k].types.map(x => tchip(x, 1)).join('')}</td><td>${[...new Map(ss.map(s => [line(s), s])).keys()].join('')}</td></tr>`).join('')}</tbody></table></section>`).join('')
+    };
+    const groups = [grp('', hits.filter(both)), ...Object.keys(BUCKET).map(b => grp(b, hits.filter(s => s[2] === b && !both(s))))].filter(([, a]) => a.length);
+    const line = (s, top) => `<div class="sl"><span class="sl-h">Lv ${esc(s[3])} · ${esc(s[4])}${top ? '<br>' + bucketHtml(s[2]) : ''}</span>${bv ? "" : `<div>${whereHtml(s)}</div>`}${bv || s[7].length || s[8].length ? `<div class="cond">${condHtml(s)}</div>` : ""}</div>`;
+    $('sres').innerHTML = groups.length ? groups.map(([b, arr]) => `<section style="margin-bottom:28px"><h2>${b ? bucketHtml(b) : tys.size > 2 ? '고른 타입 중 2개를 가진 포켓몬' : '고른 타입을 둘 다 가진 포켓몬'} · ${arr.length}종</h2>
+      <table><tbody>${arr.map(([k, ss]) => `<tr class="sp-row"><td style="width:170px">${monChip(k)}</td><td class="sp-ty">${M[k].types.map(x => tchip(x, 1)).join('')}</td><td>${[...new Map(ss.map(s => [line(s, !b), s])).keys()].join('')}</td></tr>`).join('')}</tbody></table></section>`).join('')
       : (q ? (search($('sq').value).map(x => `<div class="row" style="grid-template-columns:200px 1fr;align-items:center">${monChip(x.k)}<span class="cond">${SP_BY[x.k] ? '지금 고른 바이옴·필터에선 안 나옴. 바이옴을 "전체"로 바꾸고 체크박스를 켜봐' : esc(noSpawnReason(x.k))}</span></div>`).join('') || '<p class="empty">그런 이름의 포켓몬 없음</p>') : '<p class="empty">조건에 맞는 출현 없음</p>');
   };
   ['sb', 'sg', 'st', 'sp', 'ss', 'sx'].forEach(id => $(id).addEventListener('change', () => { if (id === 'sb') history.replaceState(null, '', '#/spawn?b=' + $('sb').value); draw(); }));

@@ -208,7 +208,7 @@ details[open] summary:before{content:"−"}
 .gy .gt td{vertical-align:middle}
 .gy .gt .ico{margin-right:5px}
 .gy .gt td:nth-child(2),.gy .gt td:last-child{white-space:nowrap}
-@media(max-width:700px){.gy .gt .glv{display:block}.gy .gt th,.gy .gt td{padding-left:5px;padding-right:5px}}
+@media(max-width:700px){.gy .gt .glv,.gy .gt .ben{display:block}.gy .gt th,.gy .gt td{padding-left:5px;padding-right:5px}}
 .gy .gt .badge,.gy .gym .badge{margin-left:0}
 .gy code{background:var(--soft);border-radius:3px;padding:2px 6px;font-size:13px;overflow-wrap:anywhere}
 .gy .gym{display:grid;gap:14px 36px;max-width:1040px;padding:26px 0 10px;border-top:1px solid var(--line);scroll-margin-top:70px}
@@ -1295,7 +1295,7 @@ TABS.battle = () => {
 TABS.gym = () => {
   const G = D.gyms, nm = k => esc(D.items[k]?.[0] || k), top = t => Math.max(...t.map(p => p[1]));
   const lvOf = g => g.tr.length > 1 ? `${top(g.tr[0][1])}~${top(g.tr.at(-1)[1])}` : top(g.tr[0][1]);
-  const where = g => `${g.dim ? `<span class="badge">${g.dim}</span> ` : ''}${esc(g.bi)}${g.at ? ` <span class="muted">${esc(g.at)}</span>` : ''}`;
+  const where = g => `${g.dim ? `<span class="badge">${g.dim}</span> ` : ''}${esc(g.bi)} <span class="muted ben">${esc(g.en)}${g.at ? ' · ' + esc(g.at) : ''}</span>`;
   const mon = ([k, lv]) => M[k] ? monChip(k).replace(/<\/span>$/, ` <small>Lv ${lv}</small></span>`) : `<span class="mon-chip">${esc(k)} <small>Lv ${lv}</small></span>`;
   // 팀의 절반 이상이 가진 타입 = 주 타입. 그 타입에 2배로 들어가는 공격 타입을 같이 보여줌 (팀이 섞여 있으면 생략)
   const hint = team => {

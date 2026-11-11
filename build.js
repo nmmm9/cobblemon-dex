@@ -590,6 +590,7 @@ const gyms = GYM_TRADES.map(([item, tag]) => {
   return {
     ko: (lang[`tooltip.lumymon.${item.split(':')[1]}`] ?? '').match(/§.(.+?)§r/)?.[1] ?? tr[0][0], it: item, st,
     bi: [].concat(s.biomes).map(b => tagLabel(GYM_BIOME[b] ?? (b.includes(':') ? b : 'minecraft:' + b))).join(' · '),
+    en: [].concat(s.biomes).map(b => (GYM_BIOME[b] ?? b).split(/[:/]/).pop().replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())).join(' · '), // 바닐라 바이옴은 영어 이름 = id를 띄어 쓴 것
     dim: DIM_KO[allR.get(item)?.[0]?.result?.components?.['lumymon:dimension_id']] ?? '',
     // 지표에 맞춰 놓는 구조물은 start_height가 지표 기준, 아니면 절대 높이
     at: s.project_start_to_heightmap ? (y < 0 ? `수면에서 ${-y}칸 아래 (물속)` : '') : s.type === 'minecraft:jigsaw' ? `지하 Y ${y} 근처` : '',

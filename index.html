@@ -362,6 +362,7 @@ h2 .bucket{font-size:inherit}
 .bio-d{display:inline-block;margin:0;vertical-align:top}
 .bio-d summary{padding:0}
 .bio .muted{color:var(--muted);font-weight:400}
+.bio .b-en{font-size:12px}
 .dim{display:inline-block;font-size:12px;padding:0 6px;border-radius:3px;margin:2px 4px 2px 0;border:1px solid var(--line);color:var(--muted)}
 .dim-ow{color:#2e7d32;border-color:#a5d6a7}.dim-nether{color:#b03a2e;border-color:#f1b0a8}.dim-end{color:#6a4c93;border-color:#cbb8e6}
 .tchart{width:auto;border-collapse:separate;border-spacing:2px;font-size:13px}
@@ -792,17 +793,18 @@ const NETHER = new Set(['nether_wastes','soul_sand_valley','crimson_forest','war
 const END = new Set(['the_end','end_highlands','end_midlands','small_end_islands','end_barrens','the_void']);
 const DIMS = {ow: '오버월드', nether: '네더', end: '엔드'};
 const dimOf = i => { const id = D.cfg.biomes[i][0]; return NETHER.has(id) ? 'nether' : END.has(id) ? 'end' : 'ow'; };
-// 묶음마다 한 줄: 묶음 이름 + 실제 바이옴들 (제외 조건까지 반영된 s[6] 기준). 영어 ID는 마우스 올리면
+// 묶음마다 한 줄: 묶음 이름 + 실제 바이옴들 (제외 조건까지 반영된 s[6] 기준). 바이옴마다 영어 이름(= ID를 띄어 쓴 것)을 옆에 작게
 // 바닐라 바이옴이 하나도 없는 묶음(바이옴 모드 전용)은 이 모드팩에선 안 나오니 뺌. 오버월드는 기본이라 차원 표시는 네더·엔드만
+const bEn = id => id.split('_').map(w => w[0].toUpperCase() + w.slice(1)).join(' ');
 function whereHtml(s) {
   if (s[5][0] === '바이옴 무관') return '<span class="bio"><b>바이옴 무관</b> <span class="muted">조건의 구조물 안이면 어디든</span></span>';
   const dims = Object.keys(DIMS).filter(d => d !== 'ow' && s[6].some(i => dimOf(i) === d));
   const rows = s[5].map(l => {
     const mem = (D.blabel[l] || []).filter(i => s[6].includes(i)).map(i => D.cfg.biomes[i]);
     if (!mem.length) return '';
-    const inner = mem.length === 1 && mem[0][1] === l ? '' : mem.map(([, ko]) => esc(ko)).join(', ');
+    const inner = mem.map(([id, ko]) => `${mem.length === 1 && ko === l ? '' : esc(ko) + ' '}<span class="b-en">${bEn(id)}</span>`).join(', ');
     // 바이옴이 12곳 넘는 묶음(오버월드 전체 등)은 글자 벽이 되므로 접어 둠
-    return `<span class="bio" title="F3 바이옴 ID: ${esc(mem.map(([id]) => id).join(', '))}"><b>${esc(l)}</b>${!inner ? '' : mem.length > 12 ? ` <details class="bio-d"><summary>바이옴 ${mem.length}곳 보기</summary><span class="muted">${inner}</span></details>` : ` <span class="muted">${inner}</span>`}</span>`;
+    return `<span class="bio" title="F3 바이옴 ID: ${esc(mem.map(([id]) => id).join(', '))}"><b>${esc(l)}</b>${mem.length > 12 ? ` <details class="bio-d"><summary>바이옴 ${mem.length}곳 보기</summary><span class="muted">${inner}</span></details>` : ` <span class="muted">${inner}</span>`}</span>`;
   }).join('');
   return dims.map(d => `<span class="dim dim-${d}">${DIMS[d]}</span>`).join('') + (rows || '<span class="bio muted">바이옴 모드 전용 (이 모드팩엔 없음)</span>');
 }

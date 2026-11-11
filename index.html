@@ -890,6 +890,7 @@ TABS.spawn = () => {
     <select id="sg"><option value="">지상·지하 전체</option><option value="up">지상</option><option value="down">지하·동굴</option></select>
     <select id="st"><option value="">시간 전체</option><option value="낮">낮</option><option value="밤">밤</option></select>
     <select id="sp"><option value="">위치 전체</option><option>땅</option><option>물속</option><option>수면</option><option>해저</option><option>낚시</option></select>
+    <select id="sy"><option value="">타입 전체</option>${TYPES.map(t => `<option value="${t}">${TK[t]}</option>`).join('')}</select>
     <input type="text" id="sq" placeholder="포켓몬 이름으로 거르기">
     <label><input type="checkbox" id="ss"> 포케스낵 전용 포함</label>
     <label><input type="checkbox" id="sx"> 구조물·특정 블록 조건 포함</label>
@@ -897,12 +898,12 @@ TABS.spawn = () => {
   const $ = id => document.getElementById(id);
   $('sb').value = sel;
   const draw = () => {
-    const bv = $('sb').value, bi = D.cfg.biomes.findIndex(([id]) => id === bv), t = $('st').value, p = $('sp').value, g = $('sg').value, q = norm($('sq').value);
+    const bv = $('sb').value, bi = D.cfg.biomes.findIndex(([id]) => id === bv), t = $('st').value, p = $('sp').value, g = $('sg').value, ty = $('sy').value, q = norm($('sq').value);
     const other = t === '낮' ? '밤' : t === '밤' ? '낮' : null;
     const under = s => s[7].includes('햇빛 안 드는 곳') || s[7].includes('하늘 안 보이는 곳');
     const SPECIAL = /^(구조물|바닥):|도시|폐허|사원|대저택|차원문|고대 도시|요새|네더 화석|레드스톤|거미줄|소금|슬라임 청크/;
     const special = s => s[7].some(c => SPECIAL.test(c) || (c.startsWith('근처:') && !/^근처: (물|용암|나뭇잎|꽃)/.test(c)));
-    const hits = SP.filter(s => (!bv || s[6].includes(bi)) && (!p || s[4] === p) && (!g || (g === 'down') === under(s)) &&($('ss').checked || !s[7].includes('포케스낵 전용')) && ($('sx').checked || !special(s))
+    const hits = SP.filter(s => (!bv || s[6].includes(bi)) && (!p || s[4] === p) && (!ty || M[s[0]].types.includes(ty)) && (!g || (g === 'down') === under(s)) &&($('ss').checked || !s[7].includes('포케스낵 전용')) && ($('sx').checked || !special(s))
       && (!other || !s[7].includes(other) && !(other === '밤' && s[7].includes('해질녘·새벽'))) && qmatch(q, fullKo(M[s[0]]), M[s[0]].en));
     const groups = Object.keys(BUCKET).map(b => {
       const by = new Map(); hits.filter(s => s[2] === b).forEach(s => { if (!by.has(s[0])) by.set(s[0], []); by.get(s[0]).push(s); });
@@ -913,7 +914,7 @@ TABS.spawn = () => {
       <table><tbody>${arr.map(([k, ss]) => `<tr class="sp-row"><td style="width:170px">${monChip(k)}</td><td>${[...new Map(ss.map(s => [line(s), s])).keys()].join('')}</td></tr>`).join('')}</tbody></table></section>`).join('')
       : (q ? (search($('sq').value).map(x => `<div class="row" style="grid-template-columns:200px 1fr;align-items:center">${monChip(x.k)}<span class="cond">${SP_BY[x.k] ? '지금 고른 바이옴·필터에선 안 나옴. 바이옴을 "전체"로 바꾸고 체크박스를 켜봐' : esc(noSpawnReason(x.k))}</span></div>`).join('') || '<p class="empty">그런 이름의 포켓몬 없음</p>') : '<p class="empty">조건에 맞는 출현 없음</p>');
   };
-  ['sb', 'sg', 'st', 'sp', 'ss', 'sx'].forEach(id => $(id).addEventListener('change', () => { if (id === 'sb') history.replaceState(null, '', '#/spawn?b=' + $('sb').value); draw(); }));
+  ['sb', 'sg', 'st', 'sp', 'sy', 'ss', 'sx'].forEach(id => $(id).addEventListener('change', () => { if (id === 'sb') history.replaceState(null, '', '#/spawn?b=' + $('sb').value); draw(); }));
   $('sq').addEventListener('input', draw);
   draw();
 };

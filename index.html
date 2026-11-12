@@ -1057,7 +1057,7 @@ TABS.items = () => {
   const IT = D.items, ids = Object.keys(IT).sort((a, b) => IT[a][0].localeCompare(IT[b][0]));
   const cats = ['전체', ...[...new Set(ids.map(id => IT[id][1]))].sort((a, b) => (a === '기타') - (b === '기타') || a.localeCompare(b))];
   let cat = '전체';
-  $view.innerHTML = `<h1 class="tab-head">아이템</h1><p class="tab-desc">행을 누르면 얻는 법: 제작법, 캐는 블록과 그 블록이 있는 곳, 드롭, 상자·보상. 만들 수 없는 아이템·블록도 들어 있음. 진화 아이템은 그걸로 진화하는 포켓몬도 표시.</p>
+  $view.innerHTML = `<h1 class="tab-head">아이템</h1><p class="tab-desc">행을 누르면 얻는 법: 제작법, 캐는 블록과 그 블록이 있는 곳, 드롭, 상자·보상. 만들 수 없는 아이템·블록과, 포켓몬이 떨어뜨리는 바닐라 아이템(가죽·뼈 등)도 들어 있음. 진화 아이템은 그걸로 진화하는 포켓몬도 표시.</p>
   <div class="filters"><input type="text" id="iq" placeholder="아이템 이름, 설명, 얻는 곳 (예: 메가스톤, 광석, 프리져의 탑)"></div>
   <div class="chips" id="ic" style="margin:-6px 0 18px">${cats.map(c => `<span class="chip sm ${c === cat ? 'cur' : ''}" data-c="${c}">${esc(c)}</span>`).join('')}</div>
   <div class="list" id="il"></div>`;

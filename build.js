@@ -814,6 +814,10 @@ Object.assign(bwhere, {
   'mega_showdown:mega_stone_crystal': ['지하 Y -19~5 의 "메가스톤 정동" 안에 1개. 정동은 메가운석 블록으로 된 13칸 크기 덩어리'],
   'mega_showdown:keystone_ore': ['지하 Y -32~-20 의 "메가운석" 안에 1개. 메가운석 블록으로 된 13칸 크기 덩어리'],
 });
+// 이 모드팩이 없앤 바닐라 몹 (MobsBeGone 설정, extract-cv.sh 가 raw/ 로 복사). 그 몹 드롭·그 몹이 있어야 하는 보상은 출처에서 뺌
+const GONE = new Set(fs.existsSync(path.join(RAW, 'mobsbegone-blacklist.json')) ? readJ(path.join(RAW, 'mobsbegone-blacklist.json')) : []);
+const MOB_LT = { 'minecraft:gameplay/piglin_bartering': 'minecraft:piglin', 'minecraft:gameplay/cat_morning_gift': 'minecraft:cat', 'minecraft:gameplay/sniffer_digging': 'minecraft:sniffer' };
+const gone = {}; // 아이템 키 -> 없어진 몹 이름들
 const srcB = {}; // 아이템 키 -> Map(블록이 있는 곳 -> [블록 이름]). 루프가 끝나면 src[k].b 로 옮김
 for (const id of Object.keys(LT)) {
   if (refd.has(id)) continue;
@@ -824,11 +828,18 @@ for (const id of Object.keys(LT)) {
     const b = ikey(ns + ':' + p.slice(7)), nm = itemKo(b), w = bwhere[b] ? bwhere[b].slice(0, 2).join(' / ') : '';
     its.forEach(k => { if (k !== b || LT[id].crop) ((srcB[k] ??= new Map()).get(w) ?? srcB[k].set(w, []).get(w)).push(nm + (k === b ? ' (다 자라면 수확)' : '')); });
   }
-  else if (p.startsWith('entities/')) { if (ns === 'minecraft') { const nm = mcLang['entity.minecraft.' + p.slice(9).split('/')[0]] ?? p.slice(9); its.forEach(k => addSrc(k, 'e', nm)); } }
+  else if (p.startsWith('entities/')) { if (ns === 'minecraft') { const mob = p.slice(9).split('/')[0], nm = mcLang['entity.minecraft.' + mob] ?? mob; its.forEach(k => GONE.has('minecraft:' + mob) ? (gone[k] ??= new Set()).add(nm) : addSrc(k, 'e', nm)); } }
+  else if (GONE.has(MOB_LT[id] ?? (p.startsWith('gameplay/hero_of_the_village') ? 'minecraft:pillager' : ''))) continue; // 레이드(약탈자)·피글린·고양이·스니퍼가 없음
   else if (ns === 'rctmod') its.forEach(k => addSrc(k, 'l', '트레이너 대결 보상')); // 트레이너별 표가 수백 개라 하나로
   else if (!/^(equipment|shearing|pots|dispensers|placeholder)/.test(p)) its.forEach(k => addSrc(k, 'l', ltLabel(id)));
 }
 for (const [k, m] of Object.entries(srcB)) for (const [w, names] of m) addSrc(k, 'b', [...new Set(names)].join(' · ') + (w ? ' — ' + w : ''));
+// 포켓몬이 떨어뜨리는 바닐라 아이템도 아이템 탭에: 바닐라 몹이 없어서 가죽·뼈·화약 같은 건 포켓몬한테서 얻어야 함
+// 없어진 몹만 떨구던 것(블레이즈 막대기 등)도 넣음. 아이템 모델이 없는 건 드롭 표의 오타(raw_cod, minecraft:oran_berry 등)라 뺌
+for (const k of new Set([...Object.keys(src), ...Object.keys(gone)])) if (k.startsWith('minecraft:') && (src[k]?.d || gone[k]) && !items[k] && assetFile('minecraft', `models/item/${k.slice(10)}.json`)) {
+  items[k] = [itemKo(k), '바닐라', gone[k] ? `이 모드팩엔 ${[...gone[k]].slice(0, 3).join('·')} 같은 바닐라 몹이 안 나옴${src[k]?.d ? '. 포켓몬이 떨어뜨림' : ''}` : ''];
+  icon(k);
+}
 // 도감에서 보여줄 아이템(아이템 탭·레시피 재료·결과물·기믹)만 남기고, 목록이 길면 자름
 const shown = new Set([...Object.keys(items), ...Object.keys(recipes), ...Object.values(recipes).flat().flatMap(r => [...r.ik, ...(r.gk || []).flat()]),
   ...Object.values(moves).flatMap(m => m[10] ? [...m[10].ik, ...(m[10].gk || []).flat()] : [])].filter(Boolean));

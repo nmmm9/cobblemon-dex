@@ -703,12 +703,17 @@ const ltItems = (id, seen = new Set()) => { if (seen.has(id) || !LT[id]) return 
 const LT_KO = { chests: '', village: '마을', villages: '마을', desert_pyramid: '사막 사원', jungle_temple: '정글 사원', simple_dungeon: '던전', abandoned_mineshaft: '폐광', shipwreck_treasure: '난파선 보물', shipwreck_supply: '난파선 보급품', shipwreck_map: '난파선 지도', buried_treasure: '묻힌 보물', ruined_portal: '파괴된 차원문', bastion_treasure: '보루 보물', bastion_other: '보루', bastion_bridge: '보루 다리', bastion_hoglin_stable: '호글린 우리', nether_bridge: '네더 요새', end_city_treasure: '엔드 시티', stronghold_corridor: '요새 복도', stronghold_crossing: '요새 교차로', stronghold_library: '요새 서재', ancient_city: '고대 도시', ancient_city_ice_box: '고대 도시 얼음 상자', trial_chambers: '시련의 회당', woodland_mansion: '삼림 대저택', pillager_outpost: '약탈자 전초기지', igloo_chest: '이글루', underwater_ruin_big: '큰 바다 폐허', underwater_ruin_small: '작은 바다 폐허', spawn_bonus_chest: '보너스 상자', archaeology: '고고학(붓질)', desert_well: '사막 우물', ocean_ruin_cold: '차가운 바다 폐허', ocean_ruin_warm: '따뜻한 바다 폐허', trail_ruins_common: '오솔길 폐허', trail_ruins_rare: '오솔길 폐허(희귀)', gameplay: '', inject: '', fishing: '낚시', fish: '물고기', treasure: '보물', junk: '잡동사니', piglin_bartering: '피글린 물물교환', hero_of_the_village: '마을의 영웅 선물', cat_morning_gift: '고양이 아침 선물', sniffer_digging: '스니퍼 발굴', ruins: '폐허', shipwreck_coves: '난파선 만', fossils: '화석', injection: '', raid: '레이드', structures: '구조물', gilded_chests: '금빛 상자', village_weaponsmith: '무기 대장장이', village_toolsmith: '도구 대장장이', village_armorer: '갑옷 제조인', village_cartographer: '지도 제작자', village_mason: '석공', village_shepherd: '양치기', village_butcher: '도살업자', village_fletcher: '화살 제조인', village_fisher: '어부', village_tannery: '가죽 세공인', village_temple: '성직자', village_desert_house: '사막 집', village_plains_house: '평원 집', village_taiga_house: '타이가 집', village_snowy_house: '설원 집', village_savanna_house: '사바나 집', spawners: '시련의 생성기', general: '건물 상자', attic: '다락', bedroom: '침실', kitchen: '부엌', blacksmith: '대장간', sittingroom: '거실', workshop: '작업장', support_tables: '보조 상자', archaeological_site: '고고학 유적', reward: '보상', ominous: '불길한', vault: '금고' };
 const LT_MOD = { cobblemon: '', sophisticatedbackpacks: '', minecraft: '', bca: '', mega_showdown: '메가 쇼다운 ', cobbleverse: '코블벌스 ', cobblemonraiddens: '', legendarymonuments: '전설 모뉴먼트 ' };
 const ltLabel = id => { const [ns, p] = id.split(':'); return ((LT_MOD[ns] ?? ns + ' ') + p.split('/').map(w => LT_KO[w] ?? w.replace(/_/g, ' ')).filter(Boolean).join(' · ')).trim(); };
+// 자연에 깔리지 않고 구조물 안에만 있는 블록: 어디 있는지 (메가 쇼다운 worldgen/structure 의 높이·간격, 구조물 NBT 의 블록 수로 확인. 이름은 모드 한국어 발전과제 표기)
+const BLOCK_WHERE = {
+  'mega_showdown:mega_stone_crystal': '지하 Y -19~5 의 "메가스톤 정동" 안에 1개. 정동은 메가운석 블록으로 된 13칸 크기 덩어리',
+  'mega_showdown:keystone_ore': '지하 Y -32~-20 의 "메가운석" 안에 1개. 메가운석 블록으로 된 13칸 크기 덩어리',
+};
 for (const id of Object.keys(LT)) {
   if (refd.has(id)) continue;
   const [ns, p] = id.split(':'), its = new Set(ltItems(id).map(ikey));
   if (p.startsWith('blocks/')) {
     // 광석은 떨구는 다른 아이템만. 규토리·열매·작물처럼 자라는 블록은 자기 자신도 "다 자라면 수확"
-    const b = ikey(ns + ':' + p.slice(7)), nm = itemKo(b);
+    const b = ikey(ns + ':' + p.slice(7)), nm = itemKo(b) + (BLOCK_WHERE[b] ? ` (${BLOCK_WHERE[b]})` : '');
     its.forEach(k => k !== b ? addSrc(k, 'b', nm) : LT[id].crop && addSrc(k, 'b', nm + ' (다 자라면 수확)'));
   }
   else if (p.startsWith('entities/')) { if (ns === 'minecraft') { const nm = mcLang['entity.minecraft.' + p.slice(9).split('/')[0]] ?? p.slice(9); its.forEach(k => addSrc(k, 'e', nm)); } }

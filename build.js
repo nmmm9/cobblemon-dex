@@ -273,6 +273,8 @@ const STATION = { 조합대: 'minecraft:crafting_table', 화로: 'minecraft:furn
 // 아이템 키: 코블몬 건 접두어 없이, 애드온 건 "ns:id"
 const ikey = id => id.replace(/^cobblemon:/, '');
 const ITEM_NS = ['cobblemon', 'mega_showdown', 'zamega', 'legendarymonuments'];
+// 아이템 탭에 전부 넣는 모드: 설명·제작법이 없는 아이템·블록도 포함 (아래 "그 밖의 모드 아이템" 패스). 가구·콘크리트 같은 장식 모드는 raw/ 에 안 뽑아서 대상이 아님
+const ALL_NS = [...ITEM_NS, 'lumymon', 'tmcraft', 'obc', 'cobblenav', 'rctmod', 'waystones', 'comforts', 'sophisticatedbackpacks', 'toms_storage'];
 // ---------- 아이템 그림: 아이템 모델 -> 텍스처 png 를 img/<ns>/<id>.png 로 복사 (필요한 것만) ----------
 const IMG = path.join(__dirname, 'img');
 fs.rmSync(IMG, { recursive: true, force: true });
@@ -402,7 +404,7 @@ for (const { rel, f } of dataFiles('recipe', 'tmcraft')) {
 // 코블몬·애드온 아이템 레시피 + 거기 재료로 쓰인 아이템(바닐라·빈 디스크 등)의 레시피까지 따라가며 수집
 {
   const nsOf = k => k.includes(':') ? k.split(':')[0] : 'cobblemon';
-  const queue = [...allR.keys()].filter(k => ITEM_NS.includes(nsOf(k)));
+  const queue = [...allR.keys()].filter(k => ALL_NS.includes(nsOf(k)));
   Object.values(moves).forEach(m => m[10]?.ik.forEach(k => k && queue.push(k)));
   TOOLS.forEach(([, , rows]) => rows.forEach(([id]) => queue.push(id)));
   queue.push(...GYM_ITEMS, ...LG_ITEMS);
@@ -456,6 +458,19 @@ for (const id of LG_ITEMS) {
   const [ns, n] = id.split(':');
   if (!lang[`item.${ns}.${n}`] && !lang[`block.${ns}.${n}`]) throw new Error('legends.js: 없는 아이템 ' + id);
   items[ikey(id)] ??= [itemKo(id), '전설 포켓몬', (lang[`tooltip.${ns}.${n}`] ?? '').replace(/§./g, '')]; icon(id);
+}
+
+// 그 밖의 모드 아이템·블록 전부 (설명·제작법이 없어도): 아이템 탭에서 검색해 얻는 곳을 볼 수 있게.
+// 아이템 모델이 있는 것만 넣음 (화분에 심은 것·작물 단계 같은 블록 상태, 언어 파일에만 있는 이름은 빠짐)
+for (const key of Object.keys(lang)) {
+  const m = key.match(/^(item|block)\.([a-z0-9_]+)\.([a-z0-9_]+)$/);
+  if (!m || !ALL_NS.includes(m[2])) continue;
+  const id = ikey(m[2] + ':' + m[3]);
+  if (items[id] || typeof lang[key] !== 'string' || !assetFile(m[2], `models/item/${m[3]}.json`)) continue;
+  const tip = [...['tooltip', 'tooltip1', 'tooltip_1', 'tooltip2', 'tooltip_2', 'desc', 'description'].map(x => lang[`${key}.${x}`]), lang[`tooltip.${m[2]}.${m[3]}.tooltip`], lang[`tooltip.${m[2]}.${m[3]}`]]
+    .filter(x => typeof x === 'string').join(' ').replace(/§./g, '');
+  items[id] = [lang[key], catOf[id] || (m[2] === 'legendarymonuments' ? '전설 모뉴먼트' : m[1] === 'block' ? '블록·장치' : '기타'), tip];
+  icon(id);
 }
 
 // ---------- fossils / berries ----------
@@ -703,23 +718,117 @@ const ltItems = (id, seen = new Set()) => { if (seen.has(id) || !LT[id]) return 
 const LT_KO = { chests: '', village: '마을', villages: '마을', desert_pyramid: '사막 사원', jungle_temple: '정글 사원', simple_dungeon: '던전', abandoned_mineshaft: '폐광', shipwreck_treasure: '난파선 보물', shipwreck_supply: '난파선 보급품', shipwreck_map: '난파선 지도', buried_treasure: '묻힌 보물', ruined_portal: '파괴된 차원문', bastion_treasure: '보루 보물', bastion_other: '보루', bastion_bridge: '보루 다리', bastion_hoglin_stable: '호글린 우리', nether_bridge: '네더 요새', end_city_treasure: '엔드 시티', stronghold_corridor: '요새 복도', stronghold_crossing: '요새 교차로', stronghold_library: '요새 서재', ancient_city: '고대 도시', ancient_city_ice_box: '고대 도시 얼음 상자', trial_chambers: '시련의 회당', woodland_mansion: '삼림 대저택', pillager_outpost: '약탈자 전초기지', igloo_chest: '이글루', underwater_ruin_big: '큰 바다 폐허', underwater_ruin_small: '작은 바다 폐허', spawn_bonus_chest: '보너스 상자', archaeology: '고고학(붓질)', desert_well: '사막 우물', ocean_ruin_cold: '차가운 바다 폐허', ocean_ruin_warm: '따뜻한 바다 폐허', trail_ruins_common: '오솔길 폐허', trail_ruins_rare: '오솔길 폐허(희귀)', gameplay: '', inject: '', fishing: '낚시', fish: '물고기', treasure: '보물', junk: '잡동사니', piglin_bartering: '피글린 물물교환', hero_of_the_village: '마을의 영웅 선물', cat_morning_gift: '고양이 아침 선물', sniffer_digging: '스니퍼 발굴', ruins: '폐허', shipwreck_coves: '난파선 만', fossils: '화석', injection: '', raid: '레이드', structures: '구조물', gilded_chests: '금빛 상자', village_weaponsmith: '무기 대장장이', village_toolsmith: '도구 대장장이', village_armorer: '갑옷 제조인', village_cartographer: '지도 제작자', village_mason: '석공', village_shepherd: '양치기', village_butcher: '도살업자', village_fletcher: '화살 제조인', village_fisher: '어부', village_tannery: '가죽 세공인', village_temple: '성직자', village_desert_house: '사막 집', village_plains_house: '평원 집', village_taiga_house: '타이가 집', village_snowy_house: '설원 집', village_savanna_house: '사바나 집', spawners: '시련의 생성기', general: '건물 상자', attic: '다락', bedroom: '침실', kitchen: '부엌', blacksmith: '대장간', sittingroom: '거실', workshop: '작업장', support_tables: '보조 상자', archaeological_site: '고고학 유적', reward: '보상', ominous: '불길한', vault: '금고' };
 const LT_MOD = { cobblemon: '', sophisticatedbackpacks: '', minecraft: '', bca: '', mega_showdown: '메가 쇼다운 ', cobbleverse: '코블벌스 ', cobblemonraiddens: '', legendarymonuments: '전설 모뉴먼트 ' };
 const ltLabel = id => { const [ns, p] = id.split(':'); return ((LT_MOD[ns] ?? ns + ' ') + p.split('/').map(w => LT_KO[w] ?? w.replace(/_/g, ' ')).filter(Boolean).join(' · ')).trim(); };
-// 자연에 깔리지 않고 구조물 안에만 있는 블록: 어디 있는지 (메가 쇼다운 worldgen/structure 의 높이·간격, 구조물 NBT 의 블록 수로 확인. 이름은 모드 한국어 발전과제 표기)
-const BLOCK_WHERE = {
-  'mega_showdown:mega_stone_crystal': '지하 Y -19~5 의 "메가스톤 정동" 안에 1개. 정동은 메가운석 블록으로 된 13칸 크기 덩어리',
-  'mega_showdown:keystone_ore': '지하 Y -32~-20 의 "메가운석" 안에 1개. 메가운석 블록으로 된 13칸 크기 덩어리',
-};
+// ---------- 블록이 있는 곳: 광석 생성(worldgen) + 구조물 안 ----------
+// bwhere[아이템 키] = [설명, ...]. 아이템 탭의 "있는 곳"과, 그 블록을 캐서 얻는 아이템의 "블록 캐기" 줄에 붙음
+const bwhere = {};
+const addW = (blk, t) => { const a = (bwhere[ikey(blk)] ??= []); if (!a.includes(t)) a.push(t); };
+// 광석: configured_feature(ore) 가 놓는 블록 <- placed_feature 의 높이. 코블몬 진화의 돌 광석은 has_ore/ore_<돌>_<normal|rare|nether|dripstone> 태그로 바이옴까지
+{
+  const oreOf = {}; // feature id -> [[블록, 바탕(블록 id 또는 태그)]]
+  for (const { ns, rel, f } of dataFiles('worldgen/configured_feature')) { const j = readJ(f); if (/:(scattered_)?ore$/.test(j.type)) oreOf[ns + ':' + rel.replace(/\.json$/, '')] = j.config.targets.map(t => [t.state.Name, t.target.block]); }
+  const yv = v => v.absolute ?? (v.above_bottom !== undefined ? '바닥+' + v.above_bottom : v.below_top !== undefined ? '천장-' + v.below_top : '?');
+  const agg = {}; // 블록|바이옴 글 -> [min, max, 바탕]
+  for (const { ns, rel, f } of dataFiles('worldgen/placed_feature')) {
+    const j = readJ(f), ore = typeof j.feature === 'string' && oreOf[j.feature]; if (!ore) continue;
+    const h = j.placement.find(p => p.type === 'minecraft:height_range')?.height;
+    const m = ns === 'cobblemon' && rel.match(/^ore\/([a-z]+_stone)_(upper|lower|nether|dripstone)(_rare)?\.json$/);
+    const kind = m && (m[3] ? 'rare' : /upper|lower/.test(m[2]) ? 'normal' : m[2]);
+    const bio = m ? tagValues('cobblemon', 'worldgen/biome', `has_ore/ore_${m[1]}_${kind}`).map(v => tagLabel(typeof v === 'string' ? v : v.id)).join(', ') : '';
+    const head = kind === 'nether' ? '네더' : kind === 'rare' ? `드물게: ${bio} 바이옴` : kind ? `${bio} 바이옴` : '자연 생성';
+    for (const [blk, base] of ore) {
+      const o = (agg[blk + '|' + head] ??= [h ? yv(h.min_inclusive) : null, h ? yv(h.max_inclusive) : null, base]);
+      if (h && typeof o[0] === 'number' && typeof h.min_inclusive.absolute === 'number') { o[0] = Math.min(o[0], h.min_inclusive.absolute); o[1] = Math.max(o[1], h.max_inclusive.absolute); }
+    }
+  }
+  for (const [k, [lo, hi, base]] of Object.entries(agg)) { const [blk, head] = k.split('|'); addW(blk, `${head}${base ? ` (${itemKo(base)} 속)` : ''}${typeof lo === 'number' && typeof hi === 'number' ? ` · Y ${lo}~${hi}` : ''}`); }
+}
+// 구조물: NBT 의 블록 개수. 제작법이 없는(= 찾아야 하는) 모드 블록만. 구조물 이름은 전설 탭 장소 이름 -> 아래 표 -> 드롭 표와 같은 방식(ltLabel) 순
+{
+  const nbt = buf => { // gzip 푼 구조물 NBT -> 객체 (긴 배열 내용은 버림)
+    let o = 0;
+    const str = () => { const n = buf.readUInt16BE(o); o += 2; const t = buf.toString('utf8', o, o + n); o += n; return t; };
+    const val = t => {
+      switch (t) {
+        case 1: return buf.readInt8(o++);
+        case 2: o += 2; return buf.readInt16BE(o - 2);
+        case 3: o += 4; return buf.readInt32BE(o - 4);
+        case 4: o += 8; return 0;
+        case 5: o += 4; return 0;
+        case 6: o += 8; return 0;
+        case 7: { const n = buf.readInt32BE(o); o += 4 + n; return null; }
+        case 8: return str();
+        case 9: { const tt = buf.readInt8(o++), n = buf.readInt32BE(o); o += 4; const a = []; for (let i = 0; i < n; i++) a.push(val(tt)); return a; }
+        case 10: { const c = {}; for (;;) { const tt = buf.readInt8(o++); if (!tt) return c; const k = str(); c[k] = val(tt); } }
+        case 11: { const n = buf.readInt32BE(o); o += 4 + n * 4; return null; }
+        case 12: { const n = buf.readInt32BE(o); o += 4 + n * 8; return null; }
+        default: throw new Error('nbt tag ' + t);
+      }
+    };
+    const t = buf.readInt8(o++); str(); return val(t);
+  };
+  const zlib = require('zlib');
+  const ST_NAME = { 'mega_showdown:megaroid': '메가운석', 'mega_showdown:mega_site': '메가스톤 정동' }; // 모드 한국어 발전과제 표기
+  const LG_PLACE = Object.fromEntries(LG.list.filter(e => e.st).map(e => [e.st, e.place]));
+  const stName = sid => LG_PLACE[sid] ?? ST_NAME[sid] ?? ltLabel(sid);
+  // 구조물 조각(nbt id) -> [구조물 이름, 높이]. worldgen/structure 의 start_pool 에 바로 들어 있는 조각만 (가지 조각은 경로 이름으로)
+  const poolFile = Object.fromEntries(dataFiles('worldgen/template_pool', null, true).map(x => [x.ns + ':' + x.rel.replace(/\.json$/, ''), x.f]));
+  const procFile = Object.fromEntries(dataFiles('worldgen/processor_list', null, true).map(x => [x.ns + ':' + x.rel.replace(/\.json$/, ''), x.f]));
+  const piece = {}, stLabel = {}, swapped = {}; // swapped: 블록 키 -> 조각을 놓을 때 그 블록으로 바뀌는 구조물 이름들
+  for (const { ns, rel, f } of dataFiles('worldgen/structure', null, true)) {
+    const j = readJ(f), sid = ns + ':' + rel.replace(/\.json$/, ''), pf = poolFile[j.start_pool]; if (!pf) continue;
+    const h = j.start_height, abs = v => typeof v?.absolute === 'number';
+    const y = j.project_start_to_heightmap || !h ? '' : abs(h.min_inclusive) && abs(h.max_inclusive) ? `Y ${h.min_inclusive.absolute}~${h.max_inclusive.absolute}` : abs(h) ? `Y ${h.absolute}` : '';
+    const label = stLabel[sid] = stName(sid) + (y ? ` (${y})` : '');
+    for (const el of readJ(pf).elements || []) for (const e of [el.element, ...(el.element?.elements || [])]) {
+      if (typeof e?.location !== 'string') continue;
+      piece[e.location] ??= label;
+      // 조각을 놓을 때 블록 일부를 다른 블록으로 바꾸는 규칙 (메가스톤 정동의 진화의 돌 광석, 폐허의 모으령 상자)
+      const pr = typeof e.processors === 'string' && procFile[e.processors];
+      if (pr) for (const p of readJ(pr).processors || []) for (const r of p.rules || []) if (r.output_state?.Name && !r.output_state.Name.startsWith('minecraft:')) (swapped[ikey(r.output_state.Name)] ??= new Set()).add(label);
+    }
+  }
+  for (const [k, set] of Object.entries(swapped)) (bwhere[k] ??= []).push('구조물이 생길 때 블록 일부가 이걸로 바뀜: ' + [...set].slice(0, 4).join(', ') + (set.size > 4 ? ` 외 ${set.size - 4}곳` : ''));
+  // 가지 조각(start_pool 에 없는 것)은 경로가 구조물 id 로 시작하면 그 구조물 이름
+  const stIds = Object.keys(stLabel).sort((x, y) => y.length - x.length);
+  const byPrefix = sid => { const hit = stIds.find(s => sid === s || sid.startsWith(s + '/') || sid.startsWith(s + '_')); return hit && stLabel[hit]; };
+  const walkNbt = (d, acc = []) => { if (fs.existsSync(d)) for (const e of fs.readdirSync(d, { withFileTypes: true })) { const p = path.join(d, e.name); e.isDirectory() ? walkNbt(p, acc) : e.name.endsWith('.nbt') && acc.push(p); } return acc; };
+  const found = {}; // 블록 키 -> {구조물 이름: 개수}
+  for (const L of [...LAYERS, ...XLAYERS]) {
+    const dd = path.join(L, 'data'); if (!fs.existsSync(dd)) continue;
+    for (const ns of fs.readdirSync(dd)) { const root = path.join(dd, ns, 'structure'); for (const f of walkNbt(root)) {
+      let r; try { r = nbt(zlib.gunzipSync(fs.readFileSync(f))); } catch { continue; }
+      const pal = r.palette ?? r.palettes?.[0] ?? [], cnt = {};
+      for (const blk of r.blocks || []) { const nm = pal[blk.state]?.Name; if (nm && !nm.startsWith('minecraft:')) cnt[nm] = (cnt[nm] || 0) + 1; }
+      const rel = path.relative(root, f).split(path.sep).join('/').slice(0, -4), sid = ns + ':' + rel;
+      const label = piece[sid] ?? byPrefix(sid) ?? (/^villages?[_/]/.test(rel) ? '마을' : ltLabel(ns + ':' + rel.split('/').slice(0, rel.includes('/') ? -1 : 1).slice(0, 2).join('/')));
+      for (const [blk, c] of Object.entries(cnt)) { const k = ikey(blk); if (items[k] && !recipes[k]) { const o = (found[k] ??= {}); o[label] = Math.max(o[label] || 0, c); } }
+    } }
+  }
+  for (const [k, o] of Object.entries(found)) {
+    const e = Object.entries(o).sort((x, y) => y[1] - x[1]);
+    (bwhere[k] ??= []).push('구조물 안: ' + e.slice(0, 4).map(([l, c]) => `${l} ${c}개`).join(', ') + (e.length > 4 ? ` 외 ${e.length - 4}곳` : ''));
+  }
+}
+// 손으로 쓴 설명이 더 자세한 것 (구조물 파일로 확인)
+Object.assign(bwhere, {
+  'mega_showdown:mega_stone_crystal': ['지하 Y -19~5 의 "메가스톤 정동" 안에 1개. 정동은 메가운석 블록으로 된 13칸 크기 덩어리'],
+  'mega_showdown:keystone_ore': ['지하 Y -32~-20 의 "메가운석" 안에 1개. 메가운석 블록으로 된 13칸 크기 덩어리'],
+});
+const srcB = {}; // 아이템 키 -> Map(블록이 있는 곳 -> [블록 이름]). 루프가 끝나면 src[k].b 로 옮김
 for (const id of Object.keys(LT)) {
   if (refd.has(id)) continue;
   const [ns, p] = id.split(':'), its = new Set(ltItems(id).map(ikey));
   if (p.startsWith('blocks/')) {
     // 광석은 떨구는 다른 아이템만. 규토리·열매·작물처럼 자라는 블록은 자기 자신도 "다 자라면 수확"
-    const b = ikey(ns + ':' + p.slice(7)), nm = itemKo(b) + (BLOCK_WHERE[b] ? ` (${BLOCK_WHERE[b]})` : '');
-    its.forEach(k => k !== b ? addSrc(k, 'b', nm) : LT[id].crop && addSrc(k, 'b', nm + ' (다 자라면 수확)'));
+    // 블록이 있는 곳(bwhere)이 같은 블록끼리는 한 줄로 묶음: "불꽃의돌 광석 · 심층암 불꽃의돌 광석 — 사막 … 바이옴 · Y -64~320"
+    const b = ikey(ns + ':' + p.slice(7)), nm = itemKo(b), w = bwhere[b] ? bwhere[b].slice(0, 2).join(' / ') : '';
+    its.forEach(k => { if (k !== b || LT[id].crop) ((srcB[k] ??= new Map()).get(w) ?? srcB[k].set(w, []).get(w)).push(nm + (k === b ? ' (다 자라면 수확)' : '')); });
   }
   else if (p.startsWith('entities/')) { if (ns === 'minecraft') { const nm = mcLang['entity.minecraft.' + p.slice(9).split('/')[0]] ?? p.slice(9); its.forEach(k => addSrc(k, 'e', nm)); } }
   else if (ns === 'rctmod') its.forEach(k => addSrc(k, 'l', '트레이너 대결 보상')); // 트레이너별 표가 수백 개라 하나로
   else if (!/^(equipment|shearing|pots|dispensers|placeholder)/.test(p)) its.forEach(k => addSrc(k, 'l', ltLabel(id)));
 }
+for (const [k, m] of Object.entries(srcB)) for (const [w, names] of m) addSrc(k, 'b', [...new Set(names)].join(' · ') + (w ? ' — ' + w : ''));
 // 도감에서 보여줄 아이템(아이템 탭·레시피 재료·결과물·기믹)만 남기고, 목록이 길면 자름
 const shown = new Set([...Object.keys(items), ...Object.keys(recipes), ...Object.values(recipes).flat().flatMap(r => [...r.ik, ...(r.gk || []).flat()]),
   ...Object.values(moves).flatMap(m => m[10] ? [...m[10].ik, ...(m[10].gk || []).flat()] : [])].filter(Boolean));
@@ -740,7 +849,7 @@ if (bad) process.exit(1);
 
 const order = Object.keys(mons).sort((a, b) => mons[a].n - mons[b].n || (mons[a].form ? 1 : 0) - (mons[b].form ? 1 : 0) || a.localeCompare(b));
 const types = Object.fromEntries(TYPES.map(t => [t, typeKo(t)]));
-const out = `window.DEX=${JSON.stringify({ types, moves, mons, order, abilities, natures, items, recipes, src, tools: TOOLS, ic: [...ICONS], st: Object.fromEntries(Object.entries(STATION).map(([w, id]) => [w, ikey(id)])), spawns, cfg, blabel, gyms, gt: GYM_TABLES, legends })};`;
+const out = `window.DEX=${JSON.stringify({ types, moves, mons, order, abilities, natures, items, recipes, src, bw: Object.fromEntries(Object.entries(bwhere).filter(([k]) => items[k])), tools: TOOLS, ic: [...ICONS], st: Object.fromEntries(Object.entries(STATION).map(([w, id]) => [w, ikey(id)])), spawns, cfg, blabel, gyms, gt: GYM_TABLES, legends })};`;
 fs.writeFileSync(path.join(__dirname, 'data.js'), out);
 const cats = {}; Object.values(items).forEach(i => cats[i[1]] = (cats[i[1]] || 0) + 1);
 console.log(`Cobblemon ${VERSION}: mons ${order.length} (species ${Object.keys(species).length}), moves ${Object.keys(moves).length}, tm ${Object.values(moves).filter(m => m[10]).length}, items ${Object.keys(items).length}, recipes ${Object.keys(recipes).length}, spawns ${spawns.length}, data.js ${(out.length / 1048576).toFixed(1)} MB`);

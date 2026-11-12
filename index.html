@@ -858,11 +858,25 @@ function recipeHtml(r) {
 }
 // 아이템 얻는 법: 제작 + 포켓몬 드롭 + 블록 캐기 + 몹 처치 + 상자·보상
 const SRC_T = [['d', '포켓몬 드롭'], ['b', '블록 캐기·수확'], ['e', '몹 처치'], ['l', '상자·보상']];
+// 전설 포켓몬 탭에 적어 둔 얻는 법 (소환 아이템 · 플레이트): 아이템 키 -> [[설명, 전설 항목 id]]
+const LGHOW = {};
+{
+  const eulP = w => { const c = w.charCodeAt(w.length - 1) - 0xAC00; return c >= 0 && c < 11172 && c % 28 ? '을' : '를'; };
+  const lgT = s => esc(s).replace(/\{([^}]+)\}(을\(를\))?/g, (m, k, j) => { const n = D.items[k]?.[0] || k; return esc(n) + (j ? eulP(n) : ''); });
+  const put = (id, t, lg) => (LGHOW[id.replace(/^cobblemon:/, '')] ??= []).push([t, lg]);
+  for (const e of D.legends.list) for (const [id, how] of e.need || []) put(id, `${esc(e.place)}: ${lgT(how)}`, e.id);
+  for (const [id, w] of D.legends.plates) put(id, `아르세우스 소환용 플레이트. 있는 곳: ${esc(w)}`, 'arceus');
+}
+// 블록이 있는 곳 (광석 생성 바이옴·높이, 구조물 안) + 전설 탭 설명
+const whereParts = k => (D.bw[k] ? `<div class="sub">있는 곳</div>${D.bw[k].map(t => `<p class="cond">${esc(t)}</p>`).join('')}` : '')
+  + (LGHOW[k] ? `<div class="sub">전설 포켓몬 탭의 설명</div>${LGHOW[k].map(([t, lg]) => `<p class="cond">${t} <a href="#/legend?${lg}">자세히</a></p>`).join('')}` : '');
+const hasHow = k => !!(D.recipes[k] || D.src[k] || D.bw[k] || LGHOW[k]);
 const srcParts = k => { const s = D.src[k] || {}; return SRC_T.filter(([t]) => s[t]).map(([t, h]) => `<div class="sub">${h}</div>` + (t === 'd'
   ? `<div class="mon-chips">${s.d.map(x => Array.isArray(x) ? monChip(x[0]).replace('</span>', ` <span class="muted">${esc(x[1])}</span></span>`) : `<span class="muted">${esc(x)}</span>`).join('')}</div>`
-  : `<p class="cond">${s[t].map(esc).join(', ')}</p>`)).join(''); };
+  : t === 'b' ? s.b.map(x => `<p class="cond">${esc(x)}</p>`).join('')
+  : `<p class="cond">${s[t].map(esc).join(', ')}</p>`)).join('') + whereParts(k); };
 function srcHtml(k, nm) {
-  const it = D.items[k], none = !D.recipes[k] && !D.src[k];
+  const it = D.items[k], none = !hasHow(k);
   return `<div class="srcbox" data-for="${esc(k)}"><span class="x">닫기</span><b>${ico(k)}${esc(it?.[0] || nm || k)}</b>${it?.[2] ? `<p class="muted">${esc(it[2])}</p>` : ''}
     ${D.recipes[k] ? `<div class="sub">제작</div>${D.recipes[k].map(recipeHtml).join('')}` : ''}${srcParts(k)}
     ${none ? `<p class="muted">${k.startsWith('minecraft:') ? '마인크래프트 기본 아이템. 제작법·드롭 데이터 없음 (양동이로 뜨기, 주민 거래 등)' : '얻는 방법 데이터 없음 (이벤트·상점·명령어 등)'}</p>` : ''}</div>`;
@@ -1043,14 +1057,16 @@ TABS.items = () => {
   const IT = D.items, ids = Object.keys(IT).sort((a, b) => IT[a][0].localeCompare(IT[b][0]));
   const cats = ['전체', ...[...new Set(ids.map(id => IT[id][1]))].sort((a, b) => (a === '기타') - (b === '기타') || a.localeCompare(b))];
   let cat = '전체';
-  $view.innerHTML = `<h1 class="tab-head">아이템</h1><p class="tab-desc">행을 누르면 제작법. 진화 아이템은 그걸로 진화하는 포켓몬도 표시.</p>
-  <div class="filters"><input type="text" id="iq" placeholder="아이템 이름 또는 설명 키워드"></div>
+  $view.innerHTML = `<h1 class="tab-head">아이템</h1><p class="tab-desc">행을 누르면 얻는 법: 제작법, 캐는 블록과 그 블록이 있는 곳, 드롭, 상자·보상. 만들 수 없는 아이템·블록도 들어 있음. 진화 아이템은 그걸로 진화하는 포켓몬도 표시.</p>
+  <div class="filters"><input type="text" id="iq" placeholder="아이템 이름, 설명, 얻는 곳 (예: 메가스톤, 광석, 프리져의 탑)"></div>
   <div class="chips" id="ic" style="margin:-6px 0 18px">${cats.map(c => `<span class="chip sm ${c === cat ? 'cur' : ''}" data-c="${c}">${esc(c)}</span>`).join('')}</div>
   <div class="list" id="il"></div>`;
   const cols = 'grid-template-columns:180px 90px 1fr';
   const draw = () => {
     const q = norm(document.getElementById('iq').value);
-    const rows = ids.filter(id => (cat === '전체' || IT[id][1] === cat) && qmatch(q, IT[id][0], IT[id][2]));
+    // 이름 -> 설명 -> 얻는 곳(캐는 블록·상자·있는 곳) 순으로 찾고, 이름이 맞는 것을 위에
+    const rank = id => !q || qmatch(q, IT[id][0]) ? 0 : qmatch(q, IT[id][2]) ? 1 : qmatch(q, ...(D.src[id]?.b || []), ...(D.src[id]?.l || []), ...(D.bw[id] || []), ...(LGHOW[id] || []).map(x => x[0])) ? 2 : 9;
+    const rows = ids.filter(id => cat === '전체' || IT[id][1] === cat).map(id => [rank(id), id]).filter(x => x[0] < 9).sort((a, b) => a[0] - b[0]).map(x => x[1]);
     document.getElementById('il').innerHTML = rows.map(id => `<div class="it" data-id="${id}"><div class="it-h" style="${cols}"><span>${ico(id)}${esc(IT[id][0])}</span><span class="muted">${esc(IT[id][1])}</span><span class="muted">${esc(IT[id][2])}</span></div><div class="it-b"></div></div>`).join('') || '<p class="empty">없음</p>';
   };
   document.getElementById('ic').addEventListener('click', e => { const c = e.target.closest('[data-c]'); if (!c) return; cat = c.dataset.c; document.querySelectorAll('#ic .chip').forEach(x => x.classList.toggle('cur', x === c)); draw(); });
@@ -1062,7 +1078,8 @@ TABS.items = () => {
     return `${evo.length ? `<div class="sub">이 아이템으로 진화</div><div class="mon-chips">${[...new Map(evo.map(x => [x.join(), x])).values()].map(([a, b]) => `<span style="display:inline-flex;gap:4px;align-items:center;margin-right:14px">${monChip(a)}<span class="muted">→</span>${monChip(b)}</span>`).join('')}</div>` : ''}
       ${fos.length ? `<div class="sub">복원되는 포켓몬</div><div class="mon-chips">${fos.map(monChip).join('')}</div>` : ''}
       ${gmf.length ? `<div class="sub">이 아이템으로 변신·기믹을 쓰는 포켓몬</div><div class="mon-chips">${gmf.map(monChip).join('')}</div>` : ''}
-      <div class="sub">제작법</div>${recipesOf(id)}${srcParts(id)}`;
+      <div class="sub">제작법</div>${recipesOf(id)}${srcParts(id)}
+      ${hasHow(id) ? '' : '<p class="muted">얻는 방법을 모드 데이터에서 찾지 못했어요. 명령어·이벤트나 모드 코드로만 주는 아이템일 수 있어요.</p>'}`;
   });
   document.getElementById('iq').addEventListener('input', draw);
   draw();

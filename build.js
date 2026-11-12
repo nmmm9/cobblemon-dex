@@ -215,6 +215,30 @@ for (const [sid, sp] of Object.entries(species)) {
   }
 }
 
+// ---------- 폼 그림 번호 ----------
+// PokeAPI 는 폼(메가·리전폼 등)마다 번호(10001~)가 따로 있음. raw/pokeapi/pokemon.csv (extract-cv.sh 가 받아 둠) 의 이름(charizard-mega-x)을
+// 같은 종 안에서 폼 키(charizard-megax)와 맞춰 mons[key].i 에 넣음. 못 맞춘 폼(코블벌스 전용 폼, 타입 폼 등)은 i 가 없어 기본 모습 그림을 씀
+const IMG_ALIAS = { // 이름이 달라 자동으로 못 맞추는 폼 -> PokeAPI 이름
+  'meowstic-f': 'meowstic-female', 'meowstic-mega': 'meowstic-male-mega', 'greninja-bond': 'greninja-battle-bond',
+  'zygarde-10c': 'zygarde-10-power-construct', 'zygarde-50c': 'zygarde-50-power-construct', 'magearna-megao': 'magearna-original-mega',
+  'tatsugiri-mega': 'tatsugiri-curly-mega', 'tatsugiri-megas': 'tatsugiri-stretchy-mega', 'tatsugiri-megad': 'tatsugiri-droopy-mega',
+};
+{
+  const norm = s => s.toLowerCase().replace(/[^a-z0-9]/g, ''), bySp = {}, taken = new Set();
+  for (const l of fs.readFileSync(path.join(RAW, 'pokeapi/pokemon.csv'), 'utf8').trim().split(/\r?\n/).slice(1)) {
+    const [id, ident, sp, , , , , def] = l.split(',');
+    if (def === '0') (bySp[sp] ??= []).push([norm(ident), +id]);
+  }
+  const forms = Object.keys(mons).filter(k => mons[k].form !== null), cand = k => bySp[mons[k].n] || [];
+  const take = (k, hit) => { if (hit) { mons[k].i = hit[1]; taken.add(hit[1]); } };
+  for (const k of forms) take(k, cand(k).find(r => r[0] === norm(IMG_ALIAS[k] ?? k))); // 이름이 똑같은 것 먼저
+  for (const k of forms) { // 남은 것: 한쪽 이름이 다른 쪽의 앞부분이고 후보가 하나뿐일 때만 (tauros-paldeaaqua ~ tauros-paldea-aqua-breed)
+    if (mons[k].i) continue;
+    const c = cand(k).filter(r => !taken.has(r[1]) && (r[0].startsWith(norm(k)) || norm(k).startsWith(r[0])));
+    if (c.length === 1) take(k, c[0]);
+  }
+}
+
 // ---------- moves ----------
 const used = new Set();
 for (const m of Object.values(mons)) {

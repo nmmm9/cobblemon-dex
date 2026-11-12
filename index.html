@@ -513,7 +513,7 @@ function tree(k, seen = new Set()) {
 }
 function evoHtml(t, cur) {
   const m = M[t.k];
-  const node = `<div class="node ${t.k === cur ? 'cur' : ''}" data-go="${t.k}"><img loading="lazy" src="${sprite(m.n)}" alt="" onerror="this.style.visibility='hidden'"><div class="ko">${esc(m.ko)}</div>${m.form ? `<div class="fm">${esc(m.form)}</div>` : ''}<div class="ty">${m.types.map(x => tchip(x, 1)).join('')}</div></div>`;
+  const node = `<div class="node ${t.k === cur ? 'cur' : ''}" data-go="${t.k}">${monImg(m)}<div class="ko">${esc(m.ko)}</div>${m.form ? `<div class="fm">${esc(m.form)}</div>` : ''}<div class="ty">${m.types.map(x => tchip(x, 1)).join('')}</div></div>`;
   if (!t.kids.length) return `<div class="evo">${node}</div>`;
   return `<div class="evo">${node}<div class="branches">${t.kids.map(c => `<div class="branch"><div class="how">${esc(c.how)}</div>${evoHtml(c.node, cur)}</div>`).join('')}</div></div>`;
 }
@@ -731,7 +731,7 @@ function render(k) {
   }).join('');
   $view.innerHTML = `
   <div class="head">
-    <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${m.n}.png" alt="" onerror="this.style.visibility='hidden'">
+    ${monImg(m, 1)}
     <div>
       <div class="num">#${String(m.n).padStart(4, '0')}</div>
       <h1>${esc(m.ko)}${m.form ? ` <span style="font-weight:400">${esc(m.form)}</span>` : ''}<small>${esc(m.en)}</small><button class="fav ${FAV.includes(k) ? "on" : ""}" data-fav="${k}">${favLabel(k)}</button>
@@ -785,8 +785,13 @@ $view.addEventListener('click', e => {
   at.insertAdjacentHTML('afterend', srcHtml(c.dataset.it, c.dataset.nm));
 });
 // =================== 공통 ===================
-const sprite = n => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${n}.png`;
-const monChip = k => `<span class="mon-chip" data-go="${k}"><img loading="lazy" src="${sprite(M[k].n)}" alt="" onerror="this.style.visibility='hidden'">${esc(fullKo(M[k]))}</span>`;
+// 포켓몬 그림 (PokeAPI). 폼(메가·리전폼 등)은 폼 번호(m.i, build.js 가 맞춰 둠)의 그림을 쓰고, 그 그림이 없으면 기본 모습 그림으로 바꿈
+function monImg(m, big) {
+  const u = n => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${big ? 'other/official-artwork/' : ''}${n}.png`;
+  return `<img${big ? '' : ' loading="lazy"'} src="${u(m.i || m.n)}"${m.i ? ` data-b="${u(m.n)}"` : ''} alt="" onerror="imgErr(this)">`;
+}
+function imgErr(el) { const b = el.dataset.b; if (b) { el.removeAttribute('data-b'); el.src = b; } else el.style.visibility = 'hidden'; }
+const monChip = k => `<span class="mon-chip" data-go="${k}">${monImg(M[k])}${esc(fullKo(M[k]))}</span>`;
 const BUCKET = {common: '흔함', uncommon: '드묾', rare: '희귀', 'ultra-rare': '매우 희귀'};
 const bucketHtml = b => `<span class="bucket b-${b}" title="이 희귀도 등급이 뽑힐 확률. 등급 안에서는 가중치로 다시 고름">${BUCKET[b] ?? b} ${D.cfg.world[b] ?? ''}%</span>`;
 const SP = D.spawns, SP_BY = {};
@@ -1460,7 +1465,7 @@ TABS.legend = () => {
       e.gim && ['폼 · 기믹', `<ul>${e.gim.map(([k, x]) => `<li>${chip(k)} <span class="muted">—</span> ${T(x)}</li>`).join('')}</ul>`],
       ['도감', `<div class="mon-chips">${e.mons.map(monChip).join('')}</div>`],
     ].filter(Boolean);
-    return `<details class="lg" id="lg-${e.id}"><summary><span class="lg-n">${e.mons.slice(0, 3).map(k => `<img loading="lazy" src="${sprite(M[k].n)}" alt="" onerror="this.style.visibility='hidden'">`).join('')}<b>${names(e)}</b></span>
+    return `<details class="lg" id="lg-${e.id}"><summary><span class="lg-n">${e.mons.slice(0, 3).map(k => monImg(M[k])).join('')}<b>${names(e)}</b></span>
       <span class="lg-p">${esc(e.place)}${e.w ? ` <span class="muted">${e.w.dim ? e.w.dim + ' · ' : ''}${esc(e.w.bi)}</span>` : ''}</span>
       <span class="lg-i">${e.need.length ? ico(e.need[0][0]) + nm(e.need[0][0]) : '<span class="muted">아이템 없음</span>'}</span></summary>
       <div class="lg-b"><dl class="kv">${rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>${cards.length ? tcards(cards.map(k => [k])) : ''}</div></details>`;
@@ -1469,7 +1474,7 @@ TABS.legend = () => {
   // 야생 출현: 출현 데이터에서 전설 계열만. 구조물 주변에서만 나오는 것(성도 3성수 등)은 위 목록에 있어서 뺌
   const inRaid = new Set(Object.values(L.raid).flat());
   const wild = labs => D.spawns.filter(s => labs.includes(M[s[0]]?.lab) && !s[7].some(c => c.startsWith('구조물')));
-  const wildTable = rows => `<table class="lg-w"><thead><tr><th>포켓몬</th><th>바이옴</th><th>조건</th><th class="c">레벨</th></tr></thead><tbody>${rows.map(s => `<tr class="clk" data-go="${s[0]}"><td><img loading="lazy" src="${sprite(M[s[0]].n)}" alt="" onerror="this.style.visibility='hidden'"><b>${esc(fullKo(M[s[0]]))}</b>${inRaid.has(s[0]) ? ' <span class="badge">레이드</span>' : ''}</td><td>${esc(s[5].join(' · '))}${s[4] && s[4] !== '땅' ? ` <span class="muted">${esc(s[4])}</span>` : ''}</td><td>${esc([s[2] !== 'ultra-rare' && BUCKET[s[2]] + ' 등급', ...s[7]].filter(Boolean).join(', ')) || '<span class="muted">—</span>'}</td><td class="c">${esc(s[3])}</td></tr>`).join('')}</tbody></table>`;
+  const wildTable = rows => `<table class="lg-w"><thead><tr><th>포켓몬</th><th>바이옴</th><th>조건</th><th class="c">레벨</th></tr></thead><tbody>${rows.map(s => `<tr class="clk" data-go="${s[0]}"><td>${monImg(M[s[0]])}<b>${esc(fullKo(M[s[0]]))}</b>${inRaid.has(s[0]) ? ' <span class="badge">레이드</span>' : ''}</td><td>${esc(s[5].join(' · '))}${s[4] && s[4] !== '땅' ? ` <span class="muted">${esc(s[4])}</span>` : ''}</td><td>${esc([s[2] !== 'ultra-rare' && BUCKET[s[2]] + ' 등급', ...s[7]].filter(Boolean).join(', ')) || '<span class="muted">—</span>'}</td><td class="c">${esc(s[3])}</td></tr>`).join('')}</tbody></table>`;
   const FORM = [['mega_showdown:reveal_glass', '토네로스 · 볼트로스 · 랜드로스 · 러브로스를 영물폼으로 바꿔요.'], ['mega_showdown:dna_splicer', '큐레무를 레시라무나 제크로무와 합체시켜요 (화이트큐레무 · 블랙큐레무).'], ['mega_showdown:prison_bottle', '후파를 굴레를 벗어난 모습으로 바꿔요.'],
     ['mega_showdown:zygarde_cube'], ['mega_showdown:reassembly_unit'], ['mega_showdown:rusted_sword', '자시안에게 지니게 하면 검왕의 모습이 돼요.'], ['mega_showdown:rusted_shield', '자마젠타에게 지니게 하면 방패왕의 모습이 돼요.'],
     ['mega_showdown:wellspring_mask'], ['mega_showdown:hearthflame_mask'], ['mega_showdown:cornerstone_mask'], ['scroll_of_darkness'], ['scroll_of_waters']];

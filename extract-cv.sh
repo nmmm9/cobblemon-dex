@@ -23,3 +23,5 @@ rm -rf "$OUT/../cvx"
 for r in Johto Hoenn Sinnoh; do
   n=$((n+1)); 7z x "$P/datapacks/extra/COBBLEVERSE-$r-DP.zip" -o"$OUT/../cvx/${n}_$r" data -r- -y >/dev/null && echo "cvx/${n}_$r ok"
 done
+# 폼(메가·리전폼 등) 그림 번호: PokeAPI 의 포켓몬 목록. build.js 가 폼 키와 맞춰 그림 주소를 만듦
+mkdir -p "$OUT/../pokeapi" && curl -sS -m 60 -o "$OUT/../pokeapi/pokemon.csv" "https://raw.githubusercontent.com/PokeAPI/pokeapi/master/data/v2/csv/pokemon.csv" && echo "pokeapi ok"

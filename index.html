@@ -40,6 +40,7 @@ section{margin-bottom:40px}
 h2 small{font-size:13px;font-weight:400;color:var(--muted);margin-left:8px}
 h2{font-size:16px;font-weight:600;color:var(--fg);margin:0 0 14px;padding-bottom:8px;border-bottom:1px solid var(--line)}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.head .chips{margin:6px 0 12px}
 .chip{padding:3px 10px;border:1px solid var(--line);border-radius:3px;cursor:pointer}
 .chip.cur{background:var(--fg);color:#fff;border-color:var(--fg)}
 /* evolution */
@@ -721,6 +722,7 @@ function render(k) {
   $drop.classList.remove('on'); $q.value = '';
   document.title = `${fullKo(m)} · 코블몬 도감`;
   const forms = D.order.filter(x => M[x].n === m.n && (M[x].en === m.en));
+  const stay = forms.includes($view.querySelector('.head .chips .cur')?.dataset.go); // 같은 포켓몬의 다른 폼을 보던 중이면 스크롤을 그대로 둠
   const def = defense(m), tot = m.raw.reduce((a, b) => a + b, 0);
   const off = m.types.map(t => {
     const se = TYPES.filter(d => CH[t][d] === 2), nv = TYPES.filter(d => CH[t][d] === .5), im = TYPES.filter(d => CH[t][d] === 0);
@@ -734,11 +736,11 @@ function render(k) {
     ${monImg(m, 1)}
     <div>
       <div class="num">#${String(m.n).padStart(4, '0')}</div>
+      ${forms.length > 1 ? `<div class="chips">${forms.map(x => `<span class="chip ${x === k ? 'cur' : ''}" data-go="${x}">${esc(M[x].form || '기본')}</span>`).join('')}</div>` : ''}
       <h1>${esc(m.ko)}${m.form ? ` <span style="font-weight:400">${esc(m.form)}</span>` : ''}<small>${esc(m.en)}</small><button class="fav ${FAV.includes(k) ? "on" : ""}" data-fav="${k}">${favLabel(k)}</button>
         ${m.bo ? '<span class="badge">배틀 중 폼</span>' : ''}${m.imp ? '' : '<span class="badge">코블몬 미구현</span>'}</h1>
       <div>${m.types.map(t => tchip(t)).join('')}</div>
       <div class="meta"><span title="3~255. 숫자가 클수록 잘 잡힘">포획률 <b>${m.catch}</b> (${m.catch >= 150 ? '잡기 쉬움' : m.catch >= 75 ? '보통' : m.catch >= 30 ? '잡기 어려움' : '매우 어려움'})</span><span>능력치 합 <b>${tot}</b></span><span title="${ROLE_TIP[role(m.stats).main] || ''}">${esc(role(m.stats).main)}</span></div>
-      ${forms.length > 1 ? `<div class="chips">${forms.map(x => `<span class="chip ${x === k ? 'cur' : ''}" data-go="${x}">${esc(M[x].form || '기본')}</span>`).join('')}</div>` : ''}
     </div>
     <div class="head-rec">${abilHtml(m)}</div>
   </div>
@@ -772,7 +774,8 @@ function render(k) {
   document.getElementById('recall').addEventListener('change', e => { document.getElementById('rec').innerHTML = recHtml(m, e.target.checked); });
   bindSearch(document.getElementById('oq'), document.getElementById('odrop'), setOpp);
   document.getElementById('oclear')?.addEventListener('click', () => setOpp(null));
-  window.scrollTo(0, 0);
+  new Set(forms.map(x => imgUrl(M[x].i || M[x].n, 1))).forEach(u => { new Image().src = u; }); // 다른 폼 그림을 미리 받아 둠 (폼을 누를 때 그림이 비었다가 뜨지 않게)
+  if (!stay) window.scrollTo(0, 0);
 }
 $view.addEventListener('click', e => { const d = e.target.closest('[data-go]'); if (d) go(d.dataset.go); });
 $view.addEventListener('click', e => { const b = e.target.closest('[data-fav]'); if (!b) return; const k = b.dataset.fav, i = FAV.indexOf(k); i < 0 ? FAV.push(k) : FAV.splice(i, 1); try { localStorage.setItem('dex-fav', JSON.stringify(FAV)); } catch {} b.textContent = favLabel(k); b.classList.toggle('on', i < 0); });
@@ -786,9 +789,9 @@ $view.addEventListener('click', e => {
 });
 // =================== 공통 ===================
 // 포켓몬 그림 (PokeAPI). 폼(메가·리전폼 등)은 폼 번호(m.i, build.js 가 맞춰 둠)의 그림을 쓰고, 그 그림이 없으면 기본 모습 그림으로 바꿈
+function imgUrl(n, big) { return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${big ? 'other/official-artwork/' : ''}${n}.png`; }
 function monImg(m, big) {
-  const u = n => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${big ? 'other/official-artwork/' : ''}${n}.png`;
-  return `<img${big ? '' : ' loading="lazy"'} src="${u(m.i || m.n)}"${m.i ? ` data-b="${u(m.n)}"` : ''} alt="" onerror="imgErr(this)">`;
+  return `<img${big ? '' : ' loading="lazy"'} src="${imgUrl(m.i || m.n, big)}"${m.i ? ` data-b="${imgUrl(m.n, big)}"` : ''} alt="" onerror="imgErr(this)">`;
 }
 function imgErr(el) { const b = el.dataset.b; if (b) { el.removeAttribute('data-b'); el.src = b; } else el.style.visibility = 'hidden'; }
 const monChip = k => `<span class="mon-chip" data-go="${k}">${monImg(M[k])}${esc(fullKo(M[k]))}</span>`;

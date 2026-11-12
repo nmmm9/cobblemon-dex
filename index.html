@@ -40,7 +40,8 @@ section{margin-bottom:40px}
 h2 small{font-size:13px;font-weight:400;color:var(--muted);margin-left:8px}
 h2{font-size:16px;font-weight:600;color:var(--fg);margin:0 0 14px;padding-bottom:8px;border-bottom:1px solid var(--line)}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.head .chips{margin:6px 0 12px}
+.head .chips{margin:6px 0 12px;max-height:108px;overflow-y:auto}
+@media(max-width:700px){.head .chips{flex-wrap:nowrap;max-height:none;overflow:auto hidden;scrollbar-width:none}.head .chips::-webkit-scrollbar{display:none}.head .chips .chip{flex:none;white-space:nowrap}}
 .chip{padding:3px 10px;border:1px solid var(--line);border-radius:3px;cursor:pointer}
 .chip.cur{background:var(--fg);color:#fff;border-color:var(--fg)}
 /* evolution */
@@ -723,6 +724,7 @@ function render(k) {
   document.title = `${fullKo(m)} · 코블몬 도감`;
   const forms = D.order.filter(x => M[x].n === m.n && (M[x].en === m.en));
   const stay = forms.includes($view.querySelector('.head .chips .cur')?.dataset.go); // 같은 포켓몬의 다른 폼을 보던 중이면 스크롤을 그대로 둠
+  const chipPos = stay ? (el => [el.scrollLeft, el.scrollTop])($view.querySelector('.head .chips')) : null; // 폼 버튼 줄을 넘겨 둔 위치도
   const def = defense(m), tot = m.raw.reduce((a, b) => a + b, 0);
   const off = m.types.map(t => {
     const se = TYPES.filter(d => CH[t][d] === 2), nv = TYPES.filter(d => CH[t][d] === .5), im = TYPES.filter(d => CH[t][d] === 0);
@@ -737,9 +739,8 @@ function render(k) {
     <div>
       <div class="num">#${String(m.n).padStart(4, '0')}</div>
       ${forms.length > 1 ? `<div class="chips">${forms.map(x => `<span class="chip ${x === k ? 'cur' : ''}" data-go="${x}">${esc(M[x].form || '기본')}</span>`).join('')}</div>` : ''}
-      <h1>${esc(m.ko)}${m.form ? ` <span style="font-weight:400">${esc(m.form)}</span>` : ''}<small>${esc(m.en)}</small><button class="fav ${FAV.includes(k) ? "on" : ""}" data-fav="${k}">${favLabel(k)}</button>
-        ${m.bo ? '<span class="badge">배틀 중 폼</span>' : ''}${m.imp ? '' : '<span class="badge">코블몬 미구현</span>'}</h1>
-      <div>${m.types.map(t => tchip(t)).join('')}</div>
+      <h1>${esc(m.ko)}<small>${esc(m.en)}</small><button class="fav ${FAV.includes(k) ? "on" : ""}" data-fav="${k}">${favLabel(k)}</button></h1>
+      <div>${m.types.map(t => tchip(t)).join('')}${m.bo ? '<span class="badge">배틀 중 폼</span>' : ''}${m.imp ? '' : '<span class="badge">코블몬 미구현</span>'}</div>
       <div class="meta"><span title="3~255. 숫자가 클수록 잘 잡힘">포획률 <b>${m.catch}</b> (${m.catch >= 150 ? '잡기 쉬움' : m.catch >= 75 ? '보통' : m.catch >= 30 ? '잡기 어려움' : '매우 어려움'})</span><span>능력치 합 <b>${tot}</b></span><span title="${ROLE_TIP[role(m.stats).main] || ''}">${esc(role(m.stats).main)}</span></div>
     </div>
     <div class="head-rec">${abilHtml(m)}</div>
@@ -775,6 +776,19 @@ function render(k) {
   bindSearch(document.getElementById('oq'), document.getElementById('odrop'), setOpp);
   document.getElementById('oclear')?.addEventListener('click', () => setOpp(null));
   new Set(forms.map(x => imgUrl(M[x].i || M[x].n, 1))).forEach(u => { new Image().src = u; }); // 다른 폼 그림을 미리 받아 둠 (폼을 누를 때 그림이 비었다가 뜨지 않게)
+  const fc = $view.querySelector('.head .chips'); // 폼 버튼이 넘칠 때(모바일은 한 줄, 넓은 화면은 3줄): 보던 위치 그대로, 처음 열 때는 고른 폼이 가운데 오게
+  if (fc) { const r = fc.querySelector('.cur').getBoundingClientRect(), R = fc.getBoundingClientRect(); [fc.scrollLeft, fc.scrollTop] = chipPos ?? [r.left - R.left - (fc.clientWidth - r.width) / 2, r.top - R.top - (fc.clientHeight - r.height) / 2]; }
+  if (forms.length > 1) { // 폼마다 특성 개수가 달라 특성·성격 칸 높이가 다름 -> 두 칸이 나란히 있을 때(넓은 화면)는 폼 중 가장 높은 값으로 맞춰서 폼을 바꿔도 아래가 안 밀리게
+    const mu = $view.querySelector('.head-rec .mu'); // 세로로 쌓이는 모바일은 특성과 성격 사이에 큰 빈칸이 생겨서 그대로 둠
+    if (mu.children[0].offsetTop === mu.children[1].offsetTop) {
+      const probe = document.createElement('div'); let max = 0;
+      probe.className = 'head-rec'; probe.style.cssText = `position:absolute;visibility:hidden;left:0;top:0;width:${mu.parentNode.offsetWidth}px`;
+      $view.appendChild(probe);
+      for (const x of forms) { probe.innerHTML = abilHtml({...M[x], stats: eff6(M[x]), raw: M[x].stats}); max = Math.max(max, probe.firstChild.offsetHeight); }
+      probe.remove();
+      mu.style.minHeight = max + 'px'; // ponytail: 창 폭을 바꾸면 다음에 화면을 그릴 때 다시 맞춰짐
+    }
+  }
   if (!stay) window.scrollTo(0, 0);
 }
 $view.addEventListener('click', e => { const d = e.target.closest('[data-go]'); if (d) go(d.dataset.go); });

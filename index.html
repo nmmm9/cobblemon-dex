@@ -331,6 +331,7 @@ details[open] summary:before{content:"−"}
 /* 카드 안에서 연 얻는 법 상자는 카드 폭을 그대로 씀 (안 그러면 조합 칸이 내용 폭으로 쪼그라듦) */
 .tcard .srcbox{display:block;max-width:none;margin:8px 0 0}
 .clk{cursor:pointer}
+.uses{display:flex;flex-wrap:wrap;gap:6px 14px;margin:2px 0 8px}.uses span{display:inline-flex;align-items:center}.uses .clk:hover{text-decoration:underline}.uses details{flex-basis:100%}.uses summary{cursor:pointer;color:var(--muted)}.uses details span{margin:6px 14px 0 0}
 .grid3 .clk:hover,.ri .clk:hover{outline:1px solid var(--fg);outline-offset:1px}
 .srcbox{display:inline-block;vertical-align:top;border:1px solid var(--fg);border-radius:4px;padding:10px 12px;margin:6px 8px 6px 0;max-width:440px;background:var(--bg);font-size:14px}
 .srcbox > b{display:block;margin-bottom:4px}
@@ -885,10 +886,24 @@ const srcParts = k => { const s = D.src[k] || {}; return SRC_T.filter(([t]) => s
   ? `<div class="mon-chips">${s.d.map(x => Array.isArray(x) ? monChip(x[0]).replace('</span>', ` <span class="muted">${esc(x[1])}</span></span>`) : `<span class="muted">${esc(x)}</span>`).join('')}</div>`
   : t === 'b' ? s.b.map(x => `<p class="cond">${esc(x)}</p>`).join('')
   : `<p class="cond">${s[t].map(esc).join(', ')}</p>`)).join('') + whereParts(k); };
+// 이 아이템이 재료로 들어가는 것 (상위 아이템). 레시피 + TM 레시피에서 거꾸로 모음
+let USES;
+const usesHtml = k => {
+  if (!USES) {
+    USES = {}; const add = (o, r) => [...(r.ik || []), ...(r.gk || []).flat()].forEach(q => q && q !== o && (USES[q] ??= new Set()).add(o));
+    for (const [o, rs] of Object.entries(D.recipes)) rs.forEach(r => add(o, r));
+    for (const m of Object.values(MV)) if (m[10]) add(m[10].o, m[10]);
+  }
+  const TMN = USES.tm ??= Object.fromEntries(Object.values(MV).filter(m => m[10]).map(m => [m[10].o, 'TM ' + m[0]]));
+  const nm = o => D.items[o]?.[0] ?? TMN[o] ?? o, u = [...(USES[k] || [])].sort((a, b) => nm(a).localeCompare(nm(b)));
+  if (!u.length) return '';
+  const chip = o => `<span${itAttr(o, nm(o))}>${ico(o)}${esc(nm(o))}</span>`, N = 30;
+  return `<div class="sub">이걸로 만드는 것 (${u.length})</div><div class="uses">${u.slice(0, N).map(chip).join('')}${u.length > N ? `<details><summary>외 ${u.length - N}개 더 보기</summary>${u.slice(N).map(chip).join('')}</details>` : ''}</div>`;
+};
 function srcHtml(k, nm) {
   const it = D.items[k], none = !hasHow(k);
   return `<div class="srcbox" data-for="${esc(k)}"><span class="x">닫기</span><b>${ico(k)}${esc(it?.[0] || nm || k)}</b>${it?.[2] ? `<p class="muted">${esc(it[2])}</p>` : ''}
-    ${D.recipes[k] ? `<div class="sub">제작</div>${D.recipes[k].map(recipeHtml).join('')}` : ''}${srcParts(k)}
+    ${D.recipes[k] ? `<div class="sub">제작</div>${D.recipes[k].map(recipeHtml).join('')}` : ''}${usesHtml(k)}${srcParts(k)}
     ${none ? `<p class="muted">${k.startsWith('minecraft:') ? '마인크래프트 기본 아이템. 제작법·드롭 데이터 없음 (양동이로 뜨기, 주민 거래 등)' : '얻는 방법 데이터 없음 (이벤트·상점·명령어 등)'}</p>` : ''}</div>`;
 }
 // 대표 제작법: 모양 있는 레시피가 있으면 그것만(염색·변환용 무형 레시피 빼기), 재료가 같은 좌우반전판은 하나로
@@ -1090,7 +1105,7 @@ TABS.items = () => {
     return `${evo.length ? `<div class="sub">이 아이템으로 진화</div><div class="mon-chips">${[...new Map(evo.map(x => [x.join(), x])).values()].map(([a, b]) => `<span style="display:inline-flex;gap:4px;align-items:center;margin-right:14px">${monChip(a)}<span class="muted">→</span>${monChip(b)}</span>`).join('')}</div>` : ''}
       ${fos.length ? `<div class="sub">복원되는 포켓몬</div><div class="mon-chips">${fos.map(monChip).join('')}</div>` : ''}
       ${gmf.length ? `<div class="sub">이 아이템으로 변신·기믹을 쓰는 포켓몬</div><div class="mon-chips">${gmf.map(monChip).join('')}</div>` : ''}
-      <div class="sub">제작법</div>${recipesOf(id)}${srcParts(id)}
+      <div class="sub">제작법</div>${recipesOf(id)}${usesHtml(id)}${srcParts(id)}
       ${hasHow(id) ? '' : '<p class="muted">얻는 방법을 모드 데이터에서 찾지 못했어요. 명령어·이벤트나 모드 코드로만 주는 아이템일 수 있어요.</p>'}`;
   });
   document.getElementById('iq').addEventListener('input', draw);

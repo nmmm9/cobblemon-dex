@@ -857,8 +857,14 @@ const ico = k => k && IC.has(k) ? `<img class="ico" src="img/${k.includes(':') ?
 const itAttr = (k, nm) => k ? ` class="clk" data-it="${esc(k)}" data-nm="${esc(nm.replace(/ ×\d+$/, ''))}" title="눌러서 얻는 법 보기"` : '';
 function recipeHtml(r) {
   const gk = (r.gk || []).flat();
-  const grid = r.g ? `<div class="grid3">${r.g.flat().map((c, j) => c ? `<div${itAttr(gk[j], c)}>${ico(gk[j])}${esc(c)}</div>` : '<div></div>').join('')}</div>` : '';
-  return `<div class="recipe"><div class="rw">${ico(D.st[r.w])}${esc(r.w)}${r.n > 1 ? ` · ${r.n}개 제작` : ''}</div>${grid}<div class="ri">${r.i.map((x, j) => `<span${itAttr(r.ik?.[j], x)}>${ico(r.ik?.[j])}${esc(x).replace(/ (×d+)$/, '&nbsp;$1')}</span>`).join(' + ')}</div></div>`;
+  let cells = r.g?.flat().map((c, j) => [c, gk[j]]), cols = 3, any = false;
+  if (!cells) { // 모양 없는 레시피도 칸 그림으로: 재료를 개수만큼 펼침
+    const ex = r.i.flatMap((x, j) => { const m = x.match(/^(.*) ×(\d+)$/); return Array(m ? +m[2] : 1).fill([m ? m[1] : x, r.ik?.[j]]); });
+    if (/^(조합대|모닥불 냄비)$/.test(r.w) && ex.length <= 9) { cells = [...ex, ...Array(9 - ex.length).fill(['', null])]; any = true; } // 아무 칸에 놓아도 됨
+    else if (ex.length <= 4) { cells = ex; cols = ex.length; } // 대장장이 작업대(형판·재료·추가 재료 3칸), 화로·석재 절단기(1칸) 등은 실제 칸 수대로 한 줄
+  }
+  const grid = cells ? `<div class="grid3" style="grid-template-columns:repeat(${cols},minmax(0,76px))">${cells.map(([c, k]) => c ? `<div${itAttr(k, c)}>${ico(k)}${esc(c)}</div>` : '<div></div>').join('')}</div>` : '';
+  return `<div class="recipe"><div class="rw">${ico(D.st[r.w])}${esc(r.w)}${r.n > 1 ? ` · ${r.n}개 제작` : ''}${any ? ' · 칸 위치 상관없음' : ''}</div>${grid}<div class="ri">${r.i.map((x, j) => `<span${itAttr(r.ik?.[j], x)}>${ico(r.ik?.[j])}${esc(x).replace(/ (×\d+)$/, '&nbsp;$1')}</span>`).join(' + ')}</div></div>`;
 }
 // 아이템 얻는 법: 제작 + 포켓몬 드롭 + 블록 캐기 + 몹 처치 + 상자·보상
 const SRC_T = [['d', '포켓몬 드롭'], ['b', '블록 캐기·수확'], ['e', '몹 처치'], ['l', '상자·보상']];

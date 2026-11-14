@@ -428,7 +428,7 @@ for (const { rel, f } of dataFiles('recipe', 'tmcraft')) {
 // 코블몬·애드온 아이템 레시피 + 거기 재료로 쓰인 아이템(바닐라·빈 디스크 등)의 레시피까지 따라가며 수집
 {
   const nsOf = k => k.includes(':') ? k.split(':')[0] : 'cobblemon';
-  const queue = [...allR.keys()].filter(k => ALL_NS.includes(nsOf(k)));
+  const queue = [...allR.keys()].filter(k => [...ALL_NS, 'minecraft'].includes(nsOf(k))); // 바닐라 레시피도 전부 (아이템 탭에서 바닐라 검색)
   Object.values(moves).forEach(m => m[10]?.ik.forEach(k => k && queue.push(k)));
   TOOLS.forEach(([, , rows]) => rows.forEach(([id]) => queue.push(id)));
   queue.push(...GYM_ITEMS, ...LG_ITEMS);
@@ -863,6 +863,17 @@ for (const [k, m] of Object.entries(srcB)) for (const [w, names] of m) addSrc(k,
 for (const k of new Set([...Object.keys(src), ...Object.keys(gone)])) if (k.startsWith('minecraft:') && (src[k]?.d || gone[k]) && !items[k] && assetFile('minecraft', `models/item/${k.slice(10)}.json`)) {
   items[k] = [itemKo(k), '바닐라', gone[k] ? `이 모드팩엔 ${[...gone[k]].slice(0, 3).join('·')} 같은 바닐라 몹이 안 나옴${src[k]?.d ? '. 포켓몬이 떨어뜨림' : ''}` : ''];
   icon(k);
+}
+// 나머지 바닐라 아이템 전부: 아이템 탭에서 검색해 제작법·얻는 곳을 볼 수 있게. 생성 알은 서바이벌에서 못 얻어서 뺌
+// 콘크리트는 레시피가 없고 가루를 물에 닿게 놓아 만듦. 캐면 자기 자신만 나오는 블록(원목·콘크리트 등)은 그렇게 적음
+for (const key of Object.keys(mcLang)) {
+  const m = key.match(/^(item|block)\.minecraft\.([a-z0-9_]+)$/), k = m && 'minecraft:' + m[2];
+  if (!m || items[k] || /_spawn_egg$/.test(m[2]) || !assetFile('minecraft', `models/item/${m[2]}.json`)) continue;
+  const c = m[2].match(/^([a-z_]+)_concrete$/);
+  items[k] = [itemKo(k), '바닐라', c ? `${itemKo(`minecraft:${c[1]}_concrete_powder`)}를 설치해서 물에 닿게 하면 바뀜` : ''];
+  icon(k);
+  const own = new Set(ltItems('minecraft:blocks/' + m[2])); // 섬세한 손길로만 그대로 나오는 것(광석·잔디)은 다른 아이템도 섞여 있어서 뺌
+  if (!recipes[k] && own.size === 1 && own.has(k)) addSrc(k, 'b', '블록을 캐면 그대로 나옴');
 }
 // 도감에서 보여줄 아이템(아이템 탭·레시피 재료·결과물·기믹)만 남기고, 목록이 길면 자름
 const shown = new Set([...Object.keys(items), ...Object.keys(recipes), ...Object.values(recipes).flat().flatMap(r => [...r.ik, ...(r.gk || []).flat()]),

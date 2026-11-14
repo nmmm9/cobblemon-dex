@@ -302,6 +302,30 @@ function icon(id) { // 'ns:name' (접두어 없으면 cobblemon) -> 'ns/name' (i
   ICONS.add(ikey(full));
   return (iconCache[full] = key);
 }
+// ---------- 지도 아이콘: 미니맵(Xaero)에 뜨는 픽셀 그림 (E19 Cobblemon Minimap Icons 리소스팩, extract-cv.sh 가 raw/mapicon/ 에 뽑아 둠) ----------
+// 파일 이름 0037_vulpix_alolan 을 같은 도감 번호 안에서 키(vulpix-alola)와 맞춤. 못 맞춘 폼(루카리오 옷 등)은 아이콘 없이 둠 -> mons[k].mi
+{
+  const DIR = path.join(RAW, 'mapicon'), byN = {};
+  const norm = s => s.toLowerCase().replace(/[^a-z0-9]/g, '').replace(/(alola|galar|hisui|paldea)(n|ian|an)?/g, '$1').replace(/female$/, 'f');
+  for (const f of fs.existsSync(DIR) ? fs.readdirSync(DIR) : []) { const [n, ...r] = f.slice(0, -4).split('_'); (byN[+n] ??= []).push([norm(r.join('')), f]); }
+  const BASE_PREF = ['male', 'spring', 'redstripe', 'single', 'baile', 'teal', 'curly', '50', 'red', 'green', 'west', 'meadow']; // 기본 모습 파일이 따로 없을 때 고를 것
+  const used = new Set(), keys = Object.keys(mons), sid = k => k.split('-')[0];
+  const take = (k, f) => { if (f) { mons[k].mi = f.slice(0, -4); used.add(f); } };
+  for (const k of keys) take(k, (byN[mons[k].n] || []).find(([nm]) => nm === norm(IMG_ALIAS[k] ?? k))?.[1]); // 이름이 똑같은 것 (IMG_ALIAS: 위 PokeAPI 용 별칭 표)
+  for (const k of keys.filter(k => k.includes('-') && !mons[k].mi)) { // 폼: 지역 이름 뺀 것(tauros-paldeacombat ~ tauros_combat), 한쪽이 다른 쪽 앞부분(zacian-crowned ~ zacian_crown)
+    const a = norm(IMG_ALIAS[k] ?? k), b = norm(sid(k)), noReg = a.replace(/(alola|galar|hisui|paldea)/, ''), c = byN[mons[k].n] || [];
+    const hit = (noReg !== a && noReg !== b && c.find(([nm]) => nm === noReg)) ||
+      c.filter(([nm, f]) => !used.has(f) && nm.length > b.length && (nm.startsWith(a) || a.startsWith(nm))).sort((x, y) => y[0].startsWith(a) - x[0].startsWith(a) || Math.abs(x[0].length - a.length) - Math.abs(y[0].length - a.length))[0]; // 파일 이름이 더 자세한 쪽 먼저 (ogerpon-tealtera ~ ogerpon_teal_terastallizes)
+    take(k, hit?.[1]);
+  }
+  for (const k of keys.filter(k => !k.includes('-') && !mons[k].mi)) { // 기본 모습: 폼이 안 가져간 것 중에서 (꽃사슴은 봄, 냐오닉스는 수컷)
+    const all = byN[mons[k].n] || [], c = all.filter(([, f]) => !used.has(f)); // 지가르데 50% 처럼 폼(50c)과 같은 그림을 쓰는 경우가 있어 우선순위 목록은 전체에서 찾음
+    take(k, (BASE_PREF.map(p => all.find(([, f]) => f.endsWith(`_${p}.png`))).find(Boolean) || c.sort()[0])?.[1]);
+  }
+  fs.mkdirSync(path.join(IMG, 'map'), { recursive: true });
+  for (const f of used) fs.copyFileSync(path.join(DIR, f), path.join(IMG, 'map', f));
+  console.log('지도 아이콘', used.size, '/ 아이콘 없는 포켓몬', keys.filter(k => !mons[k].mi).length);
+}
 const tagItems = (tag, seen = new Set()) => {
   if (seen.has(tag)) return [];
   seen.add(tag);

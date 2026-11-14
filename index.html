@@ -24,6 +24,10 @@ button,input,select,textarea{font:inherit;letter-spacing:inherit}
 .hint,.muted{color:var(--muted)}
 .head{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start;margin-bottom:40px}
 .head img{width:140px;height:140px;object-fit:contain;flex:none;image-rendering:auto}
+.head .pics{flex:none;display:flex;flex-direction:column;align-items:center}
+.mapi{margin:4px 0 0;text-align:center}.mapi figcaption{font-size:12px;color:var(--muted)}
+/* 아이콘 64px 안에서 그림은 가운데(위 15px·아래 16px 이상, 폭 40px 이하)에만 있어서 2배로 키우고 빈 테두리를 잘라냄 */
+.mapi .px{width:96px;height:68px;overflow:hidden;margin:0 auto}.head .mapi img{width:128px;height:128px;max-width:none;margin:-30px 0 0 -16px;image-rendering:pixelated}
 .head h1{margin:0;font-size:28px;font-weight:600;letter-spacing:-.01em;line-height:1.2}
 .head h1 small{font-size:14px;color:var(--muted);font-weight:400;margin-left:8px}
 .head > div:nth-child(2){flex:1 1 280px;min-width:0}
@@ -735,7 +739,7 @@ function render(k) {
   }).join('');
   $view.innerHTML = `
   <div class="head">
-    ${monImg(m, 1)}
+    <div class="pics">${monImg(m, 1)}${m.mi ? `<figure class="mapi" title="미니맵(Xaero)에 뜨는 아이콘. E19 Cobblemon Minimap Icons 리소스팩"><div class="px"><img src="img/map/${m.mi}.png" alt=""></div><figcaption>지도 아이콘</figcaption></figure>` : ""}</div>
     <div>
       <div class="num">#${String(m.n).padStart(4, '0')}</div>
       ${forms.length > 1 ? `<div class="chips">${forms.map(x => `<span class="chip ${x === k ? 'cur' : ''}" data-go="${x}">${esc(M[x].form || '기본')}</span>`).join('')}</div>` : ''}

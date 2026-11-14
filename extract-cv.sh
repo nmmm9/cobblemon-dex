@@ -27,3 +27,5 @@ done
 mkdir -p "$OUT/../pokeapi" && curl -sS -m 60 -o "$OUT/../pokeapi/pokemon.csv" "https://raw.githubusercontent.com/PokeAPI/pokeapi/master/data/v2/csv/pokemon.csv" && echo "pokeapi ok"
 # 모드팩이 없앤 바닐라 몹 목록 (MobsBeGone): build.js 가 그 몹 드롭을 얻는 곳에서 뺌
 cp "$P/config/mobsbegone-blacklist.json" "$OUT/../" && echo "mobsbegone ok"
+# 지도 아이콘: 미니맵(Xaero)에 뜨는 픽셀 그림 (E19 Cobblemon Minimap Icons 리소스팩). build.js 가 도감 키와 맞춰 img/map/ 으로 복사
+rm -rf "$OUT/../mapicon" && 7z e "$P/resourcepacks/E19 Cobblemon Minimap Icons.zip" -o"$OUT/../mapicon" 'assets/xaerominimap/entity/icon/sprite/regular/*' -y >/dev/null && echo "mapicon ok"

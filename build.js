@@ -883,29 +883,42 @@ for (const k of Object.keys(src)) {
   for (const t of Object.keys(src[k])) if (src[k][t].length > 14) src[k][t] = [...src[k][t].slice(0, 14), `외 ${src[k][t].length - 14}곳`];
 }
 
-// ---------- 지닌 도구: Smogon 대전 세트(pkmn.github.io/smogon/data/sets/genN.json, extract-cv.sh 가 raw/smogon/ 에 받아 둠)에서 많이 쓰는 도구 ----------
-// 포켓몬마다 세트가 있는 가장 최근 세대만 봄. 도구 이름을 코블버스 아이템 키와 맞추고 못 맞춘 건 버림. 메가스톤은 메가 폼에만 -> mons[k].hi = [[아이템 키, 쓰는 세트 수]], mons[k].hs = [세대, 세트 수]
+// ---------- Smogon 대전 세트 (pkmn.github.io/smogon/data/sets/genN.json, extract-cv.sh 가 raw/smogon/ 에 받아 둠): 추천 기술·특성·성격·노력치·도구의 출처 ----------
+// 포켓몬마다 세트가 있는 가장 최근 세대만 봄. 메가스톤을 든 세트는 메가 폼 것으로, 나머지는 기본 폼 것으로.
+// mons[k].ss = [{f: 대전 규칙, n: 세트 이름, mv: [[기술 id 후보..] x4], ab, na, ev, it}] (중요한 규칙 순 최대 3개), mons[k].sg = 세대, mons[k].hi = [[도구 키, 세트 수]], mons[k].hs = [세대, 세트 수]
 {
-  const ODD = /^(1v1|2v2doubles|almostanyability|anythinggoes|balancedhackmons|camomons|cap|godlygift|inheritance|mixandmega|partnersincrime|purehackmons|stabmons|letsgoou|pikacup|petitcup|nc199d)$/; // 규칙이 다른 변형 대전은 뺌
-  const nz = s => s.toLowerCase().replace(/[^a-z0-9]/g, ''), byItem = {};
+  const ODD = /^(1v1|2v2doubles|almostanyability|anythinggoes|balancedhackmons|camomons|cap|godlygift|inheritance|mixandmega|partnersincrime|purehackmons|stabmons|letsgoou|pikacup|petitcup|nc199\d)$/; // 규칙이 다른 변형 대전은 뺌
+  const PRI = ['ou', 'ubers', 'uu', 'ru', 'nu', 'pu', 'zu', 'lc', 'doublesou', 'battlestadiumsingles', 'nationaldex', 'nationaldexubers', 'nationaldexuu', 'nationaldexru', 'monotype'];
+  const pri = f => { const i = PRI.indexOf(f); return i >= 0 ? i : /^vgc/.test(f) ? 9.5 : 50; };
+  const nz = s => String(s).toLowerCase().replace(/[^a-z0-9]/g, ''), byItem = {};
   for (const id of Object.keys(items)) byItem[nz(id.split(':').pop())] ??= id;
+  const isStone = id => id.startsWith('mega_showdown:') && /ite(x|y)?$/.test(nz(id.split(':').pop()));
   const gens = [9, 8, 7, 6, 5, 4, 3, 2, 1].map(g => [g, path.join(RAW, 'smogon', `gen${g}.json`)]).filter(([, f]) => fs.existsSync(f)).map(([g, f]) => [g, readJ(f)]);
-  const setsOf = name => { for (const [g, j] of gens) { const sp = Object.keys(j).find(n => nz(n) === name); if (sp) { const sets = Object.entries(j[sp]).filter(([fm]) => !ODD.test(fm)).flatMap(([, fm]) => Object.values(fm)); if (sets.length) return [g, sets]; } } return null; };
+  const setsOf = (name, mega) => {
+    for (const [g, j] of gens) {
+      const sp = Object.keys(j).find(n => nz(n) === name); if (!sp) continue;
+      const sets = Object.entries(j[sp]).filter(([f]) => !ODD.test(f)).flatMap(([f, ss]) => Object.entries(ss).map(([n, s]) => {
+        const it = [s.item].flat().filter(Boolean).map(x => byItem[nz(x)]).filter(Boolean);
+        return { f, n, s, it, stone: it.some(isStone) };
+      })).filter(x => mega ? x.stone && (!mega[1] || x.it.some(id => isStone(id) && nz(id).endsWith(mega[1]))) : !x.stone);
+      if (sets.length) return [g, sets];
+    }
+    return null;
+  };
   let n = 0;
   for (const k of Object.keys(mons)) {
-    const mega = /-mega(x|y)?$/.exec(k), hit = setsOf(nz(mega ? k.split('-')[0] : k)); if (!hit) continue;
+    const mega = /-mega(x|y)?$/.exec(k), hit = setsOf(nz(mega ? k.split('-')[0] : k), mega); if (!hit) continue;
     const [g, sets] = hit, cnt = {};
     let used = 0;
-    for (const s of sets) {
-      const its = [s.item].flat().filter(Boolean).map(x => byItem[nz(x)]).filter(Boolean)
-        .filter(id => { const stone = /ite(x|y)?$/.test(nz(id.split(':').pop())) && id.startsWith('mega_showdown:'); return mega ? stone && (!mega[1] || nz(id).endsWith(mega[1])) : !stone; });
-      if (its.length) used++;
-      new Set(its).forEach(id => cnt[id] = (cnt[id] || 0) + 1);
-    }
+    for (const x of sets) { const its = x.it.filter(id => mega ? isStone(id) : !isStone(id)); if (its.length) used++; new Set(its).forEach(id => cnt[id] = (cnt[id] || 0) + 1); }
     const top = Object.entries(cnt).sort((a, b) => b[1] - a[1]).slice(0, 3);
-    if (top.length) { mons[k].hi = top; mons[k].hs = [g, used]; n++; }
+    if (top.length) { mons[k].hi = top; mons[k].hs = [g, used]; }
+    const mid = m => moves[nz(m)] ? nz(m) : m;
+    mons[k].sg = g; mons[k].sn = sets.length;
+    mons[k].ss = sets.sort((a, b) => pri(a.f) - pri(b.f)).map(({ f, n, s, it }) => ({ f, n, mv: (s.moves || []).map(m => [m].flat().map(mid)), ab: [s.ability ?? []].flat().map(nz), na: [s.nature ?? []].flat().map(nz), ev: [s.evs ?? []].flat()[0] || null, it }));
+    n++;
   }
-  console.log('지닌 도구 (Smogon 세트)', n, '/', Object.keys(mons).length);
+  console.log('Smogon 세트가 있는 포켓몬', n, '/', Object.keys(mons).length);
 }
 // ---------- self-check ----------
 const ids = new Set(Object.keys(mons));

@@ -681,10 +681,19 @@ function recommend(m, all) {
   for (const id of status) { if (picks.length >= 4) break; if (!picks.some(p => p.id === id)) picks.push({id, mv: MV[id], why: '보조 기술'}); }
   return picks.slice(0, 4);
 }
+// 기술 아이템(TMCraft 1.4.18 코드 기준): TM은 레벨업·TM 목록, 알기술(EGG-)은 레벨업·알 목록, 가르침기술(TUTOR-)은 레벨업·가르침 목록에 있어야 가르칠 수 있음.
+// 알기술·가르침기술 아이템은 조합법이 없고 교배작업대·기술작업대 주민만 팖. 파는 기술 목록은 jar의 PokemonBreederTradeOffer·MoveTutorTradeOffer에서 뽑음
+const EGG_SOLD = new Set('acupressure ancientpower aquajet aquaring assist astonish aurorabeam autotomize barbbarrage barrier bellydrum bite boomburst bulletpunch burnup chillyreception chipaway clearsmog confusion craftyshield crosschop crushclaw disable dragonhammer dragonrush entrainment fakeout feintattack finalgambit firstimpression flail flamewheel foresight freezedry grasswhistle guardsplit hammerarm headsmash healpulse howl hypnosis iceball ingrain lastresort lastrespects lick lifedew meditate mefirst memento metalburst mindreader mirrorcoat mist morningsun mudsport nightslash octazooka odorsleuth partingshot perishsong petaldance poisonfang powersplit powertrick powertrip powerwhip present psychoshift punishment ragingfury refresh rollingkick rototiller shadowpunch shadowsneak shedtail simplebeam slam sludge smellingsalts sparklingaria strengthsap stuffcheeks switcheroo synchronoise teeterdance thrash tickle tidyup trumpcard venomdrench waterspout wideguard wingattack wish yawn'.split(' ')), TUTOR_SOLD = new Set('afteryou ancientpower aquatail baddybad bind block bouncybubble buzzybuzz corrosivegas covet dragonascent dualchop fakeout feintattack floatyfall freezyfrost gastroacid glitzyglow healbell hypnosis knockoff laserfocus lastresort magiccoat magnetrise ominouswind relicsong risingvoltage roleplay sappyseed secretsword signalbeam sizzlyslide sparklyswirl splishysplash steelroller stringshot suckerpunch synthesis terrainpulse twister volttackle worryseed zippyzap'.split(' '));
+const eggHow = id => EGG_SOLD.has(id) ? '교배, 또는 교배작업대 주민이 파는 알기술 아이템. TM으로는 못 배움' : '교배로만 배움 (주민도 안 팔고 TM으로도 못 배움)';
+const tutorHow = id => TUTOR_SOLD.has(id) ? '기술작업대 주민이 파는 가르침기술 아이템. TM으로는 못 배움' : '가르침기술 아이템을 주민이 안 팔아서 사실상 못 배움';
+function learnHow(m, id) {
+  const lv = m.lv.find(x => x[1] === id);
+  return lv ? `Lv ${lv[0]}에 배움${MV[id]?.[10] ? ' (놓쳤으면 TM으로)' : ''}` : m.tm.includes(id) ? 'TM으로 배움' : m.tutor.includes(id) ? tutorHow(id) : m.egg.includes(id) ? eggHow(id) : '';
+}
 function recHtml(m, all) {
   const r = recommend(m, all);
   if (!r.length) return '<div class="empty">추천할 기술이 없음</div>';
-  return `<div class="rec">${r.map(p => `<div class="card"><div class="why">${esc(p.why)}</div><div class="nm">${tchip(p.mv[2], 1)} ${esc(p.mv[0])}</div><div class="st">${CAT[p.mv[3]]}${p.mv[4] ? ` · 위력 ${p.mv[4]}` : ''} · 명중 ${p.mv[5] || '—'}</div></div>`).join('')}</div>`;
+  return `<div class="rec">${r.map(p => `<div class="card"><div class="why">${esc(p.why)}</div><div class="nm">${tchip(p.mv[2], 1)} ${esc(p.mv[0])}</div><div class="st">${CAT[p.mv[3]]}${p.mv[4] ? ` · 위력 ${p.mv[4]}` : ''} · 명중 ${p.mv[5] || '—'}</div>${all ? `<div class="st">${esc(learnHow(m, p.id))}</div>` : ''}</div>`).join('')}</div>`;
 }
 
 // ---------- 1:1 compare ----------
@@ -787,7 +796,7 @@ function render(k) {
     <div id="rec">${recHtml(m, false)}</div>
   </section>
   <section class="c6"><h2>레벨업 기술</h2>${moveTable(m.lv, true)}</section>
-  <section class="c6 top"><h2>그 외 기술</h2><p class="desc">레벨업 말고 다른 방법으로 배우는 기술. 가르침 기술은 원작에서 NPC가 가르쳐주는 기술(튜터), 알 기술은 원작에서 교배로 물려받는 기술.</p>
+  <section class="c6 top"><h2>그 외 기술</h2><p class="desc">기술머신(TM) 아이템은 레벨업·기술머신 목록에 있는 기술만 가르칠 수 있음. 가르침 기술은 기술작업대 주민이 파는 가르침기술 아이템, 알 기술은 교배나 교배작업대 주민이 파는 알기술 아이템으로 배움. <b>알·가르침 목록에만 있는 기술은 TM을 만들어도 못 배움.</b></p>
     <details><summary>기술머신 (${m.tm.length})</summary>${moveTable(m.tm)}</details>
     <details><summary>가르침 기술 (${m.tutor.length})</summary>${moveTable(m.tutor)}</details>
     <details><summary>알 기술 (${m.egg.length})</summary>${moveTable(m.egg)}</details>
@@ -1066,9 +1075,10 @@ TABS.moves = () => {
   };
   bindList($('ml'), id => {
     const m = MV[id], ls = learners(id);
-    const groups = {}; ls.forEach(([k, how]) => (groups[how.startsWith('Lv') ? '레벨업' : how] ??= []).push([k, how]));
+    const GN = { TM: 'TM', '가르침': '가르침 기술 — ' + tutorHow(id), '알 기술': '알 기술 — ' + eggHow(id) };
+    const groups = {}; ls.forEach(([k, how]) => (groups[how.startsWith('Lv') ? '레벨업' : GN[how] ?? how] ??= []).push([k, how]));
     return `<p>${esc(m[9] || '설명 없음')}</p>
-      ${m[10] ? `<div class="sub">TM 제작법</div>${recipeHtml(m[10])}` : ''}
+      ${m[10] ? `<div class="sub">TM 제작법</div>${recipeHtml(m[10])}<p class="cond">이 TM은 아래 "레벨업"·"TM" 묶음의 포켓몬만 쓸 수 있음. 알 기술·가르침 묶음의 포켓몬에게는 안 됨.</p>` : ''}
       ${Object.entries(groups).map(([g, arr]) => `<div class="sub">${g} ${arr.length}</div><div class="mon-chips">${arr.slice(0, 80).map(([k, how]) => monChip(k).replace('</span>', g === '레벨업' ? ` <span class="muted">${how}</span></span>` : '</span>')).join('')}${arr.length > 80 ? `<span class="muted">외 ${arr.length - 80}</span>` : ''}</div>`).join('') || '<p class="muted">배우는 포켓몬 없음</p>'}`;
   });
   ['mt', 'mc', 'mtm'].forEach(id => $(id).addEventListener('change', draw));
@@ -1176,7 +1186,7 @@ TABS.guide = () => {
   <li><b>교환 진화</b> (${evoCount['교환'] || 0}건): 실제 교환 또는 <b>${esc(IT.link_cable?.[0] || '연결의끈')}</b> 사용. ${tip('link_cable')}</li></ul>
   <p>포켓몬마다 정확한 조건은 도감의 진화 섹션에, 진화 아이템별 대상은 아이템 탭 "진화 아이템"에 있음.</p>
   <h3>4. 기술머신 (TM)</h3>
-  <p>코블벌스는 TMCraft 모드로 TM을 만듦. 조합대에서 빈 디스크(구리·철·금·다이아몬드·에메랄드·네더라이트)에 타입 주얼 같은 재료를 더해 제작. 레시피가 있는 기술은 ${tmAll}개. 기술별 재료는 기술 탭에서 "TM 있는 것만" 체크. 배울 수 있는 포켓몬은 도감의 "그 외 기술" TM 목록 기준.</p>
+  <p>코블벌스는 TMCraft 모드로 TM을 만듦. 조합대에서 빈 디스크(구리·철·금·다이아몬드·에메랄드·네더라이트)에 타입 주얼 같은 재료를 더해 제작. 레시피가 있는 기술은 ${tmAll}개. 기술별 재료는 기술 탭에서 "TM 있는 것만" 체크. TM은 그 기술을 <b>레벨업이나 기술머신 목록</b>으로 배우는 포켓몬만 쓸 수 있음(알 기술·가르침 기술로만 배우는 포켓몬은 안 됨). 알 기술은 교배나 교배작업대 주민의 알기술 아이템, 가르침 기술은 기술작업대 주민의 가르침기술 아이템으로 배움. 레벨업 기술을 놓쳤을 때도 TM으로 다시 가르칠 수 있음. 기술 탭에서 기술을 누르면 포켓몬이 어느 묶음인지 나옴.</p>
   <h3>5. 성장·육성</h3>
   <dl class="kv">${['exp_candy_xs', 'exp_candy_s', 'exp_candy_m', 'exp_candy_l', 'exp_candy_xl', 'rare_candy', 'hp_up', 'health_feather', 'health_mochi', 'adamant_mint', 'ability_capsule', 'ability_patch'].filter(id => IT[id]).map(id => `<dt>${esc(IT[id][0])}</dt><dd>${tip(id)}</dd>`).join('')}</dl>
   <p>민트는 능력치 오르내림만 바꾸고 성격 이름은 그대로. 어떤 성격이 좋은지는 도감의 "특성 · 성격" 섹션 추천 참고.</p>

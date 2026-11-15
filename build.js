@@ -273,8 +273,10 @@ const STATION = { 조합대: 'minecraft:crafting_table', 화로: 'minecraft:furn
 // 아이템 키: 코블몬 건 접두어 없이, 애드온 건 "ns:id"
 const ikey = id => id.replace(/^cobblemon:/, '');
 const ITEM_NS = ['cobblemon', 'mega_showdown', 'zamega', 'legendarymonuments'];
-// 아이템 탭에 전부 넣는 모드: 설명·제작법이 없는 아이템·블록도 포함 (아래 "그 밖의 모드 아이템" 패스). 가구·콘크리트 같은 장식 모드는 raw/ 에 안 뽑아서 대상이 아님
-const ALL_NS = [...ITEM_NS, 'lumymon', 'tmcraft', 'obc', 'cobblenav', 'rctmod', 'waystones', 'comforts', 'sophisticatedbackpacks', 'toms_storage'];
+// 아이템 탭에 전부 넣는 모드: 설명·제작법이 없는 아이템·블록도 포함 (아래 "그 밖의 모드 아이템" 패스). 장식 모드도 포함 (NS_CAT)
+// 아이템 탭에만 넣는 모드 (extract-cv.sh 의 14a~ 레이어). 분류 이름은 모드별로
+const NS_CAT = { sophisticatedstorage: '창고', sophisticatedcore: '창고', cobblecuisine: '요리·간식', cobbreeding: '교배', cobblemonraiddens: '레이드', cobbleversebadges: '배지', cobbledollars: '코블달러', pokeblocks: '장식', cobblefurnies: '장식', handcrafted: '장식', cozyhome: '장식', beautify: '장식', carved_wood: '장식', everycomp: '장식', rechiseled: '장식', moarconcrete: '장식', vanillabackport: '바닐라', fightorflight: '기타' };
+const ALL_NS = [...ITEM_NS, 'lumymon', 'tmcraft', 'obc', 'cobblenav', 'rctmod', 'waystones', 'comforts', 'sophisticatedbackpacks', 'toms_storage', ...Object.keys(NS_CAT)];
 // ---------- 아이템 그림: 아이템 모델 -> 텍스처 png 를 img/<ns>/<id>.png 로 복사 (필요한 것만) ----------
 const IMG = path.join(__dirname, 'img');
 fs.rmSync(IMG, { recursive: true, force: true });
@@ -493,7 +495,7 @@ for (const key of Object.keys(lang)) {
   if (items[id] || typeof lang[key] !== 'string' || !assetFile(m[2], `models/item/${m[3]}.json`)) continue;
   const tip = [...['tooltip', 'tooltip1', 'tooltip_1', 'tooltip2', 'tooltip_2', 'desc', 'description'].map(x => lang[`${key}.${x}`]), lang[`tooltip.${m[2]}.${m[3]}.tooltip`], lang[`tooltip.${m[2]}.${m[3]}`]]
     .filter(x => typeof x === 'string').join(' ').replace(/§./g, '');
-  items[id] = [lang[key], catOf[id] || (m[2] === 'legendarymonuments' ? '전설 모뉴먼트' : m[1] === 'block' ? '블록·장치' : '기타'), tip];
+  items[id] = [lang[key], catOf[id] || NS_CAT[m[2]] || (m[2] === 'legendarymonuments' ? '전설 모뉴먼트' : m[1] === 'block' ? '블록·장치' : '기타'), tip];
   icon(id);
 }
 

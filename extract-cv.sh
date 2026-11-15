@@ -17,6 +17,12 @@ for f in "mods/Cobblemon-fabric-1.7.3+1.21.1.jar" "mods/cobblemon-additions-4.1.
   n=$((n+1)); name=$(printf "%02d_%s" $n "$(basename "$f" | sed -E 's/[-_+ ].*//')")
   7z x "$P/$f" -o"$OUT/$name" data "assets/*/lang/ko_kr.json" "assets/*/lang/en_us.json" $ART -r- -y >/dev/null && echo "$name ok"
 done
+# 그 밖에 아이템이 있는 모드 (창고·요리·교배·레이드·배지·코블달러·장식 등): 아이템 탭 검색용. 이름을 14a~ 로 붙여 코블벌스 데이터팩(15~)보다 먼저 읽히게 함
+L=0
+for f in "sophisticatedstorage-1.21.1-1.3.7.9.139.jar" "sophisticatedcore-1.21.1-1.2.9.21.168.jar" "cobblecuisine-2.0.1-1.7.rc1.jar" "Cobbreeding-fabric-2.2.2.jar"   "cobblemonraiddens-fabric-0.11.3+1.21.1.jar" "CobbleverseBadges-1.3.jar" "CobbleDollars-fabric-2.0.0+Beta-5.1+1.21.1.jar" "pokeblocks-1.4.0-1.21.1.jar"   "CobbleFurnies-fabric-1.2.jar" "handcrafted-fabric-1.21.1-4.0.3.jar" "Luckys-Cozyhome-Refurnished-1.1.20.jar" "beautify-2.0.0+1.21.1.jar"   "Carved Wood-fabric-1.21.1-1.9.7-B.jar" "rechiseled-1.2.4-fabric-mc1.21.jar" "moar-concrete-1.3.1.jar" "VanillaBackport-fabric-1.21.1-1.1.7.10.jar" "fightorflight-fabric-0.10.9.jar"; do
+  name="14$(echo abcdefghijklmnopq | cut -c$((L+1)))_$(echo "$f" | sed -E 's/[-_+ ].*//')"; L=$((L+1))
+  7z x "$P/mods/$f" -o"$OUT/$name" data "assets/*/lang/ko_kr.json" "assets/*/lang/en_us.json" $ART -r- -y >/dev/null && echo "$name ok"
+done
 # 지방 추가 데이터팩 (관동 챔피언 이후 차례로 켜짐): 전설 탭의 구조물·조합법 용도로만 raw/cvx/ 에 따로 둠. 다른 탭 데이터에는 안 섞임
 n=0
 rm -rf "$OUT/../cvx"

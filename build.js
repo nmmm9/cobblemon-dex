@@ -656,7 +656,7 @@ const GYM_BIOME = { '#minecraft:has_structure/ancient_city': 'minecraft:deep_dar
 const DIM_KO = { 'minecraft:the_nether': '네더', 'minecraft:the_end': '엔드' };
 const rctTrainers = Object.fromEntries(dataFiles('trainers', 'rctmod').map(x => [x.rel.replace(/\.json$/, ''), x.f]));
 const gymStruct = Object.fromEntries(dataFiles('worldgen/structure', 'cobbleverse').map(x => [x.rel.replace(/\.json$/, ''), x.f]));
-const teamOf = id => { const t = readJ(rctTrainers[id]); return [t.name?.literal ?? id, t.team.map(p => [resolveResult([p.species.replace(/^cobblemon:/, ''), ...(p.aspects || [])].join(' ')) ?? p.species, p.level])]; };
+const teamOf = id => { const t = readJ(rctTrainers[id]); return [t.name?.literal ?? id, t.team.map(p => [resolveResult([p.species.replace(/^cobblemon:/, ''), ...(p.aspects || [])].join(' ')) ?? p.species, p.level, (p.moveset || []).map(x => x.toLowerCase().replace(/[^a-z0-9]/g, ''))])]; };
 const topLv = team => Math.max(...team.map(p => p[1]));
 const gyms = GYM_TRADES.map(([item, tag]) => {
   const region = tag.split(':')[1].split('_')[0], st = tagValues('cobbleverse', 'worldgen/structure', tag.split(':')[1])[0], sid = st.split(':')[1];

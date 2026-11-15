@@ -1471,6 +1471,23 @@ TABS.gym = () => {
     return t && c[t] * 2 >= team.length ? `<div class="gy-t">${tchip(t, 1)} 타입 위주 <span class="muted">→ 2배로 들어가는 기술</span> ${TYPES.filter(a => CH[a]?.[t] === 2).map(a => tchip(a, 1)).join('')}</div>` : '';
   };
   const box = (n, t, d) => `<div class="sbox"><i>${n}</i><b>${t}</b><span>${d}</span></div>`;
+  // 상대 추천: 트레이너 파일의 실제 팀(타입)과 기술(데미지 기술의 타입)로 상성표 계산. 포켓몬 후보는 최종 진화·전설 아님·메가 아님·
+  // 이 모드팩에서 야생으로 잡을 수 있음(진화 전 포함)·Smogon 대전 세트가 있음(쓸만함의 근거)
+  const WILD = new Set(D.spawns.map(s => s[0])), wild = k => WILD.has(k) || (M[k]?.pre ? wild(M[k].pre) : false);
+  const CANDS = D.order.filter(k => { const m = M[k]; return !m.evos.length && !m.lab && !/-mega/.test(k) && m.ss && wild(k) && m.stats.reduce((a, b) => a + b) >= 500; }); // 종족값 합 500 이상: 리그 레벨(75~100)에서 버틸 힘
+  const counter = team => {
+    const foes = team.filter(([k]) => M[k]), mv = foes.flatMap(([, , ms]) => (ms || []).filter(id => MV[id] && MV[id][3] !== 'T' && MV[id][4] > 0));
+    if (!foes.length) return '';
+    const hit = (atk, k) => eff(atk, M[k].types) >= 2;
+    const off = TYPES.map(a => [a, foes.filter(([k]) => hit(a, k)).length, foes.filter(([k]) => eff(a, M[k].types) === 0).length]).filter(x => x[1] && !x[2]).sort((x, y) => y[1] - x[1]).slice(0, 4);
+    const defOf = types => { let good = 0, bad = 0; mv.forEach(id => { const e = eff(MV[id][2], types); if (e <= 0.5) good++; if (e >= 2) bad++; }); return [good, bad]; };
+    const def = TYPES.map(t => [t, ...defOf([t])]).sort((x, y) => (y[1] - 2 * y[2]) - (x[1] - 2 * x[2])).slice(0, 4);
+    const picks = CANDS.map(k => { const m = M[k], o = foes.filter(([f]) => m.types.some(t => hit(t, f))).length, [g, bd] = defOf(m.types); return {k, o, g, bd, tot: m.stats.reduce((a, b) => a + b)}; })
+      .filter(p => p.o * 3 >= foes.length && p.bd * 6 <= mv.length).sort((x, y) => y.o - x.o || (y.g - 2 * y.bd) - (x.g - 2 * x.bd) || y.tot - x.tot).slice(0, 6);
+    return `<div class="gy-c"><p class="desc">상대 팀의 타입과 실제로 쓰는 기술로 상성을 계산한 것. 포켓몬 후보는 최종 진화 · 전설 아님 · 이 모드팩 야생에서 잡을 수 있음(진화 전 포함) · 종족값 합 500 이상 · Smogon 대전 세트가 있는 것</p><div class="gy-t"><span class="muted">때리기 좋은 타입</span> ${off.map(([a, n]) => `${tchip(a, 1)}<small class="muted">${foes.length}마리 중 ${n}</small>`).join(' ')}</div>
+      ${mv.length ? `<div class="gy-t"><span class="muted">막기 좋은 타입</span> ${def.map(([t, g, bd]) => `${tchip(t, 1)}<small class="muted">기술 ${mv.length}개 중 반감 ${g}${bd ? ' · 약점 ' + bd : ''}</small>`).join(' ')}</div>` : ''}
+      ${picks.length ? `<div class="gy-t"><span class="muted">쓸 만한 포켓몬</span></div><div class="mon-chips">${picks.map(p => monChip(p.k).replace(/<\/span>$/, ` <small>${p.o}마리에 2배 · 받는 약점 기술 ${p.bd}개</small></span>`)).join('')}</div>` : ''}</div>`;
+  };
   // 받침 있으면 a, 없으면 b를 붙임 (은/는, 을/를)
   const josa = (w, a, b) => { const c = w.charCodeAt(w.length - 1) - 0xAC00; return w + (c >= 0 && c < 11172 && c % 28 ? a : b); };
   const TABLE_FOR = ['오버월드 체육관용', '네더 체육관용 (네더에 놓고 사용)', '엔드의 리그용 (엔드에 놓고 사용)'];
@@ -1508,7 +1525,7 @@ TABS.gym = () => {
     <dl class="kv">
       <dt>생기는 곳</dt><dd>${where(g)}</dd>
       <dt>명령어</dt><dd><code>/locate structure ${esc(g.st)}</code>${g.dim ? ` <span class="muted">${g.dim}에서 입력</span>` : ''}</dd>
-      ${g.tr.map(([n, team]) => `<dt>${g.tr.length > 1 ? esc(n) : '포켓몬'}</dt><dd>${hint(team)}<div class="mon-chips">${team.map(mon).join('')}</div></dd>`).join('')}
+      ${g.tr.map(([n, team]) => `<dt>${g.tr.length > 1 ? esc(n) : '포켓몬'}</dt><dd>${hint(team)}<div class="mon-chips">${team.map(mon).join('')}</div>${counter(team)}</dd>`).join('')}
     </dl>
   </div>${tcards([[g.it]])}</section>`).join('')}
 

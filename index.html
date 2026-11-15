@@ -230,6 +230,18 @@ details[open] summary:before{content:"−"}
 .gy .gy-t{font-size:14px;margin-bottom:8px}
 .gy .gy-t .t{margin:1px 2px}
 .gy .mon-chip small{color:var(--muted)}
+.gy .gy-c{margin:12px 0 2px;border:1px solid var(--line);border-radius:6px;background:var(--soft);padding:4px 14px}
+.gy .gy-r{display:grid;grid-template-columns:92px minmax(0,1fr);gap:10px;align-items:start;padding:10px 0}
+.gy .gy-r + .gy-r{border-top:1px solid var(--line)}
+.gy .gy-l{font-size:13px;color:var(--muted);padding-top:4px}
+.gy .gy-v{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}
+.gy .gy-i{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-size:13px}
+.gy .gy-i .t{margin:0}
+.gy .gy-i b{font-weight:600}
+.gy .gy-i .bad{color:#c0392b}
+.gy .gy-c .mon-chips{margin:0}
+.gy .gy-c .mon-chip{background:var(--bg)}
+@media(max-width:700px){.gy .gy-r{grid-template-columns:1fr;gap:6px}.gy .gy-l{padding-top:0}}
 @media(min-width:900px){.gy .gym{grid-template-columns:minmax(0,1fr) 290px}}
 /* 전설 포켓몬 탭 (요약 카드 · 한 줄 답 · 목차는 배틀 기초 탭 스타일을 같이 씀). 항목은 접힌 줄 = 이름 | 구조물 | 소환 아이템 */
 .lgd h3 small{font-size:13px;font-weight:400;margin-left:8px}
@@ -1494,9 +1506,10 @@ TABS.gym = () => {
     const def = TYPES.map(t => [t, ...defOf([t])]).sort((x, y) => (y[1] - 2 * y[2]) - (x[1] - 2 * x[2])).slice(0, 4);
     const picks = CANDS.map(k => { const m = M[k], o = foes.filter(([f]) => m.types.some(t => hit(t, f))).length, [g, bd] = defOf(m.types); return {k, o, g, bd, tot: m.stats.reduce((a, b) => a + b)}; })
       .filter(p => p.o * 3 >= foes.length && p.bd * 6 <= mv.length).sort((x, y) => y.o - x.o || (y.g - 2 * y.bd) - (x.g - 2 * x.bd) || y.tot - x.tot).slice(0, 6);
-    return `<div class="gy-c"><p class="desc">상대 팀의 타입과 실제로 쓰는 기술로 상성을 계산한 것. 포켓몬 후보는 최종 진화 · 전설 아님 · 이 모드팩 야생에서 잡을 수 있음(진화 전 포함) · 종족값 합 500 이상 · Smogon 대전 세트가 있는 것</p><div class="gy-t"><span class="muted">때리기 좋은 타입</span> ${off.map(([a, n]) => `${tchip(a, 1)}<small class="muted">${foes.length}마리 중 ${n}</small>`).join(' ')}</div>
-      ${mv.length ? `<div class="gy-t"><span class="muted">막기 좋은 타입</span> ${def.map(([t, g, bd]) => `${tchip(t, 1)}<small class="muted">기술 ${mv.length}개 중 반감 ${g}${bd ? ' · 약점 ' + bd : ''}</small>`).join(' ')}</div>` : ''}
-      ${picks.length ? `<div class="gy-t"><span class="muted">쓸 만한 포켓몬</span></div><div class="mon-chips">${picks.map(p => monChip(p.k).replace(/<\/span>$/, ` <small>${p.o}마리에 2배 · 받는 약점 기술 ${p.bd}개</small></span>`)).join('')}</div>` : ''}</div>`;
+    const row = (l, v) => `<div class="gy-r"><div class="gy-l">${l}</div><div class="gy-v">${v}</div></div>`;
+    return `<div class="gy-c">${row('때리기 좋은 타입', off.map(([a, n]) => `<span class="gy-i">${tchip(a, 1)}<span><b>${n}</b>/${foes.length}마리에 2배</span></span>`).join(''))}
+      ${mv.length ? row('막기 좋은 타입', def.map(([t, g, bd]) => `<span class="gy-i">${tchip(t, 1)}<span>반감 <b>${g}</b>${bd ? ` · <span class="bad">약점 ${bd}</span>` : ''}</span></span>`).join('') + `<span class="gy-i muted">상대 기술 ${mv.length}개 기준</span>`) : ''}
+      ${picks.length ? row('추천 포켓몬', `<div class="mon-chips">${picks.map(p => monChip(p.k).replace(/<\/span>$/, ` <small>2배 ${p.o}마리 · 약점 기술 ${p.bd}</small></span>`)).join('')}</div>`) : ''}</div>`;
   };
   // 받침 있으면 a, 없으면 b를 붙임 (은/는, 을/를)
   const josa = (w, a, b) => { const c = w.charCodeAt(w.length - 1) - 0xAC00; return w + (c >= 0 && c < 11172 && c % 28 ? a : b); };
@@ -1530,6 +1543,7 @@ TABS.gym = () => {
   ${tcards(D.gt.map((k, i) => [k, TABLE_FOR[i]]))}
 
   <h3>관장별 정보</h3>
+  <p class="desc">관장마다 아래 "상대법" 상자는 상대 팀의 타입과 실제로 쓰는 기술로 상성을 계산한 거예요. 추천 포켓몬은 최종 진화 · 전설 아님 · 이 모드팩 야생에서 잡을 수 있음(진화 전 포함) · 종족값 합 500 이상 · Smogon 대전 세트가 있는 포켓몬 중에서 골랐어요. 특성 · 도구 · 레벨 차이는 반영하지 않았어요.</p>
   ${G.map((g, i) => `<section class="gym" id="gy-${i}"><div>
     <h4>${g.tr.length > 1 ? '' : i + 1 + '. '}${esc(g.ko)}<small>${g.tr.length > 1 ? '사천왕 4명 + 챔피언' : esc(g.tr[0][0])} · 최고 Lv ${lvOf(g)}</small></h4>
     <dl class="kv">

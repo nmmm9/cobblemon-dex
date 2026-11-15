@@ -412,7 +412,7 @@ const TOOLS = [
 ];
 
 // ---------- 관장 위치 (코블벌스): 지도 안내인 거래표 = [탐색 아이템, 체육관 구조물 태그]. 탐색 아이템·지도 제작대도 레시피 수집 대상 ----------
-const GYM_TRADES = dataFiles('trades', 'lumymon').flatMap(({ f }) => readJ(f).tiers.flatMap(t => t.groups.flatMap(g => g.trades)))
+const GYM_TRADES = dataFiles('trades', 'lumymon', true).flatMap(({ f }) => readJ(f).tiers.flatMap(t => t.groups.flatMap(g => g.trades)))
   .map(t => [t.cost_a.name, t.result.functions?.find(x => x.destination)?.destination]).filter(([, tag]) => tag);
 const GYM_TABLES = ['kanto', 'nether', 'end'].map(r => `lumymon:${r}_cartography_table`);
 const GYM_ITEMS = [...GYM_TRADES.map(t => t[0]), ...GYM_TABLES];
@@ -653,34 +653,41 @@ const cfg = {
 };
 
 // ---------- 관장 위치: 체육관 구조물(바이옴·높이) + RCT 트레이너(팀). 거래표의 구조물 태그 이름이 <지방>_<관장>_gym ----------
-const ELITE_KO = { Lorelei: '칸나', Bruno: '시바', Agatha: '국화', Lance: '목호', Blue: '그린' }; // 사천왕·챔피언은 탐색 아이템이 없어서 한국어 이름을 직접 적음
+const ELITE_KO = { Lorelei: '칸나', Bruno: '시바', Agatha: '국화', Lance: '목호', Blue: '그린', Pino: '일목', Koga: '독수', Karen: '카렌', Fosco: '혁진', Ester: '회연', Frida: '미혜', Drake: '권수', Rocco: '성호', Aaron: '충호', Terrie: '들국화', Vulcano: '대엽', Luciano: '오엽', Camilla: '난천' }; // 사천왕·챔피언은 탐색 아이템이 없어서 한국어 이름을 직접 적음
 const GYM_BIOME = { '#minecraft:has_structure/ancient_city': 'minecraft:deep_dark' }; // raw/mc_tags에 has_structure 태그가 없음
+const REGIONS = ['kanto', 'johto', 'hoenn', 'sinnoh'];
+const TERRA_KO = { snowy_badlands: '눈 덮인 악지', lush_desert: '무성한 사막', alpine_highlands: '고산 고원', blooming_plateau: '꽃 핀 고원', sakura_grove: '벚꽃 숲', sakura_valley: '벚꽃 계곡', glacial_chasm: '빙하 협곡', arid_highlands: '메마른 고원', wintry_lowlands: '겨울 저지대', cold_shrubland: '추운 관목지', hot_shrubland: '더운 관목지', steppe: '스텝 초원', desert_oasis: '사막 오아시스', rocky_mountains: '바위 산맥', yosemite_cliffs: '요세미티 절벽', forested_highlands: '숲 고원', brushland: '덤불 지대', moonlight_grove: '달빛 숲', amethyst_rainforest: '자수정 열대우림', volcanic_peaks: '화산 봉우리', blooming_valley: '꽃 핀 계곡', lavender_valley: '라벤더 계곡', sandstone_valley: '사암 계곡', shrubland: '관목지' };
+// 성도·호연·신오 관장: 탐색 아이템 툴팁과 트레이너 파일이 이탈리아판 이름(발레리오 등)이라 [한국판 이름, 영어판 이름]을 직접 적음
+const LEADER = { Valerio: ['비상', 'Falkner'], Raffaello: ['호일', 'Bugsy'], Chiara: ['꼭두', 'Whitney'], Angelo: ['유빈', 'Morty'], Furio: ['사도', 'Chuck'], Jasmine: ['규리', 'Jasmine'], Alfredo: ['류옹', 'Pryce'], Sandra: ['이향', 'Clair'],
+  Petra: ['원규', 'Roxanne'], Rudi: ['철구', 'Brawly'], Walter: ['암페어', 'Wattson'], Fiammetta: ['민지', 'Flannery'], Norman: ['종길', 'Norman'], Alice: ['은송', 'Winona'], Tell: ['풍 & 란', 'Tate & Liza'], Adriano: ['윤', 'Wallace'],
+  Pedro: ['강석', 'Roark'], Gardenia: ['유채', 'Gardenia'], Marzia: ['자두', 'Maylene'], Omar: ['맥실러', 'Crasher Wake'], Fannie: ['멜리사', 'Fantina'], Ferruccio: ['동관', 'Byron'], Bianca: ['무청', 'Candice'], Corrado: ['전진', 'Volkner'] };
 const DIM_KO = { 'minecraft:the_nether': '네더', 'minecraft:the_end': '엔드' };
 const rctTrainers = Object.fromEntries(dataFiles('trainers', 'rctmod').map(x => [x.rel.replace(/\.json$/, ''), x.f]));
-const gymStruct = Object.fromEntries(dataFiles('worldgen/structure', 'cobbleverse').map(x => [x.rel.replace(/\.json$/, ''), x.f]));
+const gymStruct = Object.fromEntries(dataFiles('worldgen/structure', 'cobbleverse', true).map(x => [x.rel.replace(/\.json$/, ''), x.f]));
 const teamOf = id => { const t = readJ(rctTrainers[id]); return [t.name?.literal ?? id, t.team.map(p => [resolveResult([p.species.replace(/^cobblemon:/, ''), ...(p.aspects || [])].join(' ')) ?? p.species, p.level, (p.moveset || []).map(x => x.toLowerCase().replace(/[^a-z0-9]/g, ''))])]; };
 const topLv = team => Math.max(...team.map(p => p[1]));
 const gyms = GYM_TRADES.map(([item, tag]) => {
-  const region = tag.split(':')[1].split('_')[0], st = tagValues('cobbleverse', 'worldgen/structure', tag.split(':')[1])[0], sid = st.split(':')[1];
+  const region = tag.split(':')[1].split('_')[0], st = tagValues('cobbleverse', 'worldgen/structure', tag.split(':')[1], true)[0], sid = st.split(':')[1];
   const s = readJ(gymStruct[sid]), y = s.start_height?.absolute ?? 0;
   // 관장은 <지방>_<구조물 이름>, 리그 구조물은 그 지방의 사천왕·챔피언 전부
-  const ids = rctTrainers[`${region}_${sid}`] ? [`${region}_${sid}`] : Object.keys(rctTrainers).filter(k => k.startsWith(region + '_league_') || k.startsWith(region + '_champion_'));
+  // 2인 체육관(호연 tell_pat)은 앞사람 파일에 더블 배틀 팀 전체가 있고 뒷사람(pat)은 자리 채우기용 메타몽 1마리라 앞사람만
+  const own = [sid, sid.split('_')[0]].map(x => `${region}_${x}`).find(x => rctTrainers[x]);
+  const ids = own ? [own] : Object.keys(rctTrainers).filter(k => k.startsWith(region + '_league_') || k.startsWith(region + '_champion_'));
   const tr = ids.map(teamOf).sort((a, b) => topLv(a[1]) - topLv(b[1]));
   return {
-    ko: (lang[`tooltip.lumymon.${item.split(':')[1]}`] ?? '').match(/§.(.+?)§r/)?.[1] ?? tr[0][0], it: item, st,
-    bi: [].concat(s.biomes).map(b => tagLabel(GYM_BIOME[b] ?? (b.includes(':') ? b : 'minecraft:' + b))).join(' · '),
-    en: [].concat(s.biomes).map(b => (GYM_BIOME[b] ?? b).split(/[:/]/).pop().replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())).join(' · '), // 바닐라 바이옴은 영어 이름 = id를 띄어 쓴 것
+    ko: (ids.length === 1 && LEADER[tr[0][0]]?.[0]) || ((lang[`tooltip.lumymon.${item.split(':')[1]}`] ?? '').match(/§.(.+?)§r/)?.[1] ?? tr[0][0]), it: item, st,
+    bi: [].concat(s.biomes).map(b => b.startsWith('terralith:') ? TERRA_KO[b.slice(10)] ?? b : tagLabel(GYM_BIOME[b] ?? (b.includes(':') ? b : 'minecraft:' + b))).join(' · '),
+    en: [].concat(s.biomes).map(b => (GYM_BIOME[b] ?? b).split(/[:/]/).pop().replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) + (b.startsWith('terralith:') ? ' (Terralith)' : '')).join(' · '), // 바닐라 바이옴은 영어 이름 = id를 띄어 쓴 것
     dim: DIM_KO[allR.get(item)?.[0]?.result?.components?.['lumymon:dimension_id']] ?? '',
     // 지표에 맞춰 놓는 구조물은 start_height가 지표 기준, 아니면 절대 높이
     // 지표 기준 음수(이슬 -21)는 기초가 내려가는 깊이일 뿐. misty.nbt는 높이 40, 체육관 바닥이 23층이라 건물은 수면 위로 나옴 (NBT로 확인)
     at: s.project_start_to_heightmap ? (y < 0 ? '수면 위로 솟은 건물' : '') : s.type === 'minecraft:jigsaw' ? `지하 Y ${y} 근처` : '',
-    tr: tr.map(([n, team]) => [ELITE_KO[n] ?? n, team]),
+    tr: tr.map(([n, team]) => [ids.length > 1 ? ELITE_KO[n] ?? n : LEADER[n]?.[1] ?? n, team]), rg: region, db: tr.filter(([n]) => readJ(rctTrainers[ids.find(id => teamOf(id)[0] === n)]).battleFormat === 'GEN_9_DOUBLES').map(([n]) => ids.length > 1 ? ELITE_KO[n] ?? n : LEADER[n]?.[1] ?? n),
   };
-}).sort((a, b) => topLv(a.tr[0][1]) - topLv(b.tr[0][1]));
+}).sort((a, b) => REGIONS.indexOf(a.rg) - REGIONS.indexOf(b.rg) || topLv(a.tr[0][1]) - topLv(b.tr[0][1]));
 
 // ---------- 전설 포켓몬: 구조물 파일에서 바이옴·차원, 트레이너 파일에서 이름·레벨을 채움 ----------
 // Terralith 바이옴은 한국어 번역이 없어서 직접 옮김 (게임 F3 화면에는 terralith:snowy_badlands 처럼 영어 id로 나옴)
-const TERRA_KO = { snowy_badlands: '눈 덮인 악지', lush_desert: '무성한 사막', alpine_highlands: '고산 고원', blooming_plateau: '꽃 핀 고원', sakura_grove: '벚꽃 숲', sakura_valley: '벚꽃 계곡', glacial_chasm: '빙하 협곡', arid_highlands: '메마른 고원', wintry_lowlands: '겨울 저지대', cold_shrubland: '추운 관목지', hot_shrubland: '더운 관목지', steppe: '스텝 초원', desert_oasis: '사막 오아시스' };
 const lgStruct = Object.fromEntries(dataFiles('worldgen/structure', null, true).map(x => [x.ns + ':' + x.rel.replace(/\.json$/, ''), x.f]));
 const titleEn = id => id.split(/[:/]/).pop().replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 const lgBiomes = b => {

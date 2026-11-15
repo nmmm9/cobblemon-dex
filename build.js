@@ -883,6 +883,30 @@ for (const k of Object.keys(src)) {
   for (const t of Object.keys(src[k])) if (src[k][t].length > 14) src[k][t] = [...src[k][t].slice(0, 14), `외 ${src[k][t].length - 14}곳`];
 }
 
+// ---------- 지닌 도구: Smogon 대전 세트(pkmn.github.io/smogon/data/sets/genN.json, extract-cv.sh 가 raw/smogon/ 에 받아 둠)에서 많이 쓰는 도구 ----------
+// 포켓몬마다 세트가 있는 가장 최근 세대만 봄. 도구 이름을 코블버스 아이템 키와 맞추고 못 맞춘 건 버림. 메가스톤은 메가 폼에만 -> mons[k].hi = [[아이템 키, 쓰는 세트 수]], mons[k].hs = [세대, 세트 수]
+{
+  const ODD = /^(1v1|2v2doubles|almostanyability|anythinggoes|balancedhackmons|camomons|cap|godlygift|inheritance|mixandmega|partnersincrime|purehackmons|stabmons|letsgoou|pikacup|petitcup|nc199d)$/; // 규칙이 다른 변형 대전은 뺌
+  const nz = s => s.toLowerCase().replace(/[^a-z0-9]/g, ''), byItem = {};
+  for (const id of Object.keys(items)) byItem[nz(id.split(':').pop())] ??= id;
+  const gens = [9, 8, 7, 6, 5, 4, 3, 2, 1].map(g => [g, path.join(RAW, 'smogon', `gen${g}.json`)]).filter(([, f]) => fs.existsSync(f)).map(([g, f]) => [g, readJ(f)]);
+  const setsOf = name => { for (const [g, j] of gens) { const sp = Object.keys(j).find(n => nz(n) === name); if (sp) { const sets = Object.entries(j[sp]).filter(([fm]) => !ODD.test(fm)).flatMap(([, fm]) => Object.values(fm)); if (sets.length) return [g, sets]; } } return null; };
+  let n = 0;
+  for (const k of Object.keys(mons)) {
+    const mega = /-mega(x|y)?$/.exec(k), hit = setsOf(nz(mega ? k.split('-')[0] : k)); if (!hit) continue;
+    const [g, sets] = hit, cnt = {};
+    let used = 0;
+    for (const s of sets) {
+      const its = [s.item].flat().filter(Boolean).map(x => byItem[nz(x)]).filter(Boolean)
+        .filter(id => { const stone = /ite(x|y)?$/.test(nz(id.split(':').pop())) && id.startsWith('mega_showdown:'); return mega ? stone && (!mega[1] || nz(id).endsWith(mega[1])) : !stone; });
+      if (its.length) used++;
+      new Set(its).forEach(id => cnt[id] = (cnt[id] || 0) + 1);
+    }
+    const top = Object.entries(cnt).sort((a, b) => b[1] - a[1]).slice(0, 3);
+    if (top.length) { mons[k].hi = top; mons[k].hs = [g, used]; n++; }
+  }
+  console.log('지닌 도구 (Smogon 세트)', n, '/', Object.keys(mons).length);
+}
 // ---------- self-check ----------
 const ids = new Set(Object.keys(mons));
 let bad = 0;

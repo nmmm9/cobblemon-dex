@@ -29,3 +29,5 @@ mkdir -p "$OUT/../pokeapi" && curl -sS -m 60 -o "$OUT/../pokeapi/pokemon.csv" "h
 cp "$P/config/mobsbegone-blacklist.json" "$OUT/../" && echo "mobsbegone ok"
 # 지도 아이콘: 미니맵(Xaero)에 뜨는 픽셀 그림 (E19 Cobblemon Minimap Icons 리소스팩). build.js 가 도감 키와 맞춰 img/map/ 으로 복사
 rm -rf "$OUT/../mapicon" && 7z e "$P/resourcepacks/E19 Cobblemon Minimap Icons.zip" -o"$OUT/../mapicon" 'assets/xaerominimap/entity/icon/sprite/regular/*' -y >/dev/null && echo "mapicon ok"
+# 지닌 도구 추천: Smogon 대전 세트 (pkmn/smogon 공개 데이터). build.js 가 포켓몬마다 많이 쓰는 도구를 뽑음
+mkdir -p "$OUT/../smogon" && for g in 1 2 3 4 5 6 7 8 9; do curl -sL -o "$OUT/../smogon/gen$g.json" "https://pkmn.github.io/smogon/data/sets/gen$g.json"; done && echo "smogon ok"

@@ -687,10 +687,15 @@ function learnHow(m, id) {
 }
 const FMT = {ou: 'OU', ubers: 'Ubers', uu: 'UU', ru: 'RU', nu: 'NU', pu: 'PU', zu: 'ZU', lc: 'LC (Lv 5)', doublesou: '더블 OU', battlestadiumsingles: '배틀스타디움 싱글', battlestadiumdoubles: '배틀스타디움 더블', nationaldex: '내셔널덱스 OU', nationaldexubers: '내셔널덱스 Ubers', nationaldexuu: '내셔널덱스 UU', nationaldexru: '내셔널덱스 RU', nationaldexdoubles: '내셔널덱스 더블', nationaldexmonotype: '내셔널덱스 모노타입', monotype: '모노타입', middlecup: '미들컵', nfe: 'NFE', lclevel100: 'LC Lv 100', ubersuu: 'Ubers UU', bdspou: 'BDSP OU', dreamworldou: '드림월드 OU', tradebacksou: '트레이드백 OU', stadiumou: '스타디움 OU', battlespotsingles: '배틀스팟 싱글', battlespotdoubles: '배틀스팟 더블', battlespottriples: '배틀스팟 트리플', dlc1nationaldexag: '내셔널덱스 AG'};
 const EVK = {hp: 'HP', atk: '공격', def: '방어', spa: '특공', spd: '특방', spe: '스피드'};
-const setCard = (m, s) => `<div class="card"><div class="why">${esc(FMT[s.f] ?? s.f.replace(/^vgc(\d+)$/, 'VGC $1'))} · ${esc(s.n)}</div>
-  ${s.mv.map(alt => `<div class="nm">${alt.map(id => MV[id] ? `${tchip(MV[id][2], 1)} ${esc(MV[id][0])}${learnHow(m, id) ? '' : ' <span class="muted">(못 배움)</span>'}` : esc(id) + ' <span class="muted">(코블버스에 없음)</span>').join(' <span class="muted">또는</span> ')}</div>`).join('')}
-  <div class="st">${[s.ab.length && '특성 ' + s.ab.map(a => D.abilities[a]?.[0] ?? a).join('/'), s.na.length && '성격 ' + s.na.map(x => D.natures[x] ?? x).join('/'), s.it.length && '도구 ' + s.it.map(x => D.items[x]?.[0] ?? x).join('/'), s.ev && '노력치 ' + Object.entries(s.ev).map(([k, v]) => EVK[k] + ' ' + v).join(' · ')].filter(Boolean).map(esc).join('<br>')}</div></div>`;
-const setsHtml = m => `<p class="desc">Smogon(포켓몬 대전 커뮤니티) ${m.sg}세대 대전 세트 ${m.ss.length}개. 중요한 대전 규칙 순. "(못 배움)"은 코블버스 데이터상 이 포켓몬이 배울 방법이 없는 기술</p><div class="rec">${m.ss.slice(0, 3).map(s => setCard(m, s)).join('')}</div>${m.ss.length > 3 ? `<details><summary>세트 ${m.ss.length - 3}개 더 보기</summary><div class="rec">${m.ss.slice(3).map(s => setCard(m, s)).join('')}</div></details>` : ''}`;
+const fmtName = f => FMT[f] ?? f.replace(/^vgc(\d+)$/, 'VGC $1');
+// Smogon 세트 하나를 예전 추천 기술 카드 4장으로. 칸마다 후보가 여럿이면 첫 번째를 카드로, 나머지는 "또는"으로
+const setRec = (m, i) => {
+  const s = m.ss[i], card = alt => { const id = alt[0], mv = MV[id], how = mv ? learnHow(m, id) : '';
+    const rest = alt.slice(1).map(x => MV[x]?.[0] ?? x);
+    return `<div class="card"><div class="why">${esc(rest.length ? '또는 ' + rest.join(' · ') : mv ? (how || '코블버스에서 못 배움') : '코블버스에 없는 기술')}</div><div class="nm">${mv ? `${tchip(mv[2], 1)} ${esc(mv[0])}` : esc(id)}</div>${mv ? `<div class="st">${CAT[mv[3]]}${mv[4] ? ` · 위력 ${mv[4]}` : ''} · 명중 ${mv[5] || '—'}</div>` : ''}</div>`; };
+  const info = [s.ab.length && '특성 ' + s.ab.map(a => D.abilities[a]?.[0] ?? a).join('/'), s.na.length && '성격 ' + s.na.map(x => D.natures[x] ?? x).join('/'), s.it.length && '도구 ' + s.it.map(x => D.items[x]?.[0] ?? x).join('/'), s.ev && '노력치 ' + Object.entries(s.ev).map(([k, v]) => EVK[k] + ' ' + v).join(' · ')].filter(Boolean);
+  return `<div class="rec">${s.mv.map(card).join('')}</div>${info.length ? `<p class="desc" style="margin-top:8px">${info.map(esc).join(' &nbsp;|&nbsp; ')}</p>` : ''}`;
+};
 function recHtml(m, all) {
   const r = recommend(m, all);
   if (!r.length) return '<div class="empty">추천할 기술이 없음</div>';
@@ -792,8 +797,9 @@ function render(k) {
   <section><h2>진화</h2><div class="evo-scroll">${evoHtml(tree(root(k)), k)}</div></section>
   <section><h2>어디서 잡나</h2>${spawnSection(k, m)}</section>
   ${gimmickSection(m)}
-  <section><h2>${m.ss ? "대전 세트<small>기술·특성·성격·노력치·도구 조합</small>" : "추천 기술<small>다 키웠을 때 기준 4개</small>"}</h2>
-    ${m.ss ? setsHtml(m) : `<p class="desc">Smogon 대전 세트가 없는 포켓몬이라 위력·자기 타입·상성만 보고 자동으로 고른 것. 대전 데이터 아님.</p>`}${m.ss ? '' : `<div class="opt"><label><input type="checkbox" id="recall"> 기술머신·가르침·알 기술까지 포함</label><span>${m.stats[1] >= m.stats[3] ? '공격이 더 높아서 물리' : '특공이 더 높아서 특수'} 기술 위주로 고름</span></div>
+  <section><h2>추천 기술<small>다 키웠을 때 기준 4개</small></h2>
+    ${m.ss ? `<div class="opt" id="setsel" style="flex-wrap:wrap;gap:6px">${m.ss.map((s, i) => `<span class="chip sm ${i ? '' : 'cur'}" data-set="${i}">${esc(fmtName(s.f))} · ${esc(s.n)}</span>`).join('')}<span>Smogon ${m.sg}세대 대전 세트</span></div>
+    <div id="rec">${setRec(m, 0)}</div>` : `<div class="opt"><label><input type="checkbox" id="recall"> 기술머신·가르침·알 기술까지 포함</label><span>대전 세트가 없어서 위력·자기 타입·상성으로 자동 계산</span></div>
     <div id="rec">${recHtml(m, false)}</div>`}
   </section>
   <section class="c6"><h2>레벨업 기술</h2>${moveTable(m.lv, true)}</section>
@@ -803,6 +809,7 @@ function render(k) {
     <details><summary>알 기술 (${m.egg.length})</summary>${moveTable(m.egg)}</details>
     <details><summary>기타 · 예전 게임 기술 (${m.other.length})</summary>${moveTable(m.other)}</details>
   </section></div>`;
+  document.getElementById('setsel')?.addEventListener('click', e => { const c = e.target.closest('[data-set]'); if (!c) return; document.querySelectorAll('#setsel .chip').forEach(x => x.classList.toggle('cur', x === c)); document.getElementById('rec').innerHTML = setRec(m, +c.dataset.set); });
   document.getElementById('recall')?.addEventListener('change', e => { document.getElementById('rec').innerHTML = recHtml(m, e.target.checked); });
   bindSearch(document.getElementById('oq'), document.getElementById('odrop'), setOpp);
   document.getElementById('oclear')?.addEventListener('click', () => setOpp(null));

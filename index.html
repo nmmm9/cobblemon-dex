@@ -475,7 +475,7 @@ const rankHtml = () => {
   const v = m => RS.by === 6 ? m.stats.reduce((a, b) => a + b) : m.stats[RS.by];
   const r = D.order.filter(k => !RS[KIND(M[k])] && RS.ty.every(t => M[k].types.includes(t)) && !(RS.xf && M[k].form)).map(k => [k, v(M[k]), M[k].stats.reduce((a, b) => a + b)]).sort((a, b) => b[1] - a[1] || b[2] - a[2] || M[a[0]].n - M[b[0]].n).slice(0, 100);
   const cell = (x, on) => `<td class="c"${on ? ' style="font-weight:600;color:var(--fg)"' : ' style="color:var(--muted)"'}>${x}</td>`;
-  return `<div style="overflow-x:auto"><table class="rkt"><thead><tr><th class="c">순위</th><th>포켓몬</th>${STAT.map((s, i) => `<th class="c">${s}</th>`).join('')}<th class="c">합계</th></tr></thead><tbody>${r.map(([k, , t], i) => `<tr data-go="${k}" style="cursor:pointer"><td class="c" style="color:var(--muted)">${i + 1}</td><td style="white-space:nowrap">${monImg(M[k])}${esc(fullKo(M[k]))}${kindTag(M[k])}</td>${M[k].stats.map((x, j) => cell(x, j === RS.by)).join('')}${cell(t, RS.by === 6)}</tr>`).join('')}</tbody></table></div>`;
+  return `<div style="overflow-x:auto"><table class="rkt"><thead><tr><th class="c">순위</th><th>포켓몬</th>${[...STAT, '합계'].map((s, i) => `<th class="c" data-rs="${i}" style="cursor:pointer${RS.by === i ? ';text-decoration:underline' : ''}">${s}${RS.by === i ? ' ▼' : ''}</th>`).join('')}</tr></thead><tbody>${r.map(([k, , t], i) => `<tr data-go="${k}" style="cursor:pointer"><td class="c" style="color:var(--muted)">${i + 1}</td><td style="white-space:nowrap">${monImg(M[k])}${esc(fullKo(M[k]))}${kindTag(M[k])}</td>${M[k].stats.map((x, j) => cell(x, j === RS.by)).join('')}${cell(t, RS.by === 6)}</tr>`).join('')}</tbody></table></div>`;
 };
 const homeHtml = () => `<p class="hint">예: 리자몽, 이브이, charizard, 6 · 초전설, 준전설, 환상, 울트라비스트, 패러독스로 검색하면 그 종류가 다 나와요</p><section style="margin-top:36px"><h2>즐겨찾기</h2>${FAV.length ? `<div class="mon-chips">${FAV.map(monChip).join("")}</div>` : '<p class="hint">포켓몬 페이지에서 이름 옆 ☆ 즐겨찾기를 누르면 여기에 모임. 이 브라우저에만 저장됨.</p>'}</section><section style="margin-top:36px"><h2>타입 · 종류로 찾기</h2><p class="desc">타입을 누르면 그 타입 포켓몬이 나와요. 2개를 고르면 두 타입을 다 가진 포켓몬만 나와요. 종류는 여러 개 고를 수 있고, 타입과 같이 고르면 둘 다 맞는 것만 나와요. 다시 누르면 해제.</p><div class="tpk ${TSEL.length ? 'any' : ''}" id="tpk">${TYPES.map(t => `<span class="t ${TSEL.includes(t) ? 'on' : ''}" data-ty="${t}" style="background:${COLOR[t]}">${TK[t]}</span>`).join('')}</div><div class="chips" id="kpk" style="margin:-4px 0 14px">${KINDS.map(c => `<span class="chip sm ${KSEL.includes(c) ? 'cur' : ''}" data-kd="${c}">${c}</span>`).join('')}</div><div id="tph">${typeHits()}</div></section><section style="margin-top:36px"><h2>종족값 순위</h2><p class="desc">타입을 고르면 그 타입만(2개면 둘 다 가진 것만), 기준을 누르면 그 종족값이 높은 순으로 100마리. 줄을 누르면 그 포켓몬 페이지로 가요.</p><div class="tpk ${RS.ty.length ? 'any' : ''}" id="rkp" style="margin-bottom:8px">${TYPES.map(t => `<span class="t ${RS.ty.includes(t) ? 'on' : ''}" data-ty="${t}" style="background:${COLOR[t]}">${TK[t]}</span>`).join('')}</div><div class="chips" id="rks" style="margin:0 0 8px">${['합계', ...STAT].map((s, i) => `<span class="chip sm ${RS.by === (i ? i - 1 : 6) ? 'cur' : ''}" data-rs="${i ? i - 1 : 6}">${s}</span>`).join('')}</div><div class="opt" id="rko" style="gap:6px 16px;flex-wrap:wrap;margin-bottom:10px">${KINDS.map(c => `<label><input type="checkbox" data-ro="${c}" ${RS[c] ? '' : 'checked'}> ${c} 넣기</label>`).join('')}<label><input type="checkbox" data-ro="xf" ${RS.xf ? '' : 'checked'}> 메가·리전폼 등 다른 폼 넣기</label></div><div id="rkt">${rankHtml()}</div></section>`;
 const TYPES = Object.keys(TK);
@@ -824,11 +824,12 @@ function render(k) {
       c.classList.toggle('cur', KSEL.includes(d));
       document.getElementById('tph').innerHTML = typeHits();
     });
-    document.getElementById('rks').addEventListener('click', e => {
+    const rkSort = e => {
       const c = e.target.closest('[data-rs]'); if (!c) return;
-      RS.by = +c.dataset.rs; document.querySelectorAll('#rks .chip').forEach(x => x.classList.toggle('cur', x === c));
+      RS.by = +c.dataset.rs; document.querySelectorAll('#rks .chip').forEach(x => x.classList.toggle('cur', +x.dataset.rs === RS.by));
       document.getElementById('rkt').innerHTML = rankHtml();
-    });
+    };
+    document.getElementById('rks').addEventListener('click', rkSort); document.getElementById('rkt').addEventListener('click', rkSort);
     document.getElementById('rkp').addEventListener('click', e => {
       const t = e.target.closest('[data-ty]')?.dataset.ty; if (!t) return;
       RS.ty = RS.ty.includes(t) ? RS.ty.filter(x => x !== t) : [...RS.ty, t].slice(-2);

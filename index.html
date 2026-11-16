@@ -657,7 +657,7 @@ function dmgScore(m, mv) {
 }
 function recommend(m, all) {
   const ids = new Set(m.lv.map(x => x[1]));
-  if (all) [...m.tm, ...m.egg, ...m.tutor, ...m.other].forEach(x => ids.add(x));
+  if (all) [...m.tm, ...m.egg, ...m.tutor.filter(id => TUTOR_SOLD.has(id))].forEach(x => ids.add(x)); // 실제로 배울 수 있는 것만
   const pool = [...ids].filter(id => MV[id] && !MV[id][7].includes('n') && !GIMMICK.has(id));
   const bias = m.stats[1] >= m.stats[3] * 1.1 ? 'P' : m.stats[3] >= m.stats[1] * 1.1 ? 'S' : null; // 한쪽이 10% 이상 높으면 그 분류만
   const allCands = pool.map(id => ({id, mv: MV[id], s: dmgScore(m, MV[id])})).filter(c => c.s > 0).sort((a, b) => b.s - a.s);
@@ -709,6 +709,14 @@ function learnHow(m, id) {
 const FMT = {ou: 'OU', ubers: 'Ubers', uu: 'UU', ru: 'RU', nu: 'NU', pu: 'PU', zu: 'ZU', lc: 'LC (Lv 5)', doublesou: '더블 OU', battlestadiumsingles: '배틀스타디움 싱글', battlestadiumdoubles: '배틀스타디움 더블', nationaldex: '내셔널덱스 OU', nationaldexubers: '내셔널덱스 Ubers', nationaldexuu: '내셔널덱스 UU', nationaldexru: '내셔널덱스 RU', nationaldexdoubles: '내셔널덱스 더블', nationaldexmonotype: '내셔널덱스 모노타입', monotype: '모노타입', middlecup: '미들컵', nfe: 'NFE', lclevel100: 'LC Lv 100', ubersuu: 'Ubers UU', bdspou: 'BDSP OU', dreamworldou: '드림월드 OU', tradebacksou: '트레이드백 OU', stadiumou: '스타디움 OU', battlespotsingles: '배틀스팟 싱글', battlespotdoubles: '배틀스팟 더블', battlespottriples: '배틀스팟 트리플', dlc1nationaldexag: '내셔널덱스 AG'};
 const EVK = {hp: 'HP', atk: '공격', def: '방어', spa: '특공', spd: '특방', spe: '스피드'};
 const fmtName = f => FMT[f] ?? f.replace(/^vgc(\d+)$/, 'VGC $1');
+// 세트 역할: 변화기 3개 이상 = 지원형, 노력치가 공격·특공 둘 다 128 이상 = 혼합, 내구(HP·방어·특방) 합 300 이상이고 공격 쪽 200 미만 = 내구형, 아니면 공격·특공 중 큰 쪽. 노력치가 없으면 물리·특수 기술 수로
+const setRole = s => {
+  const e = s.ev || {}, a = e.atk || 0, p = e.spa || 0, b = (e.hp || 0) + (e.def || 0) + (e.spd || 0), cat = c => s.mv.filter(alt => MV[alt[0]]?.[3] === c).length;
+  if (cat('T') >= 3) return '지원형';
+  if (a >= 128 && p >= 128) return '혼합 공격형';
+  if (b >= 300 && Math.max(a, p) < 200) return '내구형';
+  return (a || p ? a > p : cat('P') >= cat('S')) ? '물리 공격형' : '특수 공격형';
+};
 // Smogon 세트 하나를 예전 추천 기술 카드 4장으로. 칸마다 후보가 여럿이면 첫 번째를 카드로, 나머지는 "또는"으로
 const setRec = (m, i) => {
   const s = m.ss[i], card = alt => { const id = alt[0], mv = MV[id], how = mv ? learnHow(m, id) : '';
@@ -819,9 +827,12 @@ function render(k) {
   <section><h2>어디서 잡나</h2>${spawnSection(k, m)}</section>
   ${gimmickSection(m)}
   <section><h2>추천 기술<small>다 키웠을 때 기준 4개</small></h2>
-    ${m.ss ? `<div class="opt" id="setsel" style="flex-wrap:wrap;gap:6px">${m.ss.map((s, i) => `<span class="chip sm ${i ? '' : 'cur'}" data-set="${i}">${esc(fmtName(s.f))} · ${esc(s.n)}</span>`).join('')}<span>Smogon ${m.sg}세대 대전 세트</span></div>
-    <div id="rec">${setRec(m, 0)}</div>` : `<div class="opt"><label><input type="checkbox" id="recall"> 기술머신·가르침·알 기술까지 포함</label><span>대전 세트가 없어서 위력·자기 타입·상성으로 자동 계산</span></div>
-    <div id="rec">${recHtml(m, false)}</div>`}
+    <div class="opt" id="recmode" style="gap:6px"><span class="chip sm cur" data-mode="pve">PvE · 트레이너·관장 상대</span>${m.ss ? '<span class="chip sm" data-mode="pvp">PvP · 사람과 대전</span>' : ''}</div>
+    <div id="pve"><div class="opt"><label><input type="checkbox" id="reclv"> 레벨업으로 배우는 기술만</label><span>위력 · 명중 · 자기 타입 · 상성 범위로 자동 계산. 기술머신 · 교배 · 주민 기술까지 실제로 배울 수 있는 것만</span></div>
+    <div id="rec">${recHtml(m, true)}</div></div>
+    ${m.ss ? `<div id="pvp" hidden><div class="opt" id="setsel" style="flex-wrap:wrap;gap:6px">${m.ss.map((s, i) => `<span class="chip sm ${i ? '' : 'cur'}" data-set="${i}" title="${esc(s.n)}">${setRole(s)} · ${esc(fmtName(s.f))}</span>`).join('')}</div>
+    <p class="desc">Smogon(포켓몬 대전 커뮤니티) ${m.sg}세대 대전 세트. 뒤의 OU · UU 같은 건 대전 규칙 등급이에요. 사람끼리 하는 대전 기준이라 함정 · 교체 기술이 섞여 있어요.</p>
+    <div id="srec">${setRec(m, 0)}</div></div>` : ''}
   </section>
   <section class="c6"><h2>레벨업 기술</h2>${moveTable(m.lv, true)}</section>
   <section class="c6 top"><h2>그 외 기술</h2><p class="desc">기술머신(TM) 아이템은 레벨업·기술머신 목록에 있는 기술만 가르칠 수 있음. 가르침 기술은 기술작업대 주민이 파는 가르침기술 아이템, 알 기술은 교배나 교배작업대 주민이 파는 알기술 아이템으로 배움. <b>알·가르침 목록에만 있는 기술은 TM을 만들어도 못 배움.</b></p>
@@ -830,8 +841,9 @@ function render(k) {
     <details><summary>알 기술 (${m.egg.length})</summary>${moveTable(m.egg)}</details>
     <details><summary>기타 · 예전 게임 기술 (${m.other.length})</summary>${moveTable(m.other)}</details>
   </section></div>`;
-  document.getElementById('setsel')?.addEventListener('click', e => { const c = e.target.closest('[data-set]'); if (!c) return; document.querySelectorAll('#setsel .chip').forEach(x => x.classList.toggle('cur', x === c)); document.getElementById('rec').innerHTML = setRec(m, +c.dataset.set); });
-  document.getElementById('recall')?.addEventListener('change', e => { document.getElementById('rec').innerHTML = recHtml(m, e.target.checked); });
+  document.getElementById('recmode').addEventListener('click', e => { const c = e.target.closest('[data-mode]'); if (!c) return; document.querySelectorAll('#recmode .chip').forEach(x => x.classList.toggle('cur', x === c)); document.getElementById('pve').hidden = c.dataset.mode !== 'pve'; const p = document.getElementById('pvp'); if (p) p.hidden = c.dataset.mode !== 'pvp'; });
+  document.getElementById('setsel')?.addEventListener('click', e => { const c = e.target.closest('[data-set]'); if (!c) return; document.querySelectorAll('#setsel .chip').forEach(x => x.classList.toggle('cur', x === c)); document.getElementById('srec').innerHTML = setRec(m, +c.dataset.set); });
+  document.getElementById('reclv').addEventListener('change', e => { document.getElementById('rec').innerHTML = recHtml(m, !e.target.checked); });
   bindSearch(document.getElementById('oq'), document.getElementById('odrop'), setOpp);
   document.getElementById('oclear')?.addEventListener('click', () => setOpp(null));
   new Set(forms.map(x => imgUrl(M[x].i || M[x].n, 1))).forEach(u => { new Image().src = u; }); // 다른 폼 그림을 미리 받아 둠 (폼을 누를 때 그림이 비었다가 뜨지 않게)

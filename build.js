@@ -34,13 +34,14 @@ const tagValues = (ns, kind, p, withExtra) => {
   return vals;
 };
 // 언어: 모든 레이어 en_us를 깔고 ko_kr로 덮음 (한국어 없는 애드온 문구는 영어로 남음)
-const lang = {};
+const lang = {}, langEn = {}; // langEn: 영어 원문 (한국어 없는 아이템 이름 번역용, itemko.js)
 for (const lc of ['en_us', 'ko_kr']) for (const L of LAYERS) {
   const a = path.join(L, 'assets');
   if (fs.existsSync(a)) for (const ns of fs.readdirSync(a)) {
     const f = path.join(a, ns, 'lang', lc + '.json');
     if (!fs.existsSync(f)) continue;
     // 게임은 느슨하게 읽어서 쉼표 빠진 줄도 통과함 (메가 쇼다운 ko_kr). 같은 식으로 보정
+    if (lc === 'en_us') try { Object.assign(langEn, readJ(f)); } catch {}
     try { Object.assign(lang, readJ(f)); } catch { Object.assign(lang, JSON.parse(fs.readFileSync(f, 'utf8').replace(/^﻿/, '').replace(/"\s*\n(\s*)"/g, '",\n$1"'))); }
   }
 }
@@ -939,6 +940,18 @@ for (const [k, m] of Object.entries(mons)) {
 }
 if (bad) process.exit(1);
 
+// 아이템 이름 정리: 개발용([LEGACY]·_로 시작) 빼고, 포맷 자리표시자(%s) 지우고, 한국어 언어 파일이 없는 모드 이름은 번역 (원문은 [3]에 둬서 검색·표시)
+{
+  const mcEn = readJ(path.join(RAW, 'mc_en_us.json')), NAMEK = /^(item|block|cobblemon\.(species|move)|color)\./;
+  const pairs = [...Object.keys(mcEn).filter(k => NAMEK.test(k) && typeof mcLang[k] === 'string').map(k => [mcEn[k], mcLang[k]]),
+    ...Object.keys(langEn).filter(k => NAMEK.test(k) && typeof lang[k] === 'string' && lang[k] !== langEn[k]).map(k => [langEn[k], lang[k]])].filter(([e]) => typeof e === 'string');
+  const toKo = require('./itemko.js')(pairs, LEADER);
+  for (const [id, it] of Object.entries(items)) {
+    if (/^\[LEGACY\]|^_/.test(it[0])) { delete items[id]; continue; }
+    it[0] = it[0].replace(/%s/g, '').trim();
+    if (!/[가-힣]/.test(it[0])) { const k = toKo(it[0]); if (k !== it[0]) it[3] = it[0], it[0] = k; }
+  }
+}
 const order = Object.keys(mons).sort((a, b) => mons[a].n - mons[b].n || (mons[a].form ? 1 : 0) - (mons[b].form ? 1 : 0) || a.localeCompare(b));
 const types = Object.fromEntries(TYPES.map(t => [t, typeKo(t)]));
 const out = `window.DEX=${JSON.stringify({ types, moves, mons, order, abilities, natures, items, recipes, src, bw: Object.fromEntries(Object.entries(bwhere).filter(([k]) => items[k])), tools: TOOLS, ic: [...ICONS], st: Object.fromEntries(Object.entries(STATION).map(([w, id]) => [w, ikey(id)])), spawns, cfg, blabel, gyms, gt: GYM_TABLES, legends })};`;

@@ -1157,11 +1157,11 @@ TABS.items = () => {
   const draw = () => {
     const q = norm(document.getElementById('iq').value);
     // 이름 -> 설명 -> 얻는 곳(캐는 블록·상자·있는 곳) 순으로 찾고, 이름이 맞는 것을 위에
-    const rank = id => q && norm(IT[id][0]) === q ? -1 : !q || qmatch(q, IT[id][0]) ? 0 : qmatch(q, IT[id][2]) ? 1 : qmatch(q, ...(D.src[id]?.b || []), ...(D.src[id]?.l || []), ...(D.bw[id] || []), ...(LGHOW[id] || []).map(x => x[0])) ? 2 : 9;
+    const rank = id => q && norm(IT[id][0]) === q ? -1 : !q || qmatch(q, IT[id][0], IT[id][3] || '') ? 0 : qmatch(q, IT[id][2]) ? 1 : qmatch(q, ...(D.src[id]?.b || []), ...(D.src[id]?.l || []), ...(D.bw[id] || []), ...(LGHOW[id] || []).map(x => x[0])) ? 2 : 9;
     let rows = ids.filter(id => cat === '전체' || IT[id][1] === cat).map(id => [rank(id), id]).filter(x => x[0] < 9).sort((a, b) => a[0] - b[0]).map(x => x[1]);
     // 맞는 게 없으면 글자를 빼먹은 검색으로 봄 (하얀콘크리트 -> 하얀색 콘크리트): 이름에 검색어 글자가 순서대로 다 들어 있는 것
     if (q && !rows.length) { const qs = [...q], sub = s => { let i = 0; for (const ch of norm(s)) if (ch === qs[i]) i++; return i === qs.length; }; rows = ids.filter(id => (cat === '전체' || IT[id][1] === cat) && sub(IT[id][0])); }
-    document.getElementById('il').innerHTML = rows.map(id => `<div class="it" data-id="${id}"><div class="it-h" style="${cols}"><span>${ico(id)}${esc(IT[id][0])}</span><span class="muted">${esc(IT[id][1])}</span><span class="muted">${esc(IT[id][2])}</span></div><div class="it-b"></div></div>`).join('') || '<p class="empty">없음</p>';
+    document.getElementById('il').innerHTML = rows.map(id => `<div class="it" data-id="${id}"><div class="it-h" style="${cols}"><span>${ico(id)}${esc(IT[id][0])}${IT[id][3] ? `<small class="muted" style="display:block">게임 표기: ${esc(IT[id][3])}</small>` : ''}</span><span class="muted">${esc(IT[id][1])}</span><span class="muted">${esc(IT[id][2])}</span></div><div class="it-b"></div></div>`).join('') || '<p class="empty">없음</p>';
   };
   document.getElementById('ic').addEventListener('click', e => { const c = e.target.closest('[data-c]'); if (!c) return; cat = c.dataset.c; document.querySelectorAll('#ic .chip').forEach(x => x.classList.toggle('cur', x === c)); draw(); });
   bindList(document.getElementById('il'), id => {

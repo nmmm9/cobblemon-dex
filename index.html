@@ -462,9 +462,11 @@ const D = window.DEX, M = D.mons, MV = D.moves, TK = D.types;
 let FAV = []; try { FAV = JSON.parse(localStorage.getItem("dex-fav") || "[]").filter(k => M[k]); } catch {}
 const favLabel = k => FAV.includes(k) ? "★ 즐겨찾기" : "☆ 즐겨찾기";
 // 타입으로 찾기: 고른 타입을 모두 가진 포켓몬 (포켓몬 타입은 최대 2개라 3개째를 고르면 가장 먼저 고른 것이 빠짐)
-let TSEL = [];
-const typeHits = () => `${TSEL.length ? (() => { const r = D.order.filter(k => TSEL.every(t => M[k].types.includes(t))); return `<p class="desc">${TSEL.map(t => TK[t]).join(' + ')} · ${r.length}마리</p><div class="mon-chips">${r.map(monChip).join('')}</div>`; })() : ''}`;
-const homeHtml = () => `<p class="hint">예: 리자몽, 이브이, charizard, 6 · 초전설, 준전설, 환상, 울트라비스트, 패러독스로 검색하면 그 종류가 다 나와요</p><section style="margin-top:36px"><h2>타입으로 찾기</h2><p class="desc">타입을 누르면 그 타입 포켓몬이 나와요. 2개를 고르면 두 타입을 다 가진 포켓몬만 나와요. 다시 누르면 해제.</p><div class="tpk ${TSEL.length ? 'any' : ''}" id="tpk">${TYPES.map(t => `<span class="t ${TSEL.includes(t) ? 'on' : ''}" data-ty="${t}" style="background:${COLOR[t]}">${TK[t]}</span>`).join('')}</div><div id="tph">${typeHits()}</div></section><section style="margin-top:36px"><h2>즐겨찾기</h2>${FAV.length ? `<div class="mon-chips">${FAV.map(monChip).join("")}</div>` : '<p class="hint">포켓몬 페이지에서 이름 옆 ☆ 즐겨찾기를 누르면 여기에 모임. 이 브라우저에만 저장됨.</p>'}</section>`;
+// 종류(KIND)는 여러 개 고르면 그중 하나에 해당하는 포켓몬. 타입과 같이 고르면 둘 다 맞는 것만
+let TSEL = [], KSEL = [];
+const KINDS = ['초전설', '준전설', '환상', '울트라비스트', '고대 패러독스', '미래 패러독스'];
+const typeHits = () => `${TSEL.length || KSEL.length ? (() => { const r = D.order.filter(k => TSEL.every(t => M[k].types.includes(t)) && (!KSEL.length || KSEL.includes(KIND(M[k])))); return `<p class="desc">${[TSEL.map(t => TK[t]).join(' + '), KSEL.join(' · ')].filter(Boolean).join(' / ')} · ${r.length}마리</p><div class="mon-chips">${r.map(monChip).join('') || '<span class="muted">없음</span>'}</div>`; })() : ''}`;
+const homeHtml = () => `<p class="hint">예: 리자몽, 이브이, charizard, 6 · 초전설, 준전설, 환상, 울트라비스트, 패러독스로 검색하면 그 종류가 다 나와요</p><section style="margin-top:36px"><h2>타입 · 종류로 찾기</h2><p class="desc">타입을 누르면 그 타입 포켓몬이 나와요. 2개를 고르면 두 타입을 다 가진 포켓몬만 나와요. 종류는 여러 개 고를 수 있고, 타입과 같이 고르면 둘 다 맞는 것만 나와요. 다시 누르면 해제.</p><div class="tpk ${TSEL.length ? 'any' : ''}" id="tpk">${TYPES.map(t => `<span class="t ${TSEL.includes(t) ? 'on' : ''}" data-ty="${t}" style="background:${COLOR[t]}">${TK[t]}</span>`).join('')}</div><div class="chips" id="kpk" style="margin:-4px 0 14px">${KINDS.map(c => `<span class="chip sm ${KSEL.includes(c) ? 'cur' : ''}" data-kd="${c}">${c}</span>`).join('')}</div><div id="tph">${typeHits()}</div></section><section style="margin-top:36px"><h2>즐겨찾기</h2>${FAV.length ? `<div class="mon-chips">${FAV.map(monChip).join("")}</div>` : '<p class="hint">포켓몬 페이지에서 이름 옆 ☆ 즐겨찾기를 누르면 여기에 모임. 이 브라우저에만 저장됨.</p>'}</section>`;
 const TYPES = Object.keys(TK);
 const COLOR = {normal:'#9fa19f',fire:'#e56c2b',water:'#3f8fd8',electric:'#e8b81e',grass:'#5fa83a',ice:'#59b9c8',fighting:'#c0392b',poison:'#9b5ab5',ground:'#b8893a',flying:'#8aa2e0',psychic:'#e06098',bug:'#8fa31b',rock:'#a89a6b',ghost:'#6a5a9c',dragon:'#5a4fcf',dark:'#5a4a42',steel:'#7f8fa0',fairy:'#e09ac0'};
 // attacker -> {defender: mult}; omitted = 1
@@ -803,6 +805,12 @@ function render(k) {
       TSEL = TSEL.includes(t) ? TSEL.filter(x => x !== t) : [...TSEL, t].slice(-2);
       document.querySelectorAll('#tpk .t').forEach(x => x.classList.toggle('on', TSEL.includes(x.dataset.ty)));
       document.getElementById('tpk').classList.toggle('any', TSEL.length > 0);
+      document.getElementById('tph').innerHTML = typeHits();
+    });
+    document.getElementById('kpk').addEventListener('click', e => {
+      const c = e.target.closest('[data-kd]'); if (!c) return;
+      const d = c.dataset.kd; KSEL = KSEL.includes(d) ? KSEL.filter(x => x !== d) : [...KSEL, d];
+      c.classList.toggle('cur', KSEL.includes(d));
       document.getElementById('tph').innerHTML = typeHits();
     });
     return;

@@ -21,6 +21,8 @@ button,input,select,textarea{font:inherit;letter-spacing:inherit}
 .search input::placeholder{color:#a8a8a8}
 .drop{position:absolute;left:0;right:0;top:100%;background:var(--bg);border:1px solid var(--line);border-top:0;z-index:10;max-height:360px;overflow:auto;display:none}
 .drop.on{display:block}
+.kind{display:inline-block;font-size:12px;font-weight:500;color:#8a6d1f;border:1px solid #d9c27a;background:#fbf6e6;border-radius:3px;padding:0 6px;margin-left:8px;vertical-align:middle;line-height:1.6;letter-spacing:0}
+h1 .kind{font-size:13px;padding:1px 8px}
 .drop div{padding:9px 12px;cursor:pointer;display:flex;gap:10px;align-items:baseline}
 .drop div.sel,.drop div:hover{background:var(--soft)}
 .drop .n{color:var(--muted);font-variant-numeric:tabular-nums;min-width:44px}
@@ -462,7 +464,7 @@ const favLabel = k => FAV.includes(k) ? "★ 즐겨찾기" : "☆ 즐겨찾기";
 // 타입으로 찾기: 고른 타입을 모두 가진 포켓몬 (포켓몬 타입은 최대 2개라 3개째를 고르면 가장 먼저 고른 것이 빠짐)
 let TSEL = [];
 const typeHits = () => `${TSEL.length ? (() => { const r = D.order.filter(k => TSEL.every(t => M[k].types.includes(t))); return `<p class="desc">${TSEL.map(t => TK[t]).join(' + ')} · ${r.length}마리</p><div class="mon-chips">${r.map(monChip).join('')}</div>`; })() : ''}`;
-const homeHtml = () => `<p class="hint">예: 리자몽, 이브이, charizard, 6</p><section style="margin-top:36px"><h2>타입으로 찾기</h2><p class="desc">타입을 누르면 그 타입 포켓몬이 나와요. 2개를 고르면 두 타입을 다 가진 포켓몬만 나와요. 다시 누르면 해제.</p><div class="tpk ${TSEL.length ? 'any' : ''}" id="tpk">${TYPES.map(t => `<span class="t ${TSEL.includes(t) ? 'on' : ''}" data-ty="${t}" style="background:${COLOR[t]}">${TK[t]}</span>`).join('')}</div><div id="tph">${typeHits()}</div></section><section style="margin-top:36px"><h2>즐겨찾기</h2>${FAV.length ? `<div class="mon-chips">${FAV.map(monChip).join("")}</div>` : '<p class="hint">포켓몬 페이지에서 이름 옆 ☆ 즐겨찾기를 누르면 여기에 모임. 이 브라우저에만 저장됨.</p>'}</section>`;
+const homeHtml = () => `<p class="hint">예: 리자몽, 이브이, charizard, 6 · 초전설, 준전설, 환상, 울트라비스트, 패러독스로 검색하면 그 종류가 다 나와요</p><section style="margin-top:36px"><h2>타입으로 찾기</h2><p class="desc">타입을 누르면 그 타입 포켓몬이 나와요. 2개를 고르면 두 타입을 다 가진 포켓몬만 나와요. 다시 누르면 해제.</p><div class="tpk ${TSEL.length ? 'any' : ''}" id="tpk">${TYPES.map(t => `<span class="t ${TSEL.includes(t) ? 'on' : ''}" data-ty="${t}" style="background:${COLOR[t]}">${TK[t]}</span>`).join('')}</div><div id="tph">${typeHits()}</div></section><section style="margin-top:36px"><h2>즐겨찾기</h2>${FAV.length ? `<div class="mon-chips">${FAV.map(monChip).join("")}</div>` : '<p class="hint">포켓몬 페이지에서 이름 옆 ☆ 즐겨찾기를 누르면 여기에 모임. 이 브라우저에만 저장됨.</p>'}</section>`;
 const TYPES = Object.keys(TK);
 const COLOR = {normal:'#9fa19f',fire:'#e56c2b',water:'#3f8fd8',electric:'#e8b81e',grass:'#5fa83a',ice:'#59b9c8',fighting:'#c0392b',poison:'#9b5ab5',ground:'#b8893a',flying:'#8aa2e0',psychic:'#e06098',bug:'#8fa31b',rock:'#a89a6b',ghost:'#6a5a9c',dragon:'#5a4fcf',dark:'#5a4a42',steel:'#7f8fa0',fairy:'#e09ac0'};
 // attacker -> {defender: mult}; omitted = 1
@@ -496,8 +498,14 @@ const fullKo = m => m.ko + (m.form ? ` (${m.form})` : '');
 // ---------- search ----------
 const norm = s => s.toLowerCase().replace(/[\s\-.'’:]/g, '');
 const IDX = D.order.map(k => ({k, m: M[k], ko: norm(fullKo(M[k])), en: norm(M[k].en + (M[k].form || ''))}));
+// 전설 구분: 초전설 = 코블몬 데이터의 restricted 라벨, 나머지 legendary = 준전설. 패러독스는 영어 이름이 Iron으로 시작하면 미래, 아니면 고대
+const KIND = m => m.lab === 'legendary' ? (m.rs ? '초전설' : '준전설') : m.lab === 'mythical' ? '환상' : m.lab === 'ultra_beast' ? '울트라비스트' : m.lab === 'paradox' ? (/^Iron /.test(m.en) ? '미래 패러독스' : '고대 패러독스') : '';
+const kindTag = m => KIND(m) ? `<span class="kind">${KIND(m)}</span>` : '';
+const KQ = { 초전설: ['초전설'], 준전설: ['준전설'], 전설: ['초전설', '준전설'], 환상: ['환상'], 울트라비스트: ['울트라비스트'], 패러독스: ['고대 패러독스', '미래 패러독스'], 고대: ['고대 패러독스'], 미래: ['미래 패러독스'] };
 function search(q) {
   q = norm(q); if (!q) return [];
+  const kq = KQ[q.replace(/포켓몬$/, '')];
+  if (kq) return IDX.filter(x => kq.includes(KIND(x.m))).sort((a, b) => a.m.n - b.m.n);
   if (/^\d+$/.test(q)) return IDX.filter(x => x.m.n === +q).slice(0, 12);
   const hit = IDX.filter(x => x.ko.includes(q) || x.en.includes(q));
   const rank = x => (x.ko === q || norm(x.m.en) === q ? 0 : x.ko.startsWith(q) || x.en.startsWith(q) ? 1 : 2) * 2 + (x.m.form ? 1 : 0);
@@ -507,7 +515,7 @@ const $q = document.getElementById('q'), $drop = document.getElementById('drop')
 function bindSearch(input, drop, onPick) {
   let res = [], sel = 0;
   const show = () => {
-    drop.innerHTML = res.map((x, i) => `<div data-k="${x.k}" class="${i === sel ? 'sel' : ''}"><span class="n">#${x.m.n}</span><span>${esc(fullKo(x.m))}</span><span class="en">${esc(x.m.en)}</span></div>`).join('');
+    drop.innerHTML = res.map((x, i) => `<div data-k="${x.k}" class="${i === sel ? 'sel' : ''}"><span class="n">#${x.m.n}</span><span>${esc(fullKo(x.m))}${kindTag(x.m)}</span><span class="en">${esc(x.m.en)}</span></div>`).join('');
     drop.classList.toggle('on', res.length > 0);
   };
   input.addEventListener('input', () => { res = search(input.value); sel = 0; show(); });
@@ -821,7 +829,7 @@ function render(k) {
     <div>
       <div class="num">#${String(m.n).padStart(4, '0')}</div>
       ${forms.length > 1 ? `<div class="chips">${forms.map(x => `<span class="chip ${x === k ? 'cur' : ''}" data-go="${x}">${esc(M[x].form || '기본')}</span>`).join('')}</div>` : ''}
-      <h1>${esc(m.ko)}<small>${esc(m.en)}</small><button class="fav ${FAV.includes(k) ? "on" : ""}" data-fav="${k}">${favLabel(k)}</button></h1>
+      <h1>${esc(m.ko)}${kindTag(m)}<small>${esc(m.en)}</small><button class="fav ${FAV.includes(k) ? "on" : ""}" data-fav="${k}">${favLabel(k)}</button></h1>
       <div>${m.types.map(t => tchip(t)).join('')}${m.bo ? '<span class="badge">배틀 중 폼</span>' : ''}${m.imp ? '' : '<span class="badge">코블몬 미구현</span>'}</div>
       <div class="meta"><span title="3~255. 숫자가 클수록 잘 잡힘">포획률 <b>${m.catch}</b> (${m.catch >= 150 ? '잡기 쉬움' : m.catch >= 75 ? '보통' : m.catch >= 30 ? '잡기 어려움' : '매우 어려움'})</span><span>능력치 합 <b>${tot}</b></span><span title="${ROLE_TIP[role(m.stats).main] || ''}">${esc(role(m.stats).main)}</span></div>
     </div>
@@ -901,7 +909,6 @@ const BUCKET = {common: '흔함', uncommon: '드묾', rare: '희귀', 'ultra-rar
 const bucketHtml = b => `<span class="bucket b-${b}" title="이 희귀도 등급이 뽑힐 확률. 등급 안에서는 가중치로 다시 고름">${BUCKET[b] ?? b} ${D.cfg.world[b] ?? ''}%</span>`;
 const SP = D.spawns, SP_BY = {};
 SP.forEach(s => (SP_BY[s[0]] ??= []).push(s));
-const LAB = {legendary: '전설', mythical: '환상', ultra_beast: '울트라비스트', paradox: '패러독스'};
 const lgOf = k => D.legends.list.find(e => e.mons.includes(k)); // 전설 포켓몬 탭에 만나는 법이 있는 포켓몬
 function noSpawnReason(k) {
   const m = M[k];
@@ -911,7 +918,7 @@ function noSpawnReason(k) {
   if (m.ev) return `야생 자연 출현 없음 → ${m.ev}에서만 만남 (코블벌스 전설 구조물)`;
   if (m.fossil) return `야생 출현 없음 → 화석 복원 (${m.fossil.join(', ')})`;
   if (m.pre && M[m.pre]) return `야생 출현 없음 → ${fullKo(M[m.pre])}에서 진화시켜 얻기`;
-  const why = m.lab ? `${LAB[m.lab]} 포켓몬인데 코블벌스에 야생 출현이 없음` : '코블벌스에 야생 출현이 없음';
+  const why = m.lab ? `${KIND(m)} 포켓몬인데 코블벌스에 야생 출현이 없음` : '코블벌스에 야생 출현이 없음';
   return why + (m.imp ? '. 레이드·이벤트·교환 같은 다른 경로로 얻어야 함' : '. 게다가 아직 미구현(모델 없음)');
 }
 const condHtml = s => [...s[7], ...s[8]].map(esc).join(' · ') || '—';

@@ -57,6 +57,8 @@ const STAT_KO = { hp: 'HP', attack: '공격', defence: '방어', special_attack:
 // ---------- species ----------
 const species = {};
 for (const { f } of dataFiles('species', 'cobblemon')) species[path.basename(f, '.json')] = readJ(f);
+// 초전설(restricted) 라벨: 메가 쇼다운이 자시안·자마젠타 등 종 파일을 덮으면서 라벨을 빼서, 어느 레이어든 붙어 있으면 인정
+const RESTRICTED = new Set(LAYERS.flatMap(L => walkJson(path.join(L, 'data', 'cobblemon', 'species'))).filter(f => readJ(f).labels?.includes('restricted')).map(f => path.basename(f, '.json')));
 // species_additions: 메가 쇼다운·코블벌스가 기존 종에 폼·구현 여부 등을 덧붙임. 폼은 이름이 같으면 합치고 없으면 추가
 for (const { f } of dataFiles('species_additions')) {
   const a = readJ(f), sp = species[String(a.target).split(':').pop()];
@@ -195,6 +197,7 @@ for (const [sid, sp] of Object.entries(species)) {
     n: sp.nationalPokedexNumber, en: sp.name, ko: L(`cobblemon.species.${sid}.name`, sp.name),
     form: null, bo: false, imp: !!sp.implemented,
     lab: (sp.labels || []).find(l => ['legendary', 'mythical', 'ultra_beast', 'paradox'].includes(l)) || null,
+    rs: RESTRICTED.has(sid) || undefined, // 초전설 (대전 규칙의 제한 전설: 뮤츠·가이오가 등)
     types: [sp.primaryType, sp.secondaryType].filter(Boolean),
     stats: stats6(sp.baseStats), abil: abil(sp.abilities), catch: sp.catchRate,
     pre: sp.preEvolution ? resolveResult(sp.preEvolution) : null,

@@ -466,8 +466,10 @@ let FAV = []; try { FAV = JSON.parse(localStorage.getItem("dex-fav") || "[]").fi
 const favLabel = k => FAV.includes(k) ? "★ 즐겨찾기" : "☆ 즐겨찾기";
 const KINDS = ['초전설', '준전설', '환상', '울트라비스트', '고대 패러독스', '미래 패러독스'];
 // 종족값 순위: by = 0~5 (HP~스피드) 또는 6 (합계). 같으면 합계 높은 쪽, 그다음 도감 번호
-const RS = {by: 6, xf: false, ty: []}; // RS[종류이름] = true 면 그 종류 빼기
+const RS = {by: 6, xf: false, ty: []}; // RS[종류이름] = true 면 그 종류 빼기. 고른 상태는 이 브라우저에 저장
+try { Object.assign(RS, JSON.parse(localStorage.getItem('dex-rank') || '{}')); } catch {}
 const rankHtml = () => {
+  try { localStorage.setItem('dex-rank', JSON.stringify(RS)); } catch {}
   const v = m => RS.by === 6 ? m.stats.reduce((a, b) => a + b) : m.stats[RS.by];
   const r = D.order.filter(k => !RS[KIND(M[k])] && RS.ty.every(t => M[k].types.includes(t)) && !(RS.xf && M[k].form)).map(k => [k, v(M[k]), M[k].stats.reduce((a, b) => a + b)]).sort((a, b) => b[1] - a[1] || b[2] - a[2] || M[a[0]].n - M[b[0]].n).slice(0, 100);
   const cell = (x, on) => `<td class="c"${on ? ' style="font-weight:600;color:var(--fg)"' : ' style="color:var(--muted)"'}>${x}</td>`;

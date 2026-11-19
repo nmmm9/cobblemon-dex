@@ -219,7 +219,7 @@ details[open] summary:before{content:"−"}
 .bt .rk th{border-bottom:1px solid var(--soft)}
 .bt h4 small{font-size:13px;font-weight:400;color:var(--muted);margin-left:6px}
 /* 관장 위치 탭 (카드 · 한 줄 답은 배틀 기초 탭 스타일을 같이 씀) */
-@media(min-width:1100px){.bt.gy{padding-right:0}}
+@media(min-width:1100px){.gy .tj.s:not(.on){display:none}} /* 오른쪽 목차: 펼친 지방의 관장만 */
 .gy .gt tbody tr{cursor:pointer}
 .gy .gt td{vertical-align:middle}
 .gy .gt .ico{margin-right:5px}
@@ -249,7 +249,7 @@ details[open] summary:before{content:"−"}
 .gy .gy-c .mon-chip{background:var(--bg);white-space:normal;max-width:100%}
 @media(max-width:700px){.gy .gy-r{grid-template-columns:1fr;gap:6px}.gy .gy-l{padding-top:0}}
 @media(min-width:900px){.gy .gym{grid-template-columns:minmax(0,1fr) 290px}}
-.gy details.rg{border-top:1px solid var(--line)}
+.gy details.rg{border-top:1px solid var(--line);scroll-margin-top:60px}
 .gy details.rg:last-of-type{border-bottom:1px solid var(--line)}
 .gy details.rg > summary{list-style:none;cursor:pointer;display:flex;align-items:baseline;gap:6px 14px;flex-wrap:wrap;padding:18px 2px}
 .gy details.rg > summary::-webkit-details-marker{display:none}
@@ -1584,7 +1584,7 @@ TABS.gym = () => {
   const region = rg => {
     const gs = G.map((g, i) => [g, i]).filter(([g]) => g.rg === rg), st = ST[rg] || {ko: rg, when: '', d: ''};
     const lvs = gs.flatMap(([g]) => g.tr.map(t => top(t[1])));
-    return `<details class="rg"><summary><b>${esc(st.ko)}</b><span class="muted">관장 ${gs.filter(([g]) => g.tr.length === 1).length}명 · 리그 · Lv ${Math.min(...lvs)}~${Math.max(...lvs)}</span>${st.when ? `<span class="muted">${esc(st.when)}</span>` : ''}</summary><div class="rg-in">
+    return `<details class="rg" id="gy-rg-${rg}"><summary><b>${esc(st.ko)}</b><span class="muted">관장 ${gs.filter(([g]) => g.tr.length === 1).length}명 · 리그 · Lv ${Math.min(...lvs)}~${Math.max(...lvs)}</span>${st.when ? `<span class="muted">${esc(st.when)}</span>` : ''}</summary><div class="rg-in">
     ${rg !== 'kanto' && st.d ? `<p class="desc">${esc(st.d)}</p>` : ''}
     <table class="gt"><thead><tr><th>순서</th><th>관장</th><th>체육관이 생기는 곳</th><th>탐색 아이템</th></tr></thead><tbody>
       ${gs.map(([g, i], n) => `<tr data-jump="gy-${i}"><td>${g.tr.length > 1 ? '끝' : n + 1}</td><td><b>${esc(g.ko)}</b> <span class="muted glv">Lv ${lvOf(g)}</span></td><td>${where(g)}</td><td>${ico(g.it)}${nm(g.it)}</td></tr>`).join('')}
@@ -1600,8 +1600,9 @@ TABS.gym = () => {
     </div></details>`;
   };
   $view.innerHTML = `<div class="guide bt gy"><h1 class="tab-head">관장 위치</h1><p class="tab-desc">${RG.map(r => ST[r]?.ko ?? r).join(' · ')} 지방 관장 ${lead.length}명과 포켓몬 리그를 찾는 법. 관장은 돌아다니지 않고 체육관 건물 안에 있어요. 체육관은 정해진 바이옴에만 생기고, 좌표는 월드마다 달라요.</p>
+  <div class="toc"><div class="toc-in"><span class="tj g" data-jump="gy-how">찾는 법</span>${RG.map(rg => `<span class="tj g" data-jump="gy-rg-${rg}">${esc(ST[rg]?.ko ?? rg)}</span>${G.map((g, i) => [g, i]).filter(([g]) => g.rg === rg).map(([g, i], n) => `<span class="tj s" data-rg="${rg}" data-jump="gy-${i}">${g.tr.length > 1 ? '리그' : n + 1 + '. ' + esc(g.ko)}</span>`).join('')}`).join('')}</div></div>
 
-  <h3>찾는 법</h3>
+  <h3 id="gy-how">찾는 법</h3>
   <p class="ans">관장마다 "탐색 아이템"이 있어요. 그걸 지도 제작대에 넣으면 그 관장의 체육관 지도가 나와요.</p>
   <div class="sgrid f4">
     ${box(1, '탐색 아이템 만들기', '다음 관장의 탐색 아이템을 조합해요. 조합법은 아래 지방별 관장 정보에 있어요.')}
@@ -1625,7 +1626,9 @@ TABS.gym = () => {
   <h3>지방별 관장</h3>
   <p class="desc">지방 이름을 누르면 펼쳐져요. 줄을 누르면 그 관장 정보로 이동해요. Lv는 그 관장이 쓰는 포켓몬의 최고 레벨이고, 관장은 순서대로만 도전할 수 있어요. "상대법" 상자는 상대 팀의 타입과 실제로 쓰는 기술로 상성을 계산한 거예요. 추천 포켓몬은 최종 진화 · 전설 아님 · 이 모드팩 야생에서 잡을 수 있음(진화 전 포함) · 종족값 합 500 이상 · Smogon 대전 세트가 있는 포켓몬 중에서 골랐어요. 특성 · 도구 · 레벨 차이는 반영하지 않았어요.</p>
   ${RG.map(region).join('')}</div>`;
-  $view.querySelector('.gy').addEventListener('click', e => { const j = e.target.closest('tr[data-jump]')?.dataset.jump; if (j) document.getElementById(j).scrollIntoView({behavior: 'smooth'}); });
+  $view.querySelector('.gy').addEventListener('toggle', () => $view.querySelectorAll('.gy .tj.s').forEach(x => x.classList.toggle('on', document.getElementById('gy-rg-' + x.dataset.rg).open)), true);
+  // 오른쪽 목차 · 표 줄을 누르면 그 지방을 펼치고 이동
+  $view.querySelector('.gy').addEventListener('click', e => { const el = document.getElementById(e.target.closest('[data-jump]')?.dataset.jump); if (!el) return; const d = el.closest('details.rg'); if (d) d.open = true; el.scrollIntoView({behavior: 'smooth'}); });
 };
 
 // ---- 전설 포켓몬: 만나는 법 · 기믹 (build.js의 legends = legends.js에 구조물 바이옴·트레이너 레벨을 채운 것) ----

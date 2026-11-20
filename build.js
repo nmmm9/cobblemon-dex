@@ -219,6 +219,26 @@ for (const [sid, sp] of Object.entries(species)) {
   }
 }
 
+// ---------- 탈것 (코블몬 1.7 riding.behaviours.<AIR|LAND|LIQUID>.stats = "최소-최대") ----------
+// 코드 확인(1.7.3): 실제 능력치 = min(최소 + 규드링크 누적치, 최대). 처음엔 최솟값이고 규드링크를 먹일수록 올라 최댓값에서 멈춤
+const RSTAT = { SPEED: 'sp', ACCELERATION: 'ac', STAMINA: 'st', SKILL: 'sk', JUMP: 'jp' };
+const rideOf = r => {
+  if (!r?.behaviours) return null;
+  const b = {};
+  for (const [st, v] of Object.entries(r.behaviours)) if (['AIR', 'LAND', 'LIQUID'].includes(st) && v.stats)
+    b[st] = { t: v.key.split('/').pop(), ...(v.canSprint === false ? { ns: 1 } : {}), ...Object.fromEntries(Object.entries(v.stats).filter(([k]) => RSTAT[k]).map(([k, s]) => [RSTAT[k], String(s).split('-').map(Number)])) };
+  return Object.keys(b).length ? { seat: r.seats?.length || 1, b } : null;
+};
+const rides = {};
+for (const [sid, sp] of Object.entries(species)) {
+  if (mons[sid] && rideOf(sp.riding)) rides[sid] = rideOf(sp.riding);
+  for (const fm of sp.forms || []) { const k = formKey(sid, fm); if (mons[k] && rideOf(fm.riding)) rides[k] = rideOf(fm.riding); }
+}
+// 규드링크: 규토리 색 기본 효과 + 양념(열매) 맛 합계 -> 점수. 맛 -> 능력치는 코드(AprijuicesMechanic) 확인: 매운 가속 · 떫은 조작 · 단 속도 · 신 지구력 · 쓴 점프
+const AJ = readJ(dataFiles('mechanics', 'cobblemon').find(x => x.rel === 'aprijuices.json').f);
+const berryFl = Object.fromEntries(dataFiles('berries', 'cobblemon').map(({ rel, f }) => [rel.replace(/\.json$/, ''), readJ(f).flavours || {}]));
+const ride = { mons: rides, aj: AJ.apricornStatEffects, thr: AJ.statPointFlavourThresholds, sweet: Object.entries(berryFl).filter(([, fl]) => fl.SWEET >= 20).sort((a, b) => b[1].SWEET - a[1].SWEET || Object.values(a[1]).reduce((x, y) => x + y) - Object.values(b[1]).reduce((x, y) => x + y)) };
+
 // ---------- 폼 그림 번호 ----------
 // PokeAPI 는 폼(메가·리전폼 등)마다 번호(10001~)가 따로 있음. raw/pokeapi/pokemon.csv (extract-cv.sh 가 받아 둠) 의 이름(charizard-mega-x)을
 // 같은 종 안에서 폼 키(charizard-megax)와 맞춰 mons[key].i 에 넣음. 못 맞춘 폼(코블벌스 전용 폼, 타입 폼 등)은 i 가 없어 기본 모습 그림을 씀
@@ -957,7 +977,7 @@ if (bad) process.exit(1);
 }
 const order = Object.keys(mons).sort((a, b) => mons[a].n - mons[b].n || (mons[a].form ? 1 : 0) - (mons[b].form ? 1 : 0) || a.localeCompare(b));
 const types = Object.fromEntries(TYPES.map(t => [t, typeKo(t)]));
-const out = `window.DEX=${JSON.stringify({ types, moves, mons, order, abilities, natures, items, recipes, src, bw: Object.fromEntries(Object.entries(bwhere).filter(([k]) => items[k])), tools: TOOLS, ic: [...ICONS], st: Object.fromEntries(Object.entries(STATION).map(([w, id]) => [w, ikey(id)])), spawns, cfg, blabel, gyms, gt: GYM_TABLES, legends })};`;
+const out = `window.DEX=${JSON.stringify({ types, moves, mons, order, abilities, natures, items, recipes, src, bw: Object.fromEntries(Object.entries(bwhere).filter(([k]) => items[k])), tools: TOOLS, ic: [...ICONS], st: Object.fromEntries(Object.entries(STATION).map(([w, id]) => [w, ikey(id)])), spawns, cfg, blabel, gyms, gt: GYM_TABLES, legends, ride })};`;
 fs.writeFileSync(path.join(__dirname, 'data.js'), out);
 const cats = {}; Object.values(items).forEach(i => cats[i[1]] = (cats[i[1]] || 0) + 1);
 console.log(`Cobblemon ${VERSION}: mons ${order.length} (species ${Object.keys(species).length}), moves ${Object.keys(moves).length}, tm ${Object.values(moves).filter(m => m[10]).length}, items ${Object.keys(items).length}, recipes ${Object.keys(recipes).length}, spawns ${spawns.length}, data.js ${(out.length / 1048576).toFixed(1)} MB`);

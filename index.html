@@ -448,7 +448,7 @@ h2 .bucket{font-size:inherit}
 <body>
 <nav class="nav"><div class="nav-in">
   <a class="brand" href="#">코블몬 도감</a>
-  <a data-tab="" href="#">도감</a><a data-tab="spawn" href="#/spawn">출현</a><a data-tab="moves" href="#/moves">기술</a><a data-tab="abilities" href="#/abilities">특성</a><a data-tab="items" href="#/items">아이템</a><a data-tab="types" href="#/types">상성표</a><a data-tab="guide" href="#/guide">가이드</a><a data-tab="calc" href="#/calc">계산기</a><a data-tab="battle" href="#/battle">배틀 기초</a><a data-tab="gym" href="#/gym">관장 위치</a><a data-tab="legend" href="#/legend">전설 포켓몬</a>
+  <a data-tab="" href="#">도감</a><a data-tab="spawn" href="#/spawn">출현</a><a data-tab="moves" href="#/moves">기술</a><a data-tab="abilities" href="#/abilities">특성</a><a data-tab="items" href="#/items">아이템</a><a data-tab="types" href="#/types">상성표</a><a data-tab="guide" href="#/guide">가이드</a><a data-tab="calc" href="#/calc">계산기</a><a data-tab="battle" href="#/battle">배틀 기초</a><a data-tab="gym" href="#/gym">관장 위치</a><a data-tab="legend" href="#/legend">전설 포켓몬</a><a data-tab="ride" href="#/ride">탈것</a>
 </div></nav>
 <div class="wrap">
   <div class="search" id="dexbar">
@@ -1751,6 +1751,51 @@ TABS.legend = () => {
 };
 
 // ---- 계산기: 만들 것 × 개수 -> 모을 재료 합계 ----
+// 탈것: build.js 가 D.ride = {mons: {키: {seat, b: {AIR|LAND|LIQUID: {t, sp,ac,st,jp,sk: [처음, 최대], ns}}}}, aj, thr, sweet}
+// 능력치 = min(처음 + 규드링크로 쌓은 값, 최대). 맛 -> 능력치는 코드 확인 (매운 가속 · 떫은 조작 · 단 속도 · 신 지구력 · 쓴 점프)
+const RV = {st: 'AIR', two: false, by: 'sp'};
+try { Object.assign(RV, JSON.parse(localStorage.getItem('dex-ride') || '{}')); } catch {}
+TABS.ride = () => {
+  const R = D.ride, STY = {AIR: '하늘', LAND: '땅', LIQUID: '물'}, RK = [['sp', '속도'], ['ac', '가속'], ['st', '지구력'], ['jp', '점프'], ['sk', '조작']];
+  const TY = {bird: '날갯짓', jet: '제트', hover: '공중 부양', rocket: '로켓', horse: '달리기', dolphin: '헤엄', boat: '물 위', submarine: '잠수'};
+  const FL = {SPICY: 'ac', DRY: 'sk', SWEET: 'sp', SOUR: 'st', BITTER: 'jp'}, FLK = {SPICY: '매운', DRY: '떫은', SWEET: '단', SOUR: '신', BITTER: '쓴'};
+  const pts = tot => Object.entries(R.thr).reduce((p, [t, v]) => tot >= +t ? Math.max(p, v) : p, 0);
+  const nm = k => esc(D.items[k]?.[0] || k), PER = (R.aj.PINK.SPEED || 0) + pts(3 * R.sweet[0][1].SWEET);
+  // 열매 3개를 다 같은 걸로 넣은 담홍규드링크 1개의 효과
+  const juice = fl => { const e = {}; for (const [s, v] of Object.entries(R.aj.PINK)) e[RSTAT_K[s]] = v; for (const [f, v] of Object.entries(fl)) { const p = pts(3 * v); if (p) e[FL[f]] = (e[FL[f]] || 0) + p; } return e; };
+  const effTxt = e => RK.filter(([s]) => e[s]).map(([s, l]) => `${l} ${e[s] > 0 ? '+' : ''}${e[s]}`).join(' · ');
+  const berryRows = R.sweet.filter(([k]) => D.items[k]).map(([k, fl]) => `<tr><td style="white-space:nowrap"><b${itAttr(k, D.items[k][0])}>${ico(k)}${nm(k)}</b></td><td class="c">${fl.SWEET}</td><td class="muted">${Object.entries(fl).filter(([f]) => f !== 'SWEET').map(([f, v]) => FLK[f] + ' ' + v).join(' · ') || '—'}</td><td>${effTxt(juice(fl))}</td></tr>`).join('');
+  $view.innerHTML = `<h1 class="tab-head">탈것</h1><p class="tab-desc">탈 수 있는 포켓몬과 탈것 능력치. 능력치는 처음엔 왼쪽 숫자(최소)이고, 규드링크를 먹일수록 올라서 오른쪽 숫자(최대)에서 멈춰요. 코블버스 데이터 기준.</p>
+  <section><h2>속도 올리는 규드링크</h2>
+  <ol class="desc" style="line-height:1.9;padding-left:20px">
+    <li>모닥불 냄비 가운데 칸에 ${mainRecipes('aprijuice_pink').map(r => r.ik.map(nm).join(' + ')).join('')}를 넣어요 → <b${itAttr('aprijuice_pink', D.items.aprijuice_pink[0])}>${ico('aprijuice_pink')}${nm('aprijuice_pink')}</b> (기본 속도 +${R.aj.PINK.SPEED}, 가속 ${R.aj.PINK.ACCELERATION})</li>
+    <li>양념 칸 3개에 <b>단맛</b> 열매를 넣어요. 3칸의 단맛 합계가 ${Object.entries(R.thr).map(([t, v]) => `${t} 이상이면 +${v}`).join(', ')}</li>
+    <li>${nm(R.sweet[0][0])} 3개(단맛 ${3 * R.sweet[0][1].SWEET})면 한 개에 <b>속도 +${PER}</b>로 가장 많이 올라요. ${nm(R.sweet[0][0])} 2개 + 단맛 25 이상 열매 1개(합계 105 이상)도 같아요</li>
+    <li>포켓몬에게 먹이면 올린 만큼 쌓여요. 최대에 닿으면 더 안 올라가요. 배가 부르면 못 먹을 수 있어요</li>
+  </ol>
+  <details><summary>단맛 열매별 효과 (같은 열매 3개를 넣었을 때 담홍규드링크 1개)</summary><div style="overflow-x:auto"><table class="rkt"><thead><tr><th>열매</th><th class="c">단맛</th><th>다른 맛</th><th>규드링크 1개 효과</th></tr></thead><tbody>${berryRows}</tbody></table></div><p class="desc">다른 맛도 같은 방식으로 점수가 붙어요 (매운 가속 · 떫은 조작 · 신 지구력 · 쓴 점프). 다른 규토리는 ${Object.entries(R.aj).filter(([c, e]) => Object.keys(e).length && c !== 'PINK').map(([c, e]) => `${{BLUE: '파랑', GREEN: '초록', RED: '빨강', YELLOW: '노랑', WHITE: '하양'}[c]} ${effTxt(Object.fromEntries(Object.entries(e).map(([s, v]) => [RSTAT_K[s], v])))}`).join(' / ')}.</p></details></section>
+  <section style="margin-top:32px"><h2>탈것 목록</h2>
+  <div class="chips" id="rvs" style="margin:0 0 8px">${Object.entries(STY).map(([s, l]) => `<span class="chip ${RV.st === s ? 'cur' : ''}" data-st="${s}">${l}</span>`).join('')}<span class="chip ${RV.two ? 'cur' : ''}" id="rv2" style="margin-left:12px">2명 이상 타는 것만</span></div>
+  <p class="desc">제목을 누르면 그 능력치의 최대가 높은 순. ‘규드링크’ = 처음에서 최대 속도까지 ${nm('aprijuice_pink')}(${nm(R.sweet[0][0])} 3개, 속도 +${PER}) 몇 개. 줄을 누르면 그 포켓몬. 하늘에서 속도 숫자가 같으면 제트가 날갯짓보다 빨라요 (속도 100일 때 1초에 24칸 대 20칸)</p>
+  <div id="rvt"></div></section>`;
+  const draw = () => {
+    try { localStorage.setItem('dex-ride', JSON.stringify(RV)); } catch {}
+    const rows = Object.entries(R.mons).filter(([k, r]) => r.b[RV.st] && (!RV.two || r.seat > 1) && M[k]).map(([k, r]) => [k, r, r.b[RV.st]])
+      .sort((a, b) => (b[2][RV.by]?.[1] ?? 0) - (a[2][RV.by]?.[1] ?? 0) || (b[2].sp?.[1] ?? 0) - (a[2].sp?.[1] ?? 0) || M[a[0]].n - M[b[0]].n);
+    const cell = (v, on) => `<td class="c" style="white-space:nowrap${on ? ';font-weight:600;color:var(--fg)' : ';color:var(--muted)'}">${v ? (v[0] === v[1] ? v[1] : `${v[0]}→${v[1]}`) : '—'}</td>`;
+    document.getElementById('rvt').innerHTML = `<p class="desc">${rows.length}마리</p><div style="overflow-x:auto"><table class="rkt"><thead><tr><th class="c">순위</th><th>포켓몬</th><th class="c">인원</th><th>방식</th>${RK.map(([s, l]) => `<th class="c" data-by="${s}" style="cursor:pointer${RV.by === s ? ';text-decoration:underline' : ''}">${l}${RV.by === s ? ' ▼' : ''}</th>`).join('')}<th class="c">규드링크</th></tr></thead><tbody>${rows.map(([k, r, b], i) => `<tr data-go="${k}" style="cursor:pointer"><td class="c" style="color:var(--muted)">${i + 1}</td><td style="white-space:nowrap">${monImg(M[k])}${esc(fullKo(M[k]))}${kindTag(M[k])}</td><td class="c"${r.seat > 1 ? ' style="font-weight:600;color:var(--fg)"' : ' style="color:var(--muted)"'}>${r.seat}</td><td class="muted" style="white-space:nowrap">${TY[b.t] || b.t}${b.ns ? ' (질주 안 됨)' : ''}</td>${RK.map(([s]) => cell(b[s], s === RV.by)).join('')}<td class="c muted">${b.sp ? Math.ceil((b.sp[1] - b.sp[0]) / PER) + '개' : '—'}</td></tr>`).join('')}</tbody></table></div>`;
+  };
+  document.getElementById('rvs').addEventListener('click', e => {
+    const c = e.target.closest('.chip'); if (!c) return;
+    if (c.id === 'rv2') RV.two = !RV.two; else RV.st = c.dataset.st;
+    document.querySelectorAll('#rvs [data-st]').forEach(x => x.classList.toggle('cur', x.dataset.st === RV.st));
+    document.getElementById('rv2').classList.toggle('cur', RV.two); draw();
+  });
+  document.getElementById('rvt').addEventListener('click', e => { const c = e.target.closest('[data-by]'); if (c) { RV.by = c.dataset.by; draw(); } });
+  draw();
+};
+const RSTAT_K = {SPEED: 'sp', ACCELERATION: 'ac', STAMINA: 'st', SKILL: 'sk', JUMP: 'jp'};
+
 TABS.calc = () => {
   const $ = id => document.getElementById(id), cnt = s => +(s.match(/×(\d+)$/)?.[1] || 1);
   const NM = {}; Object.values(D.recipes).flat().forEach(r => r.ik.forEach((k, j) => NM[k] ??= r.i[j].replace(/ ×\d+$/, '')));

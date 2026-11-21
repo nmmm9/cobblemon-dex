@@ -121,7 +121,8 @@ td{padding:7px 8px;border-bottom:1px solid var(--soft);vertical-align:middle}
 td.c,th.c{text-align:center}
 td .en{color:var(--muted);font-size:12px;margin-left:6px}
 @media(max-width:700px){td .en{display:block;margin-left:0}}
-.cat{font-size:12px;color:var(--muted)}
+.cat{font-size:12px;color:var(--muted);white-space:nowrap}
+.catw{white-space:nowrap}.cati{display:inline-block;width:24px;height:16px;margin-right:4px;vertical-align:-3px;background:url(img/cobblemon/categories.png) 0 0/24px 48px no-repeat;image-rendering:pixelated}
 .rec{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
 .rec .card{border:1px solid var(--line);border-radius:4px;padding:12px 14px}
 .rec .why{font-size:12px;color:var(--muted);margin-bottom:6px}
@@ -502,7 +503,8 @@ const CH = {
 const eff = (atk, defs) => defs.reduce((p, d) => p * (CH[atk][d] ?? 1), 1);
 const tchip = (t, sm) => `<span class="t${sm ? ' sm' : ''}" style="background:${COLOR[t]}">${TK[t]}</span>`;
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const CAT = {P:'물리', S:'특수', T:'변화'};
+// 분류 마크: 코블몬 jar의 textures/gui/categories.png (24x48, 위에서부터 물리·특수·변화 24x16씩)
+const CAT = Object.fromEntries([['P', '물리', 0], ['S', '특수', 1], ['T', '변화', 2]].map(([k, t, i]) => [k, `<span class="catw"><i class="cati" style="background-position:0 -${i * 16}px"></i>${t}</span>`]));
 const STAT = ['HP','공격','방어','특공','특방','스피드'];
 const fullKo = m => m.ko + (m.form ? ` (${m.form})` : '');
 
@@ -1297,7 +1299,7 @@ TABS.battle = () => {
   const to = '<span class="muted">→</span>', tc = (...ts) => ts.map(t => tchip(t, 1)).join('');
   // 실제 능력치 (HP 제외): 종족값·개체값·노력치·레벨·성격
   const stat = (b, iv, ev, lv, nat) => Math.floor((Math.floor((2 * b + iv + Math.floor(ev / 4)) * lv / 100) + 5) * nat);
-  const ex = M.charizard, eb = ex.stats[3], def = defense(ex), fl = MV.flamethrower, CAT = {P: '물리', S: '특수', T: '변화'};
+  const ex = M.charizard, eb = ex.stats[3], def = defense(ex), fl = MV.flamethrower;
   const steps = [['개체값 0 · 노력치 0', stat(eb, 0, 0, 50, 1)], ['개체값 31 (타고난 최고)', stat(eb, 31, 0, 50, 1)], ['+ 노력치 252 (끝까지 키움)', stat(eb, 31, 252, 50, 1)], [`+ 성격 ${esc(D.natures.modest)} (특공 ×1.1)`, stat(eb, 31, 252, 50, 1.1)]];
   const bars = (rows, max) => `<div class="steps">${rows.map(([l, v, s]) => `<span>${l}</span><b>${s || v}</b><div class="bar"><i style="width:${v / max * 100}%"></i></div>`).join('')}</div>`;
   const TOC = [['a', '1단계 · 처음이면', [['flow', '배틀 순서'], ['stats', '능력치 6개'], ['type', '타입 상성'], ['move', '기술 고르기']]], ['b', '2단계 · 이기려면', [['order', '누가 먼저 때리나'], ['status', '상태 이상'], ['rank', '더 세지는 법'], ['item', '특성 · 지닌 물건']]], ['c', '3단계 · 키우기', [['build', '능력치가 다른 이유'], ['gim', '변신 기믹']]], ['d', '부록 · 찾아볼 때만', [['dmg', '데미지 계산'], ['old', '예전과 달라진 점'], ['word', '용어 사전']]]];

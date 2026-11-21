@@ -1198,14 +1198,27 @@ TABS.items = () => {
   <div class="chips" id="ic" style="margin:-6px 0 18px">${cats.map(c => `<span class="chip sm ${c === cat ? 'cur' : ''}" data-c="${c}">${esc(c)}</span>`).join('')}</div>
   <div class="list" id="il"></div>`;
   const cols = 'grid-template-columns:180px 90px 1fr';
+  // 검색용 글자는 아이템마다 처음 한 번만 정리: [이름, 게임 표기, 설명, 얻는 곳(캐는 블록·상자·있는 곳)]. 줄바꿈으로 이어서 경계를 넘는 일치가 없게
+  const KEY = {}, key = id => KEY[id] ??= [norm(IT[id][0]), norm(IT[id][3] || ''), norm(IT[id][2] || ''), [...(D.src[id]?.b || []), ...(D.src[id]?.l || []), ...(D.bw[id] || []), ...(LGHOW[id] || []).map(x => x[0])].map(x => norm(String(x))).join('\n')];
+  const row = id => `<div class="it" data-id="${id}"><div class="it-h" style="${cols}"><span>${ico(id)}${esc(IT[id][0])}${IT[id][3] ? `<small class="muted" style="display:block">게임 표기: ${esc(IT[id][3])}</small>` : ''}</span><span class="muted">${esc(IT[id][1])}</span><span class="muted">${esc(IT[id][2])}</span></div><div class="it-b"></div></div>`;
+  // 7천 개를 한 번에 그리면 느려서 200개씩: 목록 끝이 화면에 가까워지면 다음 200개를 붙임
+  const PAGE = 200, il = document.getElementById('il');
+  let rows = [], shown = 0;
+  const io = new IntersectionObserver(es => { if (es[0].isIntersecting) more(); }, {rootMargin: '800px'});
+  const more = () => {
+    il.querySelector('.il-end')?.remove();
+    il.insertAdjacentHTML('beforeend', rows.slice(shown, shown + PAGE).map(row).join('') + (shown + PAGE < rows.length ? '<div class="il-end"></div>' : ''));
+    shown += PAGE;
+    const end = il.querySelector('.il-end'); if (end) io.observe(end);
+  };
   const draw = () => {
     const q = norm(document.getElementById('iq').value);
-    // 이름 -> 설명 -> 얻는 곳(캐는 블록·상자·있는 곳) 순으로 찾고, 이름이 맞는 것을 위에
-    const rank = id => q && norm(IT[id][0]) === q ? -1 : !q || qmatch(q, IT[id][0], IT[id][3] || '') ? 0 : qmatch(q, IT[id][2]) ? 1 : qmatch(q, ...(D.src[id]?.b || []), ...(D.src[id]?.l || []), ...(D.bw[id] || []), ...(LGHOW[id] || []).map(x => x[0])) ? 2 : 9;
-    let rows = ids.filter(id => cat === '전체' || IT[id][1] === cat).map(id => [rank(id), id]).filter(x => x[0] < 9).sort((a, b) => a[0] - b[0]).map(x => x[1]);
+    // 이름 -> 설명 -> 얻는 곳 순으로 찾고, 이름이 맞는 것을 위에
+    const rank = id => { if (!q) return 0; const [n, g, d, w] = key(id); return n === q ? -1 : n.includes(q) || g.includes(q) ? 0 : d.includes(q) ? 1 : w.includes(q) ? 2 : 9; };
+    rows = ids.filter(id => cat === '전체' || IT[id][1] === cat).map(id => [rank(id), id]).filter(x => x[0] < 9).sort((a, b) => a[0] - b[0]).map(x => x[1]);
     // 맞는 게 없으면 글자를 빼먹은 검색으로 봄 (하얀콘크리트 -> 하얀색 콘크리트): 이름에 검색어 글자가 순서대로 다 들어 있는 것
-    if (q && !rows.length) { const qs = [...q], sub = s => { let i = 0; for (const ch of norm(s)) if (ch === qs[i]) i++; return i === qs.length; }; rows = ids.filter(id => (cat === '전체' || IT[id][1] === cat) && sub(IT[id][0])); }
-    document.getElementById('il').innerHTML = rows.map(id => `<div class="it" data-id="${id}"><div class="it-h" style="${cols}"><span>${ico(id)}${esc(IT[id][0])}${IT[id][3] ? `<small class="muted" style="display:block">게임 표기: ${esc(IT[id][3])}</small>` : ''}</span><span class="muted">${esc(IT[id][1])}</span><span class="muted">${esc(IT[id][2])}</span></div><div class="it-b"></div></div>`).join('') || '<p class="empty">없음</p>';
+    if (q && !rows.length) { const qs = [...q], sub = s => { let i = 0; for (const ch of s) if (ch === qs[i]) i++; return i === qs.length; }; rows = ids.filter(id => (cat === '전체' || IT[id][1] === cat) && sub(key(id)[0])); }
+    io.disconnect(); il.innerHTML = rows.length ? '' : '<p class="empty">없음</p>'; shown = 0; more();
   };
   document.getElementById('ic').addEventListener('click', e => { const c = e.target.closest('[data-c]'); if (!c) return; cat = c.dataset.c; document.querySelectorAll('#ic .chip').forEach(x => x.classList.toggle('cur', x === c)); draw(); });
   bindList(document.getElementById('il'), id => {
@@ -1219,7 +1232,7 @@ TABS.items = () => {
       <div class="sub">제작법</div>${recipesOf(id)}${usesHtml(id)}${srcParts(id)}
       ${hasHow(id) ? '' : '<p class="muted">얻는 방법을 모드 데이터에서 찾지 못했어요. 명령어·이벤트나 모드 코드로만 주는 아이템일 수 있어요.</p>'}`;
   });
-  document.getElementById('iq').addEventListener('input', draw);
+  let t; document.getElementById('iq').addEventListener('input', () => { clearTimeout(t); t = setTimeout(draw, 150); }); // 타자 칠 때마다 말고 멈추면 검색
   draw();
 };
 

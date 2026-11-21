@@ -687,7 +687,8 @@ const LEADER = { Valerio: ['비상', 'Falkner'], Raffaello: ['호일', 'Bugsy'],
   Pedro: ['강석', 'Roark'], Gardenia: ['유채', 'Gardenia'], Marzia: ['자두', 'Maylene'], Omar: ['맥실러', 'Crasher Wake'], Fannie: ['멜리사', 'Fantina'], Ferruccio: ['동관', 'Byron'], Bianca: ['무청', 'Candice'], Corrado: ['전진', 'Volkner'] };
 const DIM_KO = { 'minecraft:the_nether': '네더', 'minecraft:the_end': '엔드' };
 const rctTrainers = Object.fromEntries(dataFiles('trainers', 'rctmod').map(x => [x.rel.replace(/\.json$/, ''), x.f]));
-const gymStruct = Object.fromEntries(dataFiles('worldgen/structure', 'cobbleverse', true).map(x => [x.rel.replace(/\.json$/, ''), x.f]));
+const rctMobs = Object.fromEntries(dataFiles('mobs/trainers', 'rctmod').map(x => [x.rel.split('/').pop().replace(/\.json$/, ''), x.f]));
+const gymStruct =Object.fromEntries(dataFiles('worldgen/structure', 'cobbleverse', true).map(x => [x.rel.replace(/\.json$/, ''), x.f]));
 const teamOf = id => { const t = readJ(rctTrainers[id]); return [t.name?.literal ?? id, t.team.map(p => [resolveResult([p.species.replace(/^cobblemon:/, ''), ...(p.aspects || [])].join(' ')) ?? p.species, p.level, (p.moveset || []).map(x => x.toLowerCase().replace(/[^a-z0-9]/g, ''))])]; };
 const topLv = team => Math.max(...team.map(p => p[1]));
 const gyms = GYM_TRADES.map(([item, tag]) => {
@@ -697,7 +698,9 @@ const gyms = GYM_TRADES.map(([item, tag]) => {
   // 2인 체육관(호연 tell_pat)은 앞사람 파일에 더블 배틀 팀 전체가 있고 뒷사람(pat)은 자리 채우기용 메타몽 1마리라 앞사람만
   const own = [sid, sid.split('_')[0]].map(x => `${region}_${x}`).find(x => rctTrainers[x]);
   const ids = own ? [own] : Object.keys(rctTrainers).filter(k => k.startsWith(region + '_league_') || k.startsWith(region + '_champion_'));
-  const tr = ids.map(teamOf).sort((a, b) => topLv(a[1]) - topLv(b[1]));
+  // 리그는 도전 순서(mobs 파일의 requiredDefeats 사슬)대로: 앞사람을 이겨야 다음 사람과 싸울 수 있음
+  const depth = id => Math.max(0, ...(readJ(rctMobs[id]).requiredDefeats || []).flat().filter(r => ids.includes(r)).map(r => depth(r) + 1));
+  const tr = ids.sort((a, b) => depth(a) - depth(b)).map(teamOf);
   return {
     ko: (ids.length === 1 && LEADER[tr[0][0]]?.[0]) || ((lang[`tooltip.lumymon.${item.split(':')[1]}`] ?? '').match(/§.(.+?)§r/)?.[1] ?? tr[0][0]), it: item, st,
     bi: [].concat(s.biomes).map(b => b.startsWith('terralith:') ? TERRA_KO[b.slice(10)] ?? b : tagLabel(GYM_BIOME[b] ?? (b.includes(':') ? b : 'minecraft:' + b))).join(' · '),

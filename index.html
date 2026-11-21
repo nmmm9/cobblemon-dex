@@ -223,7 +223,7 @@ details[open] summary:before{content:"−"}
 .gy .gt tbody tr{cursor:pointer}
 .gy .gt td{vertical-align:middle}
 .gy .gt .ico{margin-right:5px}
-.gy .gt td:nth-child(2),.gy .gt td:last-child{white-space:nowrap}
+.gy .gt td:nth-child(-n+4),.gy .gt td:last-child{white-space:nowrap}
 @media(max-width:700px){.gy .gt .glv,.gy .gt .ben{display:block}.gy .gt th,.gy .gt td{padding-left:5px;padding-right:5px}}
 .gy .gt .badge,.gy .gym .badge{margin-left:0}
 .gy code{background:var(--soft);border-radius:3px;padding:2px 6px;font-size:13px;overflow-wrap:anywhere}
@@ -1546,7 +1546,8 @@ TABS.battle = () => {
 // ---- 관장 위치: 체육관이 생기는 바이옴 · 탐색 아이템 · 팀 (코블벌스 관동·성도·호연·신오, build.js의 gyms) ----
 TABS.gym = () => {
   const G = D.gyms, nm = k => esc(D.items[k]?.[0] || k), top = t => Math.max(...t.map(p => p[1]));
-  const lvOf = g => g.tr.length > 1 ? `${top(g.tr[0][1])}~${top(g.tr.at(-1)[1])}` : top(g.tr[0][1]);
+  // 내 레벨 상한 = 다음에 이겨야 할 상대의 최고 Lv + 5, 최저 20 · 최고 100 (rctmod-server.toml의 relativeLevelCap · initialLevelCap)
+  const capOf = t => Math.min(100, Math.max(20, top(t) + 5));
   const where = g => `${g.dim ? `<span class="badge">${g.dim}</span> ` : ''}${esc(g.bi)} <span class="muted ben">${esc(g.en)}${g.at ? ' · ' + esc(g.at) : ''}</span>`;
   const mon = ([k, lv]) => M[k] ? monChip(k).replace(/<\/span>$/, ` <small>Lv ${lv}</small></span>`) : `<span class="mon-chip">${esc(k)} <small>Lv ${lv}</small></span>`;
   // 팀의 절반 이상이 가진 타입 = 주 타입. 그 타입에 2배로 들어가는 공격 타입을 같이 보여줌 (팀이 섞여 있으면 생략)
@@ -1581,26 +1582,31 @@ TABS.gym = () => {
   const ST = Object.fromEntries(D.legends.stages.map(([id, ko, when, d]) => [id, {ko, when, d}]));
   const RG = [...new Set(G.map(g => g.rg))];
   const lead = G.filter(g => g.tr.length === 1);
+  // 지방별 상대 목록: 관장은 1명씩, 리그는 사천왕 · 챔피언을 도전 순서대로 한 명씩 나눔
+  const units = rg => G.map((g, i) => [g, i]).filter(([g]) => g.rg === rg).flatMap(([g, i], n) => g.tr.length > 1
+    ? g.tr.map((t, k) => ({g, id: `gy-${i}-${k}`, t, no: k === g.tr.length - 1 ? '챔피언' : `사천왕 ${k + 1}`, name: t[0], sub: g.ko, first: !k}))
+    : [{g, id: `gy-${i}`, t: g.tr[0], no: n + 1, name: g.ko, sub: g.tr[0][0], first: true}]);
+  const noTxt = u => typeof u.no === 'number' ? u.no + '. ' : '';
   const region = rg => {
-    const gs = G.map((g, i) => [g, i]).filter(([g]) => g.rg === rg), st = ST[rg] || {ko: rg, when: '', d: ''};
-    const lvs = gs.flatMap(([g]) => g.tr.map(t => top(t[1])));
-    return `<details class="rg" id="gy-rg-${rg}"><summary><b>${esc(st.ko)}</b><span class="muted">관장 ${gs.filter(([g]) => g.tr.length === 1).length}명 · 리그 · Lv ${Math.min(...lvs)}~${Math.max(...lvs)}</span>${st.when ? `<span class="muted">${esc(st.when)}</span>` : ''}</summary><div class="rg-in">
+    const us = units(rg), st = ST[rg] || {ko: rg, when: '', d: ''}, lvs = us.map(u => top(u.t[1])), el = us.filter(u => typeof u.no !== 'number').length - 1;
+    return `<details class="rg" id="gy-rg-${rg}"><summary><b>${esc(st.ko)}</b><span class="muted">관장 ${us.length - el - 1}명 · 사천왕 ${el}명 · 챔피언 · Lv ${Math.min(...lvs)}~${Math.max(...lvs)}</span>${st.when ? `<span class="muted">${esc(st.when)}</span>` : ''}</summary><div class="rg-in">
     ${rg !== 'kanto' && st.d ? `<p class="desc">${esc(st.d)}</p>` : ''}
-    <table class="gt"><thead><tr><th>순서</th><th>관장</th><th>체육관이 생기는 곳</th><th>탐색 아이템</th></tr></thead><tbody>
-      ${gs.map(([g, i], n) => `<tr data-jump="gy-${i}"><td>${g.tr.length > 1 ? '끝' : n + 1}</td><td><b>${esc(g.ko)}</b> <span class="muted glv">Lv ${lvOf(g)}</span></td><td>${where(g)}</td><td>${ico(g.it)}${nm(g.it)}</td></tr>`).join('')}
+    <table class="gt"><thead><tr><th>순서</th><th>상대</th><th>상대 최고 Lv</th><th>내 상한 Lv</th><th>생기는 곳</th><th>탐색 아이템</th></tr></thead><tbody>
+      ${us.map(u => `<tr data-jump="${u.id}"><td>${u.no}</td><td><b>${esc(u.name)}</b></td><td>${top(u.t[1])}</td><td>${capOf(u.t[1])}</td>${u.first ? `<td>${where(u.g)}</td><td>${ico(u.g.it)}${nm(u.g.it)}</td>` : '<td class="muted" colspan="2">위와 같은 리그 건물</td>'}</tr>`).join('')}
     </tbody></table>
-    ${gs.map(([g, i], n) => `<section class="gym" id="gy-${i}"><div>
-      <h4>${g.tr.length > 1 ? '' : n + 1 + '. '}${esc(g.ko)}<small>${g.tr.length > 1 ? '사천왕 4명 + 챔피언' : esc(g.tr[0][0])} · 최고 Lv ${lvOf(g)}</small></h4>
+    ${us.map(({g, id, t: [nm2, team], no, name, sub, first}) => `<section class="gym" id="${id}"><div>
+      <h4>${typeof no === 'number' ? no + '. ' : `<span class="muted">${no}</span> `}${esc(name)}<small>${esc(sub)}</small></h4>
       <dl class="kv">
+        <dt>레벨</dt><dd>상대 최고 <b>Lv ${top(team)}</b> · 내가 키울 수 있는 최고 <b>Lv ${capOf(team)}</b> <span class="muted">이 상대를 이기면 상한이 다음 상대 기준으로 올라가요</span></dd>
         <dt>생기는 곳</dt><dd>${where(g)}</dd>
         <dt>명령어</dt><dd><code>/locate structure ${esc(g.st)}</code>${g.dim ? ` <span class="muted">${g.dim}에서 입력</span>` : ''}</dd>
-        ${g.tr.map(([nm2, team]) => `<dt>${g.tr.length > 1 ? esc(nm2) : '포켓몬'}</dt><dd>${g.db?.includes(nm2) ? '<p class="desc" style="margin:0 0 6px">더블 배틀 (2마리씩 동시에 나옴)</p>' : ''}${hint(team)}<div class="mon-chips">${team.map(mon).join('')}</div>${counter(team)}</dd>`).join('')}
+        <dt>포켓몬</dt><dd>${g.db?.includes(nm2) ? '<p class="desc" style="margin:0 0 6px">더블 배틀 (2마리씩 동시에 나옴)</p>' : ''}${hint(team)}<div class="mon-chips">${team.map(mon).join('')}</div>${counter(team)}</dd>
       </dl>
-    </div>${tcards([[g.it]])}</section>`).join('')}
+    </div>${first ? tcards([[g.it]]) : ''}</section>`).join('')}
     </div></details>`;
   };
   $view.innerHTML = `<div class="guide bt gy"><h1 class="tab-head">관장 위치</h1><p class="tab-desc">${RG.map(r => ST[r]?.ko ?? r).join(' · ')} 지방 관장 ${lead.length}명과 포켓몬 리그를 찾는 법. 관장은 돌아다니지 않고 체육관 건물 안에 있어요. 체육관은 정해진 바이옴에만 생기고, 좌표는 월드마다 달라요.</p>
-  <div class="toc"><div class="toc-in"><span class="tj g" data-jump="gy-how">찾는 법</span>${RG.map(rg => `<span class="tj g" data-jump="gy-rg-${rg}">${esc(ST[rg]?.ko ?? rg)}</span>${G.map((g, i) => [g, i]).filter(([g]) => g.rg === rg).map(([g, i], n) => `<span class="tj s" data-rg="${rg}" data-jump="gy-${i}">${g.tr.length > 1 ? '리그' : n + 1 + '. ' + esc(g.ko)}</span>`).join('')}`).join('')}</div></div>
+  <div class="toc"><div class="toc-in"><span class="tj g" data-jump="gy-how">찾는 법</span>${RG.map(rg => `<span class="tj g" data-jump="gy-rg-${rg}">${esc(ST[rg]?.ko ?? rg)}</span>${units(rg).map(u => `<span class="tj s" data-rg="${rg}" data-jump="${u.id}">${noTxt(u)}${esc(u.name)}</span>`).join('')}`).join('')}</div></div>
 
   <h3 id="gy-how">찾는 법</h3>
   <p class="ans">관장마다 "탐색 아이템"이 있어요. 그걸 지도 제작대에 넣으면 그 관장의 체육관 지도가 나와요.</p>
@@ -1624,7 +1630,7 @@ TABS.gym = () => {
   ${tcards(D.gt.map((k, i) => [k, TABLE_FOR[i]]))}
 
   <h3>지방별 관장</h3>
-  <p class="desc">지방 이름을 누르면 펼쳐져요. 줄을 누르면 그 관장 정보로 이동해요. Lv는 그 관장이 쓰는 포켓몬의 최고 레벨이고, 관장은 순서대로만 도전할 수 있어요. "상대법" 상자는 상대 팀의 타입과 실제로 쓰는 기술로 상성을 계산한 거예요. 추천 포켓몬은 최종 진화 · 전설 아님 · 이 모드팩 야생에서 잡을 수 있음(진화 전 포함) · 종족값 합 500 이상 · Smogon 대전 세트가 있는 포켓몬 중에서 골랐어요. 특성 · 도구 · 레벨 차이는 반영하지 않았어요.</p>
+  <p class="desc">지방 이름을 누르면 펼쳐져요. 줄을 누르면 그 관장 정보로 이동해요. 상대 최고 Lv는 그 상대가 쓰는 포켓몬의 최고 레벨이에요. 내 상한 Lv는 그 상대를 이기기 전까지 내 포켓몬을 키울 수 있는 최고 레벨(상대 최고 Lv + 5)이에요. 관장 · 사천왕 · 챔피언은 순서대로만 도전할 수 있어요. "상대법" 상자는 상대 팀의 타입과 실제로 쓰는 기술로 상성을 계산한 거예요. 추천 포켓몬은 최종 진화 · 전설 아님 · 이 모드팩 야생에서 잡을 수 있음(진화 전 포함) · 종족값 합 500 이상 · Smogon 대전 세트가 있는 포켓몬 중에서 골랐어요. 특성 · 도구 · 레벨 차이는 반영하지 않았어요.</p>
   ${RG.map(region).join('')}</div>`;
   $view.querySelector('.gy').addEventListener('toggle', () => $view.querySelectorAll('.gy .tj.s').forEach(x => x.classList.toggle('on', document.getElementById('gy-rg-' + x.dataset.rg).open)), true);
   // 오른쪽 목차 · 표 줄을 누르면 그 지방을 펼치고 이동

@@ -69,7 +69,7 @@ module.exports = {
     { id: 'hooh', s: 'johto', mons: ['hooh'], place: '구리향루 (Bell Tower)', st: 'cobbleverse:bell_tower', radar: 'lumymon:hooh_radar',
       via: [['불탄 구리향루 (Burned Tower)', 'cobbleverse:burned_tower', 'lumymon:burned_radar']],
       need: [['lumymon:rainbow_wing', '불탄 구리향루 위층의 현자({@old_sage})를 이기면 받아요.']],
-      steps: ['불탄 구리향루을 찾아 위층의 현자를 이겨요.', '구리향루 꼭대기까지 올라가요.', ALTAR('lumymon:rainbow_wing', '꼭대기의 제단'), CATCH], lv: '60~70', shiny: '2%' },
+      steps: ['불탄 구리향루를 찾아 위층의 현자를 이겨요.', '구리향루 꼭대기까지 올라가요.', ALTAR('lumymon:rainbow_wing', '꼭대기의 제단'), CATCH], lv: '60~70', shiny: '2%' },
     { id: 'lugia', s: 'johto', mons: ['lugia'], place: '소용돌이 섬 (Whirl Island)', st: 'cobbleverse:whirl_island', radar: 'lumymon:lugia_radar',
       via: [['로켓단 라디오 타워 (Rocket Radio Tower)', 'cobbleverse:rocket_radio_tower', 'lumymon:radio_card']],
       need: [['lumymon:silver_wing', '로켓단 라디오 타워 꼭대기의 비주기({@team_rocket_giovanni})를 이기면 받아요.']],
@@ -79,7 +79,7 @@ module.exports = {
       need: [['lumymon:gs_ball', '사당 앞에 서 있는 레드({@rival_red})를 이기면 받아요.']],
       steps: ['타이가에서 사당을 찾아요.', '사당 앞의 레드를 이겨요.', ALTAR('lumymon:gs_ball', '사당'), CATCH], lv: '75~90', shiny: '5%' },
     { id: 'beasts', s: 'johto', mons: ['raikou', 'entei', 'suicune'], place: '불탄 구리향루 (Burned Tower) 주변', st: 'cobbleverse:burned_tower', radar: 'lumymon:burned_radar',
-      need: [], steps: ['불탄 구리향루을 찾아요.', '탑 주변에서 야생으로 나타나기를 기다려요. 등급이 "매우 희귀"라 오래 걸려요.', '만나면 일반 야생 포켓몬처럼 배틀해서 잡아요.'], lv: '60', shiny: '',
+      need: [], steps: ['불탄 구리향루를 찾아요.', '탑 주변에서 야생으로 나타나기를 기다려요. 등급이 "매우 희귀"라 오래 걸려요.', '만나면 일반 야생 포켓몬처럼 배틀해서 잡아요.'], lv: '60', shiny: '',
       note: ['날씨와 시간에 따라 나올 확률이 3배가 돼요: 라이코는 뇌우, 앤테이는 낮, 스이쿤은 비.', '소환 아이템은 없어요. 제단이 아니라 야생 출현이에요.'] },
 
     // ---------------- 호연 ----------------

@@ -304,6 +304,7 @@ const ALL_NS = [...ITEM_NS, 'lumymon', 'tmcraft', 'obc', 'cobblenav', 'rctmod', 
 // ---------- 아이템 그림: 아이템 모델 -> 텍스처 png 를 img/<ns>/<id>.png 로 복사 (필요한 것만) ----------
 const IMG = path.join(__dirname, 'img');
 fs.rmSync(IMG, { recursive: true, force: true });
+require('./mapgen.js'); // 전설 구조물 지도 그림 -> img/struct/ (img 를 비운 뒤에 그려야 남음)
 const assetFile = (ns, rel) => { for (let i = LAYERS.length - 1; i >= 0; i--) { const f = path.join(LAYERS[i], 'assets', ns, rel); if (fs.existsSync(f)) return f; } return null; };
 // 모델의 텍스처: 아이템은 layer0, 블록은 all/side/top 등. 없으면 parent 모델을 따라감
 function texOf(ref, depth = 0) {
@@ -709,7 +710,10 @@ const gyms = GYM_TRADES.map(([item, tag]) => {
     // 지표에 맞춰 놓는 구조물은 start_height가 지표 기준, 아니면 절대 높이
     // 지표 기준 음수(이슬 -21)는 기초가 내려가는 깊이일 뿐. misty.nbt는 높이 40, 체육관 바닥이 23층이라 건물은 수면 위로 나옴 (NBT로 확인)
     at: s.project_start_to_heightmap ? (y < 0 ? '수면 위로 솟은 건물' : '') : s.type === 'minecraft:jigsaw' ? `지하 Y ${y} 근처` : '',
-    tr: tr.map(([n, team]) => [ids.length > 1 ? ELITE_KO[n] ?? n : LEADER[n]?.[1] ?? n, team]), rg: region, db: tr.filter(([n]) => readJ(rctTrainers[ids.find(id => teamOf(id)[0] === n)]).battleFormat === 'GEN_9_DOUBLES').map(([n]) => ids.length > 1 ? ELITE_KO[n] ?? n : LEADER[n]?.[1] ?? n),
+    // 관장은 게임에서 머리 위에 뜨는 이름(트레이너 파일 이름. 성도·호연·신오는 이탈리아판) 그대로, 영어판 이름은 ge. 사천왕·챔피언은 한국어 이름
+    // 사천왕은 [한국어, 팀, 게임 표기]
+    tr: tr.map(([n, team]) => [ids.length > 1 ? ELITE_KO[n] ?? n : n, team, ...(ids.length > 1 && ELITE_KO[n] ? [n] : [])]), ...(ids.length === 1 && LEADER[tr[0][0]] && LEADER[tr[0][0]][1] !== tr[0][0] && { ge: LEADER[tr[0][0]][1] }),
+    rg: region, db: tr.filter(([n]) => readJ(rctTrainers[ids.find(id => teamOf(id)[0] === n)]).battleFormat === 'GEN_9_DOUBLES').map(([n]) => ids.length > 1 ? ELITE_KO[n] ?? n : n),
   };
 }).sort((a, b) => REGIONS.indexOf(a.rg) - REGIONS.indexOf(b.rg) || topLv(a.tr[0][1]) - topLv(b.tr[0][1]));
 
@@ -730,7 +734,8 @@ const lgWhere = st => {
   const ko = b => b.startsWith('#') ? '오버월드 어디든' : b.includes('distortion') ? '왜곡세계' : b.startsWith('terralith:') ? (TERRA_KO[b.slice(10)] ?? titleEn(b)) : biomeKo(b.split(':')[1]);
   const en = b => b.startsWith('#') ? '' : b.includes('distortion') ? 'Distortion World' : titleEn(b) + (b.startsWith('terralith:') ? ' (Terralith)' : '');
   const dim = bs.some(b => /nether_wastes|crimson|warped|soul_sand|basalt/.test(b)) ? '네더' : bs.some(b => /:(end_|small_end_|the_end)/.test(b)) ? '엔드' : bs.some(b => b.includes('distortion')) ? '왜곡세계' : '';
-  return { st, bi: bs.map(ko).join(' · '), en: bs.map(en).filter(Boolean).join(' · '), dim };
+  // mm = mapgen.js 가 그린 "지도에서 보이는 모습" 그림이 있음
+  return { st, bi: bs.map(ko).join(' · '), en: bs.map(en).filter(Boolean).join(' · '), dim, ...(fs.existsSync(path.join(__dirname, 'img/struct', st.replace(/[:/]/g, '_') + '.png')) && { mm: 1 }) };
 };
 // {@트레이너} -> "게임 표기 이름 · 최고 Lv N", {ns:item} -> {아이템 키}
 const lgT = s => s.replace(/\{@([a-z0-9_]+)\}/g, (m, id) => { if (!rctTrainers[id]) throw new Error('legends.js: 없는 트레이너 ' + id); const [n, team] = teamOf(id); return `${n} · 최고 Lv ${topLv(team)}`; })

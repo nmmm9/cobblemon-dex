@@ -32,6 +32,7 @@ h1 .kind{font-size:13px;padding:1px 8px}
 .head img{width:140px;height:140px;object-fit:contain;flex:none;image-rendering:auto}
 .head .pics{flex:none;display:flex;flex-direction:column;align-items:center}
 .mapi{margin:4px 0 0;text-align:center}.mapi figcaption{font-size:12px;color:var(--muted)}
+.smap{display:inline-block;margin:0 14px 8px 0;vertical-align:top;text-align:center;max-width:100%}.smap img{display:block;max-width:100%;image-rendering:pixelated;background:var(--soft);border:1px solid var(--line)}.smap figcaption{font-size:12px;color:var(--muted);margin-top:4px}.smap-n{font-size:12px;margin:2px 0 0}
 /* 아이콘 64px 안에서 그림은 가운데(위 15px·아래 16px 이상, 폭 40px 이하)에만 있어서 2배로 키우고 빈 테두리를 잘라냄 */
 .mapi .px{width:96px;height:68px;overflow:hidden;margin:0 auto}.head .mapi img{width:128px;height:128px;max-width:none;margin:-30px 0 0 -16px;image-rendering:pixelated}
 .head h1{margin:0;font-size:28px;font-weight:600;letter-spacing:-.01em;line-height:1.2}
@@ -122,7 +123,7 @@ td.c,th.c{text-align:center}
 td .en{color:var(--muted);font-size:12px;margin-left:6px}
 @media(max-width:700px){td .en{display:block;margin-left:0}}
 .cat{font-size:12px;color:var(--muted);white-space:nowrap}
-.catw{white-space:nowrap}.cati{display:inline-block;width:24px;height:16px;margin-right:4px;vertical-align:-3px;background:url(img/cobblemon/categories.png) 0 0/24px 48px no-repeat;image-rendering:pixelated}
+.catw{white-space:nowrap}.cati{display:inline-block;width:24px;height:16px;margin-right:4px;vertical-align:-3px;background:url(ui/categories.png) 0 0/24px 48px no-repeat;image-rendering:pixelated}
 .rec{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
 .rec .card{border:1px solid var(--line);border-radius:4px;padding:12px 14px}
 .rec .why{font-size:12px;color:var(--muted);margin-bottom:6px}
@@ -1599,25 +1600,27 @@ TABS.gym = () => {
   const lead = G.filter(g => g.tr.length === 1);
   // 지방별 상대 목록: 관장은 1명씩, 리그는 사천왕 · 챔피언을 도전 순서대로 한 명씩 나눔
   const units = rg => G.map((g, i) => [g, i]).filter(([g]) => g.rg === rg).flatMap(([g, i], n) => g.tr.length > 1
-    ? g.tr.map((t, k) => ({g, id: `gy-${i}-${k}`, t, no: k === g.tr.length - 1 ? '챔피언' : `사천왕 ${k + 1}`, name: t[0], sub: g.ko, first: !k}))
-    : [{g, id: `gy-${i}`, t: g.tr[0], no: n + 1, name: g.ko, sub: g.tr[0][0], first: true}]);
+    ? g.tr.map((t, k) => ({g, id: `gy-${i}-${k}`, t, no: k === g.tr.length - 1 ? '챔피언' : `사천왕 ${k + 1}`, name: t[0], gn: t[2] || '', sub: g.ko, first: !k}))
+    : [{g, id: `gy-${i}`, t: g.tr[0], no: n + 1, name: g.ko, gn: g.tr[0][0], sub: g.ge ? '영어판 ' + g.ge : '', first: true}]);
+  // gn = 게임에서 머리 위에 뜨는 이름 (성도·호연·신오 관장은 이탈리아판: Valerio, Fiammetta …)
+  const gname = u => u.gn ? ` <span class="muted">${esc(u.gn)}</span>` : '';
   const noTxt = u => typeof u.no === 'number' ? u.no + '. ' : '';
   const region = rg => {
     const us = units(rg), st = ST[rg] || {ko: rg, when: '', d: ''}, lvs = us.map(u => top(u.t[1])), el = us.filter(u => typeof u.no !== 'number').length - 1;
     return `<details class="rg" id="gy-rg-${rg}"><summary><b>${esc(st.ko)}</b><span class="muted">관장 ${us.length - el - 1}명 · 사천왕 ${el}명 · 챔피언 · Lv ${Math.min(...lvs)}~${Math.max(...lvs)}</span>${st.when ? `<span class="muted">${esc(st.when)}</span>` : ''}</summary><div class="rg-in">
     ${rg !== 'kanto' && st.d ? `<p class="desc">${esc(st.d)}</p>` : ''}
     <table class="gt"><thead><tr><th>순서</th><th>상대</th><th>상대 최고 Lv</th><th>내 상한 Lv</th><th>생기는 곳</th><th>탐색 아이템</th></tr></thead><tbody>
-      ${us.map(u => `<tr data-jump="${u.id}"><td>${u.no}</td><td><b>${esc(u.name)}</b></td><td>${top(u.t[1])}</td><td>${capOf(u.t[1])}</td>${u.first ? `<td>${where(u.g)}</td><td>${ico(u.g.it)}${nm(u.g.it)}</td>` : '<td class="muted" colspan="2">위와 같은 리그 건물</td>'}</tr>`).join('')}
+      ${us.map(u => `<tr data-jump="${u.id}"><td>${u.no}</td><td><b>${esc(u.name)}</b>${gname(u)}</td><td>${top(u.t[1])}</td><td>${capOf(u.t[1])}</td>${u.first ? `<td>${where(u.g)}</td><td>${ico(u.g.it)}${nm(u.g.it)}</td>` : '<td class="muted" colspan="2">위와 같은 리그 건물</td>'}</tr>`).join('')}
     </tbody></table>
-    ${us.map(({g, id, t: [nm2, team], no, name, sub, first}) => `<section class="gym" id="${id}"><div>
-      <h4>${typeof no === 'number' ? no + '. ' : `<span class="muted">${no}</span> `}${esc(name)}<small>${esc(sub)}</small></h4>
+    ${us.map(u => { const {g, id, t: [nm2, team], no, name, sub, first} = u; return `<section class="gym" id="${id}"><div>
+      <h4>${typeof no === 'number' ? no + '. ' : `<span class="muted">${no}</span> `}${esc(name)}<small>${[u.gn && '게임 표기 ' + u.gn, sub].filter(Boolean).map(esc).join(' · ')}</small></h4>
       <dl class="kv">
         <dt>레벨</dt><dd>상대 최고 <b>Lv ${top(team)}</b> · 내가 키울 수 있는 최고 <b>Lv ${capOf(team)}</b> <span class="muted">이 상대를 이기면 상한이 다음 상대 기준으로 올라가요</span></dd>
         <dt>생기는 곳</dt><dd>${where(g)}</dd>
         <dt>명령어</dt><dd><code>/locate structure ${esc(g.st)}</code>${g.dim ? ` <span class="muted">${g.dim}에서 입력</span>` : ''}</dd>
         <dt>포켓몬</dt><dd>${g.db?.includes(nm2) ? '<p class="desc" style="margin:0 0 6px">더블 배틀 (2마리씩 동시에 나옴)</p>' : ''}${hint(team)}<div class="mon-chips">${team.map(mon).join('')}</div>${counter(team)}</dd>
       </dl>
-    </div>${first ? tcards([[g.it]]) : ''}</section>`).join('')}
+    </div>${first ? tcards([[g.it]]) : ''}</section>`; }).join('')}
     </div></details>`;
   };
   $view.innerHTML = `<div class="guide bt gy"><h1 class="tab-head">관장 위치</h1><p class="tab-desc">${RG.map(r => ST[r]?.ko ?? r).join(' · ')} 지방 관장 ${lead.length}명과 포켓몬 리그를 찾는 법. 관장은 돌아다니지 않고 체육관 건물 안에 있어요. 체육관은 정해진 바이옴에만 생기고, 좌표는 월드마다 달라요.</p>
@@ -1674,9 +1677,13 @@ TABS.legend = () => {
     const cards = [...new Set([e.radar, ...(e.via || []).map(v => v[2]), ...e.need.map(n => n[0])])].filter(k => k && D.recipes[k]);
     const find = [e.w && (e.radar ? radar(e.radar, e.w) : '전용 레이더가 없어요. 이 바이옴을 돌아다니며 찾아요.'), e.w && cmd(e.w), e.find && T(e.find),
       ...(e.via || []).map(([n, w, r]) => `<span class="muted">먼저 갈 곳</span> <b>${esc(n)}</b> ${where(w)}<br>${chip(r)} · ${cmd(w)}`)].filter(Boolean);
+    // 지도 모습: mapgen.js 가 구조물 파일로 그린 그림 (먼저 갈 곳 포함)
+    const maps = [[e.place, e.w], ...(e.via || []).map(([n, w]) => [n, w])].filter(([, w]) => w?.mm)
+      .map(([n, w]) => `<figure class="smap"><img src="img/struct/${w.st.replace(/[:/]/g, '_')}.png" alt="${esc(n)} 지도 모습" loading="lazy"><figcaption>${esc(n)}</figcaption></figure>`);
     const rows = [
       ['어디서', `<b>${esc(e.place)}</b>${e.w ? `<br>${where(e.w)}` : ''}`],
       find.length && ['찾는 법', find.map(x => `<div>${x}</div>`).join('')],
+      maps.length && ['지도 모습', maps.join('') + '<p class="muted smap-n">구조물 블록만 위에서 본 모습이에요. 위쪽이 북쪽이고, 실제 지도에는 주변 지형이 같이 보여요.</p>'],
       ['필요한 것', e.need.length ? `<ul>${e.need.map(([k, x]) => `<li>${chip(k)} <span class="muted">—</span> ${T(x)}</li>`).join('')}</ul>` : '소환 아이템이 필요 없어요.'],
       e.id === 'arceus' && ['플레이트', `<details><summary>플레이트 18장 위치 보기</summary><table><tbody>${L.plates.map(([k, w]) => `<tr><td>${chip(k)}</td><td>${esc(w)}</td></tr>`).join('')}</tbody></table></details>`],
       ['순서', `<ol>${e.steps.map(s => `<li>${T(s)}</li>`).join('')}</ol>`],

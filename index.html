@@ -1656,8 +1656,8 @@ TABS.gym = () => {
     $view.querySelectorAll('.gy .tj.s').forEach(x => x.classList.toggle('on', document.getElementById('gy-rg-' + x.dataset.rg).open));
     $view.querySelectorAll('.gy .rh').forEach(x => x.classList.toggle('on', document.getElementById(x.dataset.jump).open));
   }, true);
-  // 오른쪽 목차 · 표 줄을 누르면 그 지방을 펼치고 이동. 목차의 펼친 지방 이름을 다시 누르면 접기
-  $view.querySelector('.gy').addEventListener('click', e => { const j = e.target.closest('[data-jump]'), el = document.getElementById(j?.dataset.jump); if (!el) return; if (j.classList.contains('rh') && el.open) { el.open = false; return; } const d = el.closest('details.rg'); if (d) d.open = true; el.scrollIntoView({behavior: 'smooth'}); });
+  // 오른쪽 목차 · 표 줄을 누르면 그 지방을 펼치고 이동. 목차의 지방 이름은 이동 없이 접기/펼치기만
+  $view.querySelector('.gy').addEventListener('click', e => { const j = e.target.closest('[data-jump]'), el = document.getElementById(j?.dataset.jump); if (!el) return; if (j.classList.contains('rh')) { el.open = !el.open; return; } const d = el.closest('details.rg'); if (d) d.open = true; el.scrollIntoView({behavior: 'smooth'}); });
 };
 
 // ---- 전설 포켓몬: 만나는 법 · 기믹 (build.js의 legends = legends.js에 구조물 바이옴·트레이너 레벨을 채운 것) ----

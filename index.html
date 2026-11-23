@@ -221,7 +221,9 @@ details[open] summary:before{content:"−"}
 .bt .rk th{border-bottom:1px solid var(--soft)}
 .bt h4 small{font-size:13px;font-weight:400;color:var(--muted);margin-left:6px}
 /* 관장 위치 탭 (카드 · 한 줄 답은 배틀 기초 탭 스타일을 같이 씀) */
-@media(min-width:1100px){.gy .tj.s:not(.on){display:none}} /* 오른쪽 목차: 펼친 지방의 관장만 */
+@media(min-width:1100px){.gy .tj.s:not(.on){display:none} /* 오른쪽 목차: 펼친 지방의 관장만 */
+  .gy .rh::after{content:'';display:inline-block;width:5px;height:5px;margin:0 0 3px 8px;border:solid var(--muted);border-width:0 1px 1px 0;transform:rotate(-45deg);transition:transform .15s}
+  .gy .rh.on::after{transform:rotate(45deg)}}
 .gy .gt tbody tr{cursor:pointer}
 .gy .gt td{vertical-align:middle}
 .gy .gt .ico{margin-right:5px}
@@ -1624,7 +1626,7 @@ TABS.gym = () => {
     </div></details>`;
   };
   $view.innerHTML = `<div class="guide bt gy"><h1 class="tab-head">관장 위치</h1><p class="tab-desc">${RG.map(r => ST[r]?.ko ?? r).join(' · ')} 지방 관장 ${lead.length}명과 포켓몬 리그를 찾는 법. 관장은 돌아다니지 않고 체육관 건물 안에 있어요. 체육관은 정해진 바이옴에만 생기고, 좌표는 월드마다 달라요.</p>
-  <div class="toc"><div class="toc-in"><span class="tj g" data-jump="gy-how">찾는 법</span>${RG.map(rg => `<span class="tj g" data-jump="gy-rg-${rg}">${esc(ST[rg]?.ko ?? rg)}</span>${units(rg).map(u => `<span class="tj s" data-rg="${rg}" data-jump="${u.id}">${noTxt(u)}${esc(u.name)}</span>`).join('')}`).join('')}</div></div>
+  <div class="toc"><div class="toc-in"><span class="tj g" data-jump="gy-how">찾는 법</span>${RG.map(rg => `<span class="tj g rh" data-jump="gy-rg-${rg}">${esc(ST[rg]?.ko ?? rg)}</span>${units(rg).map(u => `<span class="tj s" data-rg="${rg}" data-jump="${u.id}">${noTxt(u)}${esc(u.name)}</span>`).join('')}`).join('')}</div></div>
 
   <h3 id="gy-how">찾는 법</h3>
   <p class="ans">관장마다 "탐색 아이템"이 있어요. 그걸 지도 제작대에 넣으면 그 관장의 체육관 지도가 나와요.</p>
@@ -1650,9 +1652,12 @@ TABS.gym = () => {
   <h3>지방별 관장</h3>
   <p class="desc">지방 이름을 누르면 펼쳐져요. 줄을 누르면 그 관장 정보로 이동해요. 상대 최고 Lv는 그 상대가 쓰는 포켓몬의 최고 레벨이에요. 내 상한 Lv는 그 상대를 이기기 전까지 내 포켓몬을 키울 수 있는 최고 레벨(상대 최고 Lv + 5)이에요. 관장 · 사천왕 · 챔피언은 순서대로만 도전할 수 있어요. "상대법" 상자는 상대 팀의 타입과 실제로 쓰는 기술로 상성을 계산한 거예요. 추천 포켓몬은 최종 진화 · 전설 아님 · 이 모드팩 야생에서 잡을 수 있음(진화 전 포함) · 종족값 합 500 이상 · Smogon 대전 세트가 있는 포켓몬 중에서 골랐어요. 특성 · 도구 · 레벨 차이는 반영하지 않았어요.</p>
   ${RG.map(region).join('')}</div>`;
-  $view.querySelector('.gy').addEventListener('toggle', () => $view.querySelectorAll('.gy .tj.s').forEach(x => x.classList.toggle('on', document.getElementById('gy-rg-' + x.dataset.rg).open)), true);
-  // 오른쪽 목차 · 표 줄을 누르면 그 지방을 펼치고 이동
-  $view.querySelector('.gy').addEventListener('click', e => { const el = document.getElementById(e.target.closest('[data-jump]')?.dataset.jump); if (!el) return; const d = el.closest('details.rg'); if (d) d.open = true; el.scrollIntoView({behavior: 'smooth'}); });
+  $view.querySelector('.gy').addEventListener('toggle', () => {
+    $view.querySelectorAll('.gy .tj.s').forEach(x => x.classList.toggle('on', document.getElementById('gy-rg-' + x.dataset.rg).open));
+    $view.querySelectorAll('.gy .rh').forEach(x => x.classList.toggle('on', document.getElementById(x.dataset.jump).open));
+  }, true);
+  // 오른쪽 목차 · 표 줄을 누르면 그 지방을 펼치고 이동. 목차의 펼친 지방 이름을 다시 누르면 접기
+  $view.querySelector('.gy').addEventListener('click', e => { const j = e.target.closest('[data-jump]'), el = document.getElementById(j?.dataset.jump); if (!el) return; if (j.classList.contains('rh') && el.open) { el.open = false; return; } const d = el.closest('details.rg'); if (d) d.open = true; el.scrollIntoView({behavior: 'smooth'}); });
 };
 
 // ---- 전설 포켓몬: 만나는 법 · 기믹 (build.js의 legends = legends.js에 구조물 바이옴·트레이너 레벨을 채운 것) ----

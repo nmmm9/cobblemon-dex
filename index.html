@@ -452,7 +452,7 @@ h2 .bucket{font-size:inherit}
 <body>
 <nav class="nav"><div class="nav-in">
   <a class="brand" href="#">코블몬 도감</a>
-  <a data-tab="" href="#">도감</a><a data-tab="spawn" href="#/spawn">출현</a><a data-tab="moves" href="#/moves">기술</a><a data-tab="abilities" href="#/abilities">특성</a><a data-tab="items" href="#/items">아이템</a><a data-tab="types" href="#/types">상성표</a><a data-tab="guide" href="#/guide">가이드</a><a data-tab="calc" href="#/calc">계산기</a><a data-tab="battle" href="#/battle">배틀 기초</a><a data-tab="gym" href="#/gym">관장 위치</a><a data-tab="legend" href="#/legend">전설 포켓몬</a><a data-tab="ride" href="#/ride">탈것</a>
+  <a data-tab="" href="#">도감</a><a data-tab="spawn" href="#/spawn">출현</a><a data-tab="moves" href="#/moves">기술</a><a data-tab="abilities" href="#/abilities">특성</a><a data-tab="items" href="#/items">아이템</a><a data-tab="types" href="#/types">상성표</a><a data-tab="guide" href="#/guide">가이드</a><a data-tab="calc" href="#/calc">계산기</a><a data-tab="battle" href="#/battle">배틀 기초</a><a data-tab="gym" href="#/gym">관장 위치</a><a data-tab="legend" href="#/legend">전설 포켓몬</a><a data-tab="ride" href="#/ride">탈것</a><a data-tab="my" href="#/my">내 포켓몬</a>
 </div></nav>
 <div class="wrap">
   <div class="search" id="dexbar">
@@ -1828,6 +1828,70 @@ TABS.ride = () => {
   draw();
 };
 const RSTAT_K = {SPEED: 'sp', ACCELERATION: 'ac', STAMINA: 'st', SKILL: 'sk', JUMP: 'jp'};
+
+// 내 포켓몬: sync/my-watch.js가 쓴 my.js(window.MY = {t, files:{경로: NBT를 푼 객체}})를 1분마다 다시 읽음. 로컬 전용(my.js는 .gitignore)
+// 저장 키 이름은 코블몬 1.7.3 DataKeys 기준. 실제 파일을 못 본 채로 짠 것이라 키를 느슨하게 찾음
+const STAT_ID = [/^hp$/i, /^attack$/i, /^defen[cs]e$/i, /^special_?attack$/i, /^special_?defen[cs]e$/i, /^speed$/i];
+TABS.my = () => {
+  const bare = s => String(s || '').replace(/^cobblemon:/, '');
+  const six = o => { o = o && (o.Base || o); return STAT_ID.map(r => { const k = o && Object.keys(o).find(x => r.test(x)); return k ? +o[k] : 0; }); };
+  const txt = s => { if (typeof s !== 'string') return ''; try { const j = JSON.parse(s); return typeof j === 'string' ? j : j.text || ''; } catch { return s; } };
+  const itNm = id => { const k = bare(id); return D.items[k]?.[0] || D.items[id]?.[0] || id; };
+  // 저장 파일 안에서 Species 키가 있는 객체 = 포켓몬 한 마리. where = 거쳐 온 키 (Box3 > Slot5 등)
+  const mons = (o, where = [], out = []) => {
+    if (!o || typeof o !== 'object') return out;
+    if (typeof o.Species === 'string') { out.push({p: o, where}); return out; }
+    for (const [k, v] of Object.entries(o)) mons(v, [...where, k], out);
+    return out;
+  };
+  const card = ({p, where}) => {
+    const sp = bare(p.Species), form = String(p.FormId || '').toLowerCase(), key = M[`${sp}-${form}`] ? `${sp}-${form}` : sp, m = M[key];
+    const lv = +p.Level || 1, iv = six(p.IVs), ev = six(p.EVs), nat = bare(p.MintedNature || p.Nature), nk = NAT[nat];
+    const st = m ? m.stats.map((b, i) => i ? Math.floor((Math.floor((2 * b + iv[i] + Math.floor(ev[i] / 4)) * lv / 100) + 5) * (nk?.[0] === i ? 1.1 : nk?.[1] === i ? .9 : 1)) : Math.floor((2 * b + iv[0] + Math.floor(ev[0] / 4)) * lv / 100) + lv + 10) : null;
+    const ab = bare(p.Ability?.AbilityName || p.Ability), held = p.HeldItem?.id || p.HeldItem?.Name || (typeof p.HeldItem === 'string' ? p.HeldItem : '');
+    const moves = Object.values(p.MoveSet || {}).filter(x => x && x.MoveName).map(x => `<span class="chip sm">${esc(MV[x.MoveName]?.[0] || x.MoveName)}${x.MovePP != null ? ` <span class="muted">${x.MovePP}</span>` : ''}</span>`).join('');
+    const slot = where.filter(w => /^(Box|Slot)\d+$/.test(w)).map(w => w.replace(/^Box(\d+)/, (_, n) => `박스 ${+n + 1}`).replace(/^Slot(\d+)/, (_, n) => `${+n + 1}칸`)).join(' · ');
+    return `<div class="sbox"${m ? ` data-go="${key}" style="cursor:pointer"` : ''}>
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">${m ? monImg(m) : ''}<b>${esc(txt(p.Nickname) || (m ? fullKo(m) : sp))}</b>${p.Shiny ? ' <span class="kind">이로치</span>' : ''}<span class="muted">Lv.${lv}${p.Gender === 'MALE' ? ' ♂' : p.Gender === 'FEMALE' ? ' ♀' : ''}</span></div>
+      ${m ? `<div style="margin:4px 0">${m.types.map(t => tchip(t, 1)).join('')}${txt(p.Nickname) ? ` <span class="muted">${esc(fullKo(m))}</span>` : ''}</div>` : ''}
+      <dl class="kv" style="grid-template-columns:64px 1fr;font-size:13px;margin:6px 0">
+        <dt>성격</dt><dd>${esc(D.natures[nat] || nat || '—')}${p.MintedNature ? ' <span class="muted">(민트)</span>' : ''}</dd>
+        <dt>특성</dt><dd>${esc(D.abilities[ab]?.[0] || ab || '—')}</dd>
+        ${held ? `<dt>도구</dt><dd>${ico(bare(held))}${esc(itNm(held))}</dd>` : ''}
+        ${p.CaughtBall ? `<dt>볼</dt><dd>${ico(bare(p.CaughtBall))}${esc(itNm(p.CaughtBall))}</dd>` : ''}
+        ${p.TeraType ? `<dt>테라</dt><dd>${TK[bare(p.TeraType)] ? tchip(bare(p.TeraType), 1) : esc(p.TeraType)}</dd>` : ''}
+        ${p.Friendship != null ? `<dt>친밀도</dt><dd>${p.Friendship}</dd>` : ''}
+      </dl>
+      <div class="chips" style="margin:0 0 6px">${moves}</div>
+      <table class="rkt" style="font-size:12px"><thead><tr><th></th>${STAT.map((s, i) => `<th class="c"${nk?.[0] === i ? ' style="color:#c0392b"' : nk?.[1] === i ? ' style="color:#3f8fd8"' : ''}>${s}</th>`).join('')}</tr></thead><tbody>
+        ${st ? `<tr><td class="muted">능력치</td>${st.map((x, i) => `<td class="c">${i === 0 && p.Health != null ? `${p.Health}/` : ''}${x}</td>`).join('')}</tr>` : ''}
+        <tr><td class="muted">개체값</td>${iv.map(x => `<td class="c"${x === 31 ? ' style="font-weight:600"' : ''}>${x}</td>`).join('')}</tr>
+        <tr><td class="muted">노력치</td>${ev.map(x => `<td class="c">${x}</td>`).join('')}</tr></tbody></table>
+      ${slot ? `<div class="muted" style="font-size:12px;margin-top:4px">${slot}</div>` : ''}</div>`;
+  };
+  const draw = () => {
+    if (!location.hash.startsWith('#/my')) return;
+    const MY = window.MY;
+    if (!MY) { $view.innerHTML = `<h1 class="tab-head">내 포켓몬</h1><p class="tab-desc">아직 데이터가 없어요. 이 PC에서 <code>node sync/my-watch.js</code>를 켜 두고, 도감은 이 폴더의 index.html(또는 <code>node serve.js</code>)로 열어야 보여요. 공개 사이트에서는 안 보여요.</p>`; return; }
+    const F = Object.entries(MY.files);
+    const party = F.filter(([k]) => /party/i.test(k)).flatMap(([, v]) => mons(v)), pc = F.filter(([k]) => /pcstore|[\\/]pc[\\/]/i.test(k)).flatMap(([, v]) => mons(v));
+    // 도감: pokedex 파일 안의 "cobblemon:종" 키. 그 아래 어딘가에 CAUGHT가 있으면 잡음, 없으면 봄
+    const dex = {}; F.filter(([k]) => /pokedex/i.test(k)).forEach(([, v]) => { const w = o => { if (!o || typeof o !== 'object') return; for (const [k, x] of Object.entries(o)) { if (/^cobblemon:/.test(k) && M[bare(k)]) dex[bare(k)] = JSON.stringify(x).includes('CAUGHT') ? 2 : Math.max(dex[bare(k)] || 0, 1); else w(x); } }; w(v); });
+    const caught = Object.keys(dex).filter(k => dex[k] === 2).sort((a, b) => M[a].n - M[b].n), seen = Object.keys(dex).filter(k => dex[k] === 1);
+    const grid = a => a.length ? `<div class="sgrid">${a.map(card).join('')}</div>` : '<p class="hint">없음</p>';
+    $view.innerHTML = `<h1 class="tab-head">내 포켓몬</h1><p class="tab-desc">친구 월드에서 받은 저장 파일 기준 · 마지막 갱신 ${new Date(MY.t).toLocaleString()} · 1분마다 다시 읽어요. 카드를 누르면 도감으로.</p>
+      <section><h2>파티 ${party.length}</h2>${grid(party)}</section>
+      <section style="margin-top:32px"><h2>박스 ${pc.length}</h2>${pc.length ? grid(pc) : '<p class="hint">없음 (PC 파일이 아직 안 왔거나 비어 있음)</p>'}</section>
+      <section style="margin-top:32px"><h2>도감 · 잡음 ${caught.length} · 봄 ${seen.length}</h2>${caught.length ? `<details><summary>잡은 포켓몬 보기</summary><div class="mon-chips">${caught.map(monChip).join('')}</div></details>` : '<p class="hint">도감 파일을 아직 못 읽었어요</p>'}</section>
+      <details style="margin-top:32px"><summary class="muted">받은 파일 ${F.length}개 (확인용)</summary><ul class="desc">${F.map(([k]) => `<li><code>${esc(k)}</code></li>`).join('')}</ul></details>`;
+  };
+  const load = () => {
+    if (!location.hash.startsWith('#/my')) return clearInterval(TABS.my.t);
+    const s = document.createElement('script'); s.src = 'my.js?' + Date.now();
+    s.onload = s.onerror = () => { s.remove(); const t = window.MY?.t; if (t !== TABS.my.drawn) { TABS.my.drawn = t; draw(); } }; document.head.appendChild(s);
+  };
+  TABS.my.drawn = NaN; clearInterval(TABS.my.t); TABS.my.t = setInterval(load, 60 * 1000); load();
+};
 
 TABS.calc = () => {
   const $ = id => document.getElementById(id), cnt = s => +(s.match(/×(\d+)$/)?.[1] || 1);

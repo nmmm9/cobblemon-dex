@@ -1831,7 +1831,7 @@ const RSTAT_K = {SPEED: 'sp', ACCELERATION: 'ac', STAMINA: 'st', SKILL: 'sk', JU
 
 // 내 포켓몬: 친구 PC(sync/cobble-sync.ps1) -> 구글 드라이브 cobble-sync 폴더 -> Apps Script(sync/apps-script.gs)가 {t, files:{경로: base64}}로 돌려줌.
 // 1분마다 받아서 브라우저에서 gzip·NBT를 풂. 저장 키 이름은 코블몬 1.7.3 DataKeys 기준(실제 파일을 못 본 채로 짜서 느슨하게 찾음)
-const MY_URL = ''; // Apps Script 웹 앱 주소(.../exec)
+const MY_URL = 'https://script.google.com/macros/s/AKfycbyyNI7CRIveOcxND6WS4Qt2ArDoiZzAK2Ptdaxs-BmJ4q5Xs3ZL1LalUvu2OI0GuacL/exec'; // Apps Script 웹 앱 주소(.../exec)
 async function nbtParse(u8) {
   if (u8[0] === 0x1f && u8[1] === 0x8b) u8 = new Uint8Array(await new Response(new Blob([u8]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer());
   const v = new DataView(u8.buffer, u8.byteOffset, u8.byteLength), td = new TextDecoder(); let p = 0;

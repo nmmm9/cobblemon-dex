@@ -56,5 +56,5 @@ while ($true) {
     } catch { }  # 게임이 쓰는 중이면 다음 바퀴에 다시
   }
   if ($n) { Write-Host "[$(Get-Date -Format HH:mm:ss)] 파일 $n개 보냄" }
-  Start-Sleep -Seconds 300
+  Start-Sleep -Seconds 60
 }

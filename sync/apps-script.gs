@@ -1,0 +1,18 @@
+// 구글 Apps Script(script.google.com)에 붙여 넣고 웹 앱으로 배포.
+// 내 드라이브의 cobble-sync 폴더 안 파일을 base64로 묶어 돌려줌 -> 도감 "내 포켓몬" 탭이 1분마다 읽음.
+function doGet() {
+  const out = { t: 0, files: {} };
+  const walk = (folder, pre) => {
+    const fs = folder.getFiles();
+    while (fs.hasNext()) {
+      const f = fs.next(), n = f.getName();
+      if (/\.(tmp|bat|ps1|gs)$/i.test(n)) continue;
+      out.files[pre + n] = Utilities.base64Encode(f.getBlob().getBytes());
+      out.t = Math.max(out.t, f.getLastUpdated().getTime());
+    }
+    const ds = folder.getFolders();
+    while (ds.hasNext()) { const d = ds.next(); walk(d, pre + d.getName() + '/'); }
+  };
+  walk(DriveApp.getFoldersByName('cobble-sync').next(), '');
+  return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);
+}

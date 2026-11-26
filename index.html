@@ -1829,8 +1829,33 @@ TABS.ride = () => {
 };
 const RSTAT_K = {SPEED: 'sp', ACCELERATION: 'ac', STAMINA: 'st', SKILL: 'sk', JUMP: 'jp'};
 
-// 내 포켓몬: sync/my-watch.js가 쓴 my.js(window.MY = {t, files:{경로: NBT를 푼 객체}})를 1분마다 다시 읽음. 로컬 전용(my.js는 .gitignore)
-// 저장 키 이름은 코블몬 1.7.3 DataKeys 기준. 실제 파일을 못 본 채로 짠 것이라 키를 느슨하게 찾음
+// 내 포켓몬: 친구 PC(sync/cobble-sync.ps1) -> 구글 드라이브 cobble-sync 폴더 -> Apps Script(sync/apps-script.gs)가 {t, files:{경로: base64}}로 돌려줌.
+// 1분마다 받아서 브라우저에서 gzip·NBT를 풂. 저장 키 이름은 코블몬 1.7.3 DataKeys 기준(실제 파일을 못 본 채로 짜서 느슨하게 찾음)
+const MY_URL = ''; // Apps Script 웹 앱 주소(.../exec)
+async function nbtParse(u8) {
+  if (u8[0] === 0x1f && u8[1] === 0x8b) u8 = new Uint8Array(await new Response(new Blob([u8]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer());
+  const v = new DataView(u8.buffer, u8.byteOffset, u8.byteLength), td = new TextDecoder(); let p = 0;
+  const str = () => { const n = v.getUint16(p); p += 2; p += n; return td.decode(u8.subarray(p - n, p)); };
+  const arr = (n, f) => Array.from({length: n}, f);
+  const tag = t => {
+    switch (t) {
+      case 1: return v.getInt8(p++);
+      case 2: p += 2; return v.getInt16(p - 2);
+      case 3: p += 4; return v.getInt32(p - 4);
+      case 4: p += 8; return Number(v.getBigInt64(p - 8));
+      case 5: p += 4; return v.getFloat32(p - 4);
+      case 6: p += 8; return v.getFloat64(p - 8);
+      case 7: { const n = v.getInt32(p); p += 4 + n; return [...u8.subarray(p - n, p)]; }
+      case 8: return str();
+      case 9: { const et = u8[p++], n = v.getInt32(p); p += 4; return arr(n, () => tag(et)); }
+      case 10: { const o = {}; for (;;) { const t2 = u8[p++]; if (!t2) return o; const k = str(); o[k] = tag(t2); } }
+      case 11: { const n = v.getInt32(p); p += 4; return arr(n, () => tag(3)); }
+      case 12: { const n = v.getInt32(p); p += 4; return arr(n, () => tag(4)); }
+      default: throw new Error('NBT 태그 ' + t);
+    }
+  };
+  const t = u8[p++]; str(); return tag(t);
+}
 const STAT_ID = [/^hp$/i, /^attack$/i, /^defen[cs]e$/i, /^special_?attack$/i, /^special_?defen[cs]e$/i, /^speed$/i];
 TABS.my = () => {
   const bare = s => String(s || '').replace(/^cobblemon:/, '');
@@ -1872,7 +1897,7 @@ TABS.my = () => {
   const draw = () => {
     if (!location.hash.startsWith('#/my')) return;
     const MY = window.MY;
-    if (!MY) { $view.innerHTML = `<h1 class="tab-head">내 포켓몬</h1><p class="tab-desc">아직 데이터가 없어요. 이 PC에서 <code>node sync/my-watch.js</code>를 켜 두고, 도감은 이 폴더의 index.html(또는 <code>node serve.js</code>)로 열어야 보여요. 공개 사이트에서는 안 보여요.</p>`; return; }
+    if (!MY) { $view.innerHTML = `<h1 class="tab-head">내 포켓몬</h1><p class="tab-desc">${!MY_URL ? '아직 연결 안 됨 (Apps Script 주소를 index.html의 MY_URL에 넣어야 해요)' : TABS.my.err ? '불러오기 실패: ' + esc(TABS.my.err) : '불러오는 중…'}</p>`; return; }
     const F = Object.entries(MY.files);
     const party = F.filter(([k]) => /party/i.test(k)).flatMap(([, v]) => mons(v)), pc = F.filter(([k]) => /pcstore|[\\/]pc[\\/]/i.test(k)).flatMap(([, v]) => mons(v));
     // 도감: pokedex 파일 안의 "cobblemon:종" 키. 그 아래 어딘가에 CAUGHT가 있으면 잡음, 없으면 봄
@@ -1885,10 +1910,21 @@ TABS.my = () => {
       <section style="margin-top:32px"><h2>도감 · 잡음 ${caught.length} · 봄 ${seen.length}</h2>${caught.length ? `<details><summary>잡은 포켓몬 보기</summary><div class="mon-chips">${caught.map(monChip).join('')}</div></details>` : '<p class="hint">도감 파일을 아직 못 읽었어요</p>'}</section>
       <details style="margin-top:32px"><summary class="muted">받은 파일 ${F.length}개 (확인용)</summary><ul class="desc">${F.map(([k]) => `<li><code>${esc(k)}</code></li>`).join('')}</ul></details>`;
   };
-  const load = () => {
+  const load = async () => {
     if (!location.hash.startsWith('#/my')) return clearInterval(TABS.my.t);
-    const s = document.createElement('script'); s.src = 'my.js?' + Date.now();
-    s.onload = s.onerror = () => { s.remove(); const t = window.MY?.t; if (t !== TABS.my.drawn) { TABS.my.drawn = t; draw(); } }; document.head.appendChild(s);
+    if (MY_URL) try {
+      const r = await (await fetch(MY_URL + (MY_URL.includes('?') ? '&' : '?') + 't=' + Date.now())).json();
+      if (r.t !== window.MY?.t) {
+        const files = {};
+        for (const [k, b64] of Object.entries(r.files)) {
+          const u8 = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+          try { files[k] = /\.json$/i.test(k) ? JSON.parse(new TextDecoder().decode(u8)) : await nbtParse(u8); } catch (e) { files[k] = {읽기실패: e.message}; }
+        }
+        window.MY = {t: r.t, files};
+      }
+      TABS.my.err = '';
+    } catch (e) { TABS.my.err = e.message; }
+    const t = window.MY?.t; if (t !== TABS.my.drawn || !window.MY) { TABS.my.drawn = t; draw(); }
   };
   TABS.my.drawn = NaN; clearInterval(TABS.my.t); TABS.my.t = setInterval(load, 60 * 1000); load();
 };

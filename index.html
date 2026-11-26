@@ -1898,17 +1898,25 @@ TABS.my = () => {
     if (!location.hash.startsWith('#/my')) return;
     const MY = window.MY;
     if (!MY) { $view.innerHTML = `<h1 class="tab-head">내 포켓몬</h1><p class="tab-desc">${!MY_URL ? '아직 연결 안 됨 (Apps Script 주소를 index.html의 MY_URL에 넣어야 해요)' : TABS.my.err ? '불러오기 실패: ' + esc(TABS.my.err) : '불러오는 중…'}</p>`; return; }
-    const F = Object.entries(MY.files);
+    // 사람별로 나눔: 파일 이름의 UUID. 닉네임은 친구 PC 스크립트가 올린 players.json
+    const ALL = Object.entries(MY.files), UID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+    const names = ALL.find(([k]) => /(^|\/)players\.json$/.test(k))?.[1] || {};
+    const ids = [...new Set(ALL.map(([k]) => k.match(UID)?.[0].toLowerCase()).filter(Boolean))];
+    let who = ''; try { who = localStorage.getItem('dex-my') || ''; } catch {}
+    if (!ids.includes(who)) who = ids[0] || '';
+    const F = ALL.filter(([k]) => k.toLowerCase().includes(who));
+    const pick = ids.length > 1 ? `<div class="chips" id="mywho" style="margin:0 0 20px">${ids.map(u => `<span class="chip ${u === who ? 'cur' : ''}" data-u="${u}">${esc(names[u] || u.slice(0, 8))}</span>`).join('')}</div>` : '';
     const party = F.filter(([k]) => /party/i.test(k)).flatMap(([, v]) => mons(v)), pc = F.filter(([k]) => /pcstore|[\\/]pc[\\/]/i.test(k)).flatMap(([, v]) => mons(v));
     // 도감: pokedex 파일 안의 "cobblemon:종" 키. 그 아래 어딘가에 CAUGHT가 있으면 잡음, 없으면 봄
     const dex = {}; F.filter(([k]) => /pokedex/i.test(k)).forEach(([, v]) => { const w = o => { if (!o || typeof o !== 'object') return; for (const [k, x] of Object.entries(o)) { if (/^cobblemon:/.test(k) && M[bare(k)]) dex[bare(k)] = JSON.stringify(x).includes('CAUGHT') ? 2 : Math.max(dex[bare(k)] || 0, 1); else w(x); } }; w(v); });
     const caught = Object.keys(dex).filter(k => dex[k] === 2).sort((a, b) => M[a].n - M[b].n), seen = Object.keys(dex).filter(k => dex[k] === 1);
     const grid = a => a.length ? `<div class="sgrid">${a.map(card).join('')}</div>` : '<p class="hint">없음</p>';
-    $view.innerHTML = `<h1 class="tab-head">내 포켓몬</h1><p class="tab-desc">친구 월드에서 받은 저장 파일 기준 · 마지막 갱신 ${new Date(MY.t).toLocaleString()} · 1분마다 다시 읽어요. 카드를 누르면 도감으로.</p>
-      <section><h2>파티 ${party.length}</h2>${grid(party)}</section>
+    $view.innerHTML = `<h1 class="tab-head">내 포켓몬</h1><p class="tab-desc">친구 월드에서 받은 저장 파일 기준 · 마지막 갱신 ${new Date(MY.t).toLocaleString()} · 1분마다 다시 읽어요. 카드를 누르면 도감으로.</p>${pick}
+      <section><h2>${esc(names[who] || '')} 파티 ${party.length}</h2>${grid(party)}</section>
       <section style="margin-top:32px"><h2>박스 ${pc.length}</h2>${pc.length ? grid(pc) : '<p class="hint">없음 (PC 파일이 아직 안 왔거나 비어 있음)</p>'}</section>
       <section style="margin-top:32px"><h2>도감 · 잡음 ${caught.length} · 봄 ${seen.length}</h2>${caught.length ? `<details><summary>잡은 포켓몬 보기</summary><div class="mon-chips">${caught.map(monChip).join('')}</div></details>` : '<p class="hint">도감 파일을 아직 못 읽었어요</p>'}</section>
       <details style="margin-top:32px"><summary class="muted">받은 파일 ${F.length}개 (확인용)</summary><ul class="desc">${F.map(([k]) => `<li><code>${esc(k)}</code></li>`).join('')}</ul></details>`;
+    document.getElementById('mywho')?.addEventListener('click', e => { const c = e.target.closest('[data-u]'); if (!c) return; try { localStorage.setItem('dex-my', c.dataset.u); } catch {} draw(); });
   };
   const load = async () => {
     if (!location.hash.startsWith('#/my')) return clearInterval(TABS.my.t);

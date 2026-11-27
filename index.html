@@ -1914,25 +1914,32 @@ TABS.my = () => {
     const dex = {}; F.filter(([k]) => /pokedex/i.test(k)).forEach(([, v]) => { const w = o => { if (!o || typeof o !== 'object') return; for (const [k, x] of Object.entries(o)) { if (/^cobblemon:/.test(k) && M[bare(k)]) dex[bare(k)] = JSON.stringify(x).includes('CAUGHT') ? 2 : Math.max(dex[bare(k)] || 0, 1); else w(x); } }; w(v); });
     const caught = Object.keys(dex).filter(k => dex[k] === 2).sort((a, b) => M[a].n - M[b].n), seen = Object.keys(dex).filter(k => dex[k] === 1);
     const grid = a => a.length ? `<div class="sgrid">${a.map(card).join('')}</div>` : '<p class="hint">없음</p>';
+    // 박스는 수백 마리라 박스별로 접어 두고, 펼칠 때 그 박스 카드만 그림
+    const boxes = []; pc.forEach(x => { const b = +(x.where.find(w => /^Box\d+$/.test(w)) || 'Box0').slice(3); (boxes.at(-1)?.[0] === b ? boxes.at(-1)[1] : (boxes.push([b, []]), boxes.at(-1)[1])).push(x); });
     $view.innerHTML = `<h1 class="tab-head">내 포켓몬</h1><p class="tab-desc">친구 월드에서 받은 저장 파일 기준 · 마지막 갱신 ${new Date(MY.t).toLocaleString()} · 1분마다 다시 읽어요. 카드를 누르면 도감으로.</p>${pick}
       <section><h2>${esc(names[who] || '')} 파티 ${party.length}</h2>${grid(party)}</section>
-      <section style="margin-top:32px"><h2>박스 ${pc.length}</h2>${pc.length ? grid(pc) : '<p class="hint">없음 (PC 파일이 아직 안 왔거나 비어 있음)</p>'}</section>
+      <section style="margin-top:32px"><h2>박스 ${pc.length}</h2>${pc.length ? boxes.map(([b, a], i) => `<details class="mybox" data-i="${i}" style="margin:0 0 8px"><summary>박스 ${b + 1} <span class="muted">${a.length}마리</span></summary><div class="sgrid" style="margin-top:8px"></div></details>`).join('') : '<p class="hint">없음 (PC 파일이 아직 안 왔거나 비어 있음)</p>'}</section>
       <section style="margin-top:32px"><h2>도감 · 잡음 ${caught.length} · 봄 ${seen.length}</h2>${caught.length ? `<details><summary>잡은 포켓몬 보기</summary><div class="mon-chips">${caught.map(monChip).join('')}</div></details>` : '<p class="hint">도감 파일을 아직 못 읽었어요</p>'}</section>
       <details style="margin-top:32px"><summary class="muted">받은 파일 ${F.length}개 (확인용)</summary><ul class="desc">${F.map(([k]) => `<li><code>${esc(k)}</code></li>`).join('')}</ul></details>`;
+    $view.querySelectorAll('details.mybox').forEach(d => d.addEventListener('toggle', () => { const g = d.querySelector('.sgrid'); if (d.open && !g.childElementCount) g.innerHTML = boxes[+d.dataset.i][1].map(card).join(''); }));
     document.getElementById('mywho')?.addEventListener('click', e => { const c = e.target.closest('[data-u]'); if (!c) return; try { localStorage.setItem('dex-my', c.dataset.u); } catch {} draw(); });
+  };
+  const apply = async r => {
+    if (r.t === window.MY?.t) return;
+    const files = {};
+    for (const [k, b64] of Object.entries(r.files)) {
+      const u8 = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+      try { files[k] = /\.json$/i.test(k) ? JSON.parse(new TextDecoder().decode(u8)) : await nbtParse(u8); } catch (e) { files[k] = {읽기실패: e.message}; }
+    }
+    window.MY = {t: r.t, files};
   };
   const load = async () => {
     if (!location.hash.startsWith('#/my')) return clearInterval(TABS.my.t);
+    // 마지막으로 받은 걸 브라우저에 저장해 뒀다가 먼저 보여줌 (서버 응답은 몇 초 걸림)
+    if (!window.MY) try { const c = localStorage.getItem('dex-my-cache'); if (c) { await apply(JSON.parse(c)); TABS.my.drawn = window.MY.t; draw(); } } catch {}
     if (MY_URL) try {
-      const r = await (await fetch(MY_URL + (MY_URL.includes('?') ? '&' : '?') + 't=' + Date.now())).json();
-      if (r.t !== window.MY?.t) {
-        const files = {};
-        for (const [k, b64] of Object.entries(r.files)) {
-          const u8 = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
-          try { files[k] = /\.json$/i.test(k) ? JSON.parse(new TextDecoder().decode(u8)) : await nbtParse(u8); } catch (e) { files[k] = {읽기실패: e.message}; }
-        }
-        window.MY = {t: r.t, files};
-      }
+      const s = await (await fetch(MY_URL + (MY_URL.includes('?') ? '&' : '?') + 't=' + Date.now())).text(), r = JSON.parse(s);
+      if (r.t !== window.MY?.t) { await apply(r); try { localStorage.setItem('dex-my-cache', s); } catch {} }
       TABS.my.err = '';
     } catch (e) { TABS.my.err = e.message; }
     const t = window.MY?.t; if (t !== TABS.my.drawn || !window.MY) { TABS.my.drawn = t; draw(); }

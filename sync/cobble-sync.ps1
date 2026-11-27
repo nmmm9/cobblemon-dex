@@ -61,6 +61,22 @@ while ($true) {
       $sent[$_.FullName] = $key; $n++
     } catch { }  # 게임이 쓰는 중이면 다음 바퀴에 다시
   }
-  if ($n) { Write-Host "[$(Get-Date -Format HH:mm:ss)] 파일 $($n)개 보냄" }
+  if ($n) {
+    # 사이트가 파일을 하나씩 열면 20초 넘게 걸려서, 쓰는 파일(파티·박스·도감·닉네임)만 bundle.json 하나로 묶음
+    $files = [ordered]@{}
+    $base = $cfg.dest.TrimEnd('\')
+    Get-ChildItem -LiteralPath $base -Recurse -File -ErrorAction SilentlyContinue | ForEach-Object {
+      $rel = $_.FullName.Substring($base.Length).TrimStart('\') -replace '\\', '/'
+      if ($rel -match '^(players\.json|pokemon/(playerpartystore|pcstore)/.+\.dat|pokedex/.+\.nbt)$') {
+        try { $files[$rel] = [Convert]::ToBase64String([IO.File]::ReadAllBytes($_.FullName)) } catch { }
+      }
+    }
+    $json = @{ t = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds(); files = $files } | ConvertTo-Json -Compress
+    try {
+      [IO.File]::WriteAllText("$base\bundle.json.tmp", $json)
+      Move-Item -LiteralPath "$base\bundle.json.tmp" -Destination "$base\bundle.json" -Force -ErrorAction Stop
+    } catch { }
+    Write-Host "[$(Get-Date -Format HH:mm:ss)] 파일 $($n)개 보냄"
+  }
   Start-Sleep -Seconds 60
 }

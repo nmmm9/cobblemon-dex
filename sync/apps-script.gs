@@ -3,6 +3,9 @@
 // -> 도감 "내 포켓몬" 탭이 1분마다 읽음. 다른 파일은 폴더에 있어도 안 내보냄.
 const FOLDER_ID = '1Z_O6Tc31qAtCFbzxePKG_LgnE1Ux42Xv';
 function doGet() {
+  // 친구 PC 스크립트가 묶어 올린 bundle.json이 있으면 그것만 그대로 돌려줌 (파일 하나만 읽어서 빠름)
+  const b = DriveApp.getFolderById(FOLDER_ID).getFilesByName('bundle.json');
+  if (b.hasNext()) return ContentService.createTextOutput(b.next().getBlob().getDataAsString()).setMimeType(ContentService.MimeType.JSON);
   const out = { t: 0, files: {} };
   const walk = (folder, pre) => {
     const fs = folder.getFiles();

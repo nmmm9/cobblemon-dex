@@ -447,6 +447,33 @@ h2 .bucket{font-size:inherit}
 .kv{display:grid;grid-template-columns:140px 1fr;gap:6px 14px}
 .kv dt{color:var(--muted)}
 .kv dd{margin:0}
+.my{max-width:920px}
+.my .mlist{border-top:1px solid var(--line)}
+.my .mrow{display:grid;grid-template-columns:40px minmax(0,1fr) 64px 72px 76px;align-items:center;gap:10px;padding:2px 8px;border-bottom:1px solid var(--line);cursor:pointer}
+.my .mrow:hover,.my .mrow.on{background:var(--soft)}
+.my .mrow img{width:40px;height:40px;object-fit:contain}
+.my .mrow .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.my .mrow .nm small{color:var(--muted);font-size:12px;margin-left:6px}
+.my .mrow .c{font-size:13px;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.my .mrow .iv b{font-weight:500;color:var(--fg)}
+.my .mrow .iv b.hi{color:#c0392b}
+.my .mboxh{font-size:14px;font-weight:500;margin:18px 0 6px}
+.my .mdet{display:grid;grid-template-columns:200px minmax(0,1fr);gap:12px 28px;padding:14px 8px 18px;border-bottom:1px solid var(--line)}
+.my .mdet .kv{grid-template-columns:64px 1fr;font-size:14px}
+.my .hex .g{fill:none;stroke:var(--line);stroke-width:1}
+.my .hex .iv{fill:rgba(17,17,17,.08);stroke:var(--fg);stroke-width:1}
+.my .hex .ev{fill:none;stroke:#8a6d1f;stroke-width:1;stroke-dasharray:3 2}
+.my .hex text{font-size:11px;fill:var(--muted)}
+.my .hex text.v{fill:var(--fg);font-variant-numeric:tabular-nums}
+.my .hex text.v.max{font-weight:600}
+.my .hexk{font-size:12px;color:var(--muted);text-align:center}
+.my .hexk i{display:inline-block;width:14px;height:0;border-top:1px solid var(--fg);vertical-align:middle;margin:0 4px 0 8px}
+.my .hexk i.ev{border-top:1px dashed #8a6d1f}
+.my .mst{width:auto;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+.my .mst th{font-weight:400;color:var(--muted);padding:2px 10px 2px 0;text-align:right}
+.my .mst td{padding:2px 10px 2px 0;text-align:right}
+.my .mst td:first-child{color:var(--muted);text-align:left}
+@media(max-width:600px){.my .mrow{grid-template-columns:36px minmax(0,1fr) 56px 64px}.my .mrow .nat{display:none}.my .mdet{grid-template-columns:1fr;justify-items:start}}
 </style>
 </head>
 <body>
@@ -1869,30 +1896,50 @@ TABS.my = () => {
     for (const [k, v] of Object.entries(o)) mons(v, [...where, k], out);
     return out;
   };
-  const card = ({p, where}) => {
+  // 한 마리 정보 정리 (목록 줄과 상세가 같이 씀)
+  const info = ({p, where}) => {
     const sp = bare(p.Species), form = String(p.FormId || '').toLowerCase(), key = M[`${sp}-${form}`] ? `${sp}-${form}` : sp, m = M[key];
     const lv = +p.Level || 1, iv = six(p.IVs), ev = six(p.EVs), nat = bare(p.MintedNature || p.Nature), nk = NAT[nat];
     const st = m ? m.stats.map((b, i) => i ? Math.floor((Math.floor((2 * b + iv[i] + Math.floor(ev[i] / 4)) * lv / 100) + 5) * (nk?.[0] === i ? 1.1 : nk?.[1] === i ? .9 : 1)) : Math.floor((2 * b + iv[0] + Math.floor(ev[0] / 4)) * lv / 100) + lv + 10) : null;
-    const ab = bare(p.Ability?.AbilityName || p.Ability), held = p.HeldItem?.id || p.HeldItem?.Name || (typeof p.HeldItem === 'string' ? p.HeldItem : '');
-    const moves = Object.values(p.MoveSet || {}).filter(x => x && x.MoveName).map(x => `<span class="chip sm">${esc(MV[x.MoveName]?.[0] || x.MoveName)}${x.MovePP != null ? ` <span class="muted">${x.MovePP}</span>` : ''}</span>`).join('');
+    const name = txt(p.Nickname) || (m ? fullKo(m) : sp), sex = p.Gender === 'MALE' ? ' ♂' : p.Gender === 'FEMALE' ? ' ♀' : '';
     const slot = where.filter(w => /^(Box|Slot)\d+$/.test(w)).map(w => w.replace(/^Box(\d+)/, (_, n) => `박스 ${+n + 1}`).replace(/^Slot(\d+)/, (_, n) => `${+n + 1}칸`)).join(' · ');
-    return `<div class="sbox"${m ? ` data-go="${key}" style="cursor:pointer"` : ''}>
-      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">${m ? monImg(m) : ''}<b>${esc(txt(p.Nickname) || (m ? fullKo(m) : sp))}</b>${p.Shiny ? ' <span class="kind">이로치</span>' : ''}<span class="muted">Lv.${lv}${p.Gender === 'MALE' ? ' ♂' : p.Gender === 'FEMALE' ? ' ♀' : ''}</span></div>
-      ${m ? `<div style="margin:4px 0">${m.types.map(t => tchip(t, 1)).join('')}${txt(p.Nickname) ? ` <span class="muted">${esc(fullKo(m))}</span>` : ''}</div>` : ''}
-      <dl class="kv" style="grid-template-columns:64px 1fr;font-size:13px;margin:6px 0">
-        <dt>성격</dt><dd>${esc(D.natures[nat] || nat || '—')}${p.MintedNature ? ' <span class="muted">(민트)</span>' : ''}</dd>
+    return {p, key, m, lv, iv, ev, nat, nk, st, name, sex, slot, v: iv.filter(x => x === 31).length, ivSum: iv.reduce((a, b) => a + b, 0)};
+  };
+  // 목록 한 줄: 아이콘 · 이름 · Lv · 성격 · 6V 수와 개체값 합계
+  const row = (x, i) => { const o = info(x); return `<div class="mrow" data-r="${i}">${o.m ? monImg(o.m) : '<span></span>'}
+    <span class="nm">${esc(o.name)}${o.p.Shiny ? '<span class="kind">이로치</span>' : ''}${txt(o.p.Nickname) && o.m ? `<small>${esc(fullKo(o.m))}</small>` : ''}</span>
+    <span class="c">Lv.${o.lv}${o.sex}</span><span class="c nat">${esc(D.natures[o.nat] || o.nat || '')}</span>
+    <span class="c iv">${o.v ? `<b${o.v >= 5 ? ' class="hi"' : ''}>${o.v}V</b> · ` : ''}${o.ivSum}</span></div>`; };
+  // 육각형: 위 HP부터 시계 방향 공격·방어·스피드·특방·특공 (본가 게임 순서). 채운 면 = 개체값(31 기준), 점선 = 노력치(252 기준)
+  const HEX = [0, 1, 2, 5, 4, 3];
+  const hex = o => {
+    const R = 64, C = 100, pt = (k, r) => { const a = Math.PI / 180 * (-90 + 60 * k); return [(C + r * Math.cos(a)).toFixed(1), (C + r * Math.sin(a)).toFixed(1)]; };
+    const poly = f => HEX.map((s, k) => pt(k, f(s)).join(',')).join(' ');
+    const lab = HEX.map((s, k) => { const [x, y] = pt(k, R + 20), col = o.nk?.[0] === s ? '#c0392b' : o.nk?.[1] === s ? '#3f8fd8' : ''; return `<text x="${x}" y="${+y - 2}" text-anchor="middle"${col ? ` style="fill:${col}"` : ''}>${STAT[s]}</text><text x="${x}" y="${+y + 11}" text-anchor="middle" class="v${o.iv[s] === 31 ? ' max' : ''}">${o.iv[s]}</text>`; }).join('');
+    return `<svg class="hex" viewBox="0 0 200 200" width="200" height="200">
+      <polygon points="${poly(() => R)}" class="g"/><polygon points="${poly(() => R / 2)}" class="g"/>
+      ${HEX.map((s, k) => `<line x1="${C}" y1="${C}" x2="${pt(k, R)[0]}" y2="${pt(k, R)[1]}" class="g"/>`).join('')}
+      <polygon points="${poly(s => R * o.iv[s] / 31)}" class="iv"/><polygon points="${poly(s => R * Math.min(o.ev[s], 252) / 252)}" class="ev"/>${lab}</svg>`;
+  };
+  const detail = x => {
+    const o = info(x), p = o.p, ab = bare(p.Ability?.AbilityName || p.Ability), held = p.HeldItem?.id || p.HeldItem?.Name || (typeof p.HeldItem === 'string' ? p.HeldItem : '');
+    const moves = Object.values(p.MoveSet || {}).filter(y => y && y.MoveName).map(y => `<span class="chip sm">${esc(MV[y.MoveName]?.[0] || y.MoveName)}${y.MovePP != null ? ` <span class="muted">${y.MovePP}</span>` : ''}</span>`).join('');
+    const up = o.nk?.length ? ` <span class="muted">${STAT[o.nk[0]]}↑ ${STAT[o.nk[1]]}↓</span>` : '';
+    return `<div class="mdet"><div>${hex(o)}<div class="hexk"><i class="iv"></i>개체값 <i class="ev"></i>노력치</div></div><div>
+      <div style="margin-bottom:6px">${o.m ? o.m.types.map(t => tchip(t, 1)).join('') : ''}${o.m ? `<a class="muted" data-go="${o.key}" style="cursor:pointer;margin-left:8px;font-size:13px">도감에서 보기 →</a>` : ''}</div>
+      <dl class="kv">
+        <dt>성격</dt><dd>${esc(D.natures[o.nat] || o.nat || '—')}${up}${p.MintedNature ? ' <span class="muted">(민트)</span>' : ''}</dd>
         <dt>특성</dt><dd>${esc(D.abilities[ab]?.[0] || ab || '—')}</dd>
         ${held ? `<dt>도구</dt><dd>${ico(bare(held))}${esc(itNm(held))}</dd>` : ''}
         ${p.CaughtBall ? `<dt>볼</dt><dd>${ico(bare(p.CaughtBall))}${esc(itNm(p.CaughtBall))}</dd>` : ''}
         ${p.TeraType ? `<dt>테라</dt><dd>${TK[bare(p.TeraType)] ? tchip(bare(p.TeraType), 1) : esc(p.TeraType)}</dd>` : ''}
         ${p.Friendship != null ? `<dt>친밀도</dt><dd>${p.Friendship}</dd>` : ''}
+        ${o.slot ? `<dt>위치</dt><dd>${o.slot}</dd>` : ''}
       </dl>
-      <div class="chips" style="margin:0 0 6px">${moves}</div>
-      <table class="rkt" style="font-size:12px"><thead><tr><th></th>${STAT.map((s, i) => `<th class="c"${nk?.[0] === i ? ' style="color:#c0392b"' : nk?.[1] === i ? ' style="color:#3f8fd8"' : ''}>${s}</th>`).join('')}</tr></thead><tbody>
-        ${st ? `<tr><td class="muted">능력치</td>${st.map((x, i) => `<td class="c">${i === 0 && p.Health != null ? `${p.Health}/` : ''}${x}</td>`).join('')}</tr>` : ''}
-        <tr><td class="muted">개체값</td>${iv.map(x => `<td class="c"${x === 31 ? ' style="font-weight:600"' : ''}>${x}</td>`).join('')}</tr>
-        <tr><td class="muted">노력치</td>${ev.map(x => `<td class="c">${x}</td>`).join('')}</tr></tbody></table>
-      ${slot ? `<div class="muted" style="font-size:12px;margin-top:4px">${slot}</div>` : ''}</div>`;
+      <div class="chips" style="margin:8px 0">${moves}</div>
+      <table class="mst"><tr><td></td>${STAT.map(s => `<th>${s}</th>`).join('')}</tr>
+        ${o.st ? `<tr><td>능력치</td>${o.st.map((v, i) => `<td>${i === 0 && p.Health != null ? `${p.Health}/` : ''}${v}</td>`).join('')}</tr>` : ''}
+        <tr><td>노력치</td>${o.ev.map(v => `<td>${v}</td>`).join('')}</tr></table></div></div>`;
   };
   const draw = () => {
     if (!location.hash.startsWith('#/my')) return;
@@ -1913,15 +1960,20 @@ TABS.my = () => {
     // 도감: pokedex 파일 안의 "cobblemon:종" 키. 그 아래 어딘가에 CAUGHT가 있으면 잡음, 없으면 봄
     const dex = {}; F.filter(([k]) => /pokedex/i.test(k)).forEach(([, v]) => { const w = o => { if (!o || typeof o !== 'object') return; for (const [k, x] of Object.entries(o)) { if (/^cobblemon:/.test(k) && M[bare(k)]) dex[bare(k)] = JSON.stringify(x).includes('CAUGHT') ? 2 : Math.max(dex[bare(k)] || 0, 1); else w(x); } }; w(v); });
     const caught = Object.keys(dex).filter(k => dex[k] === 2).sort((a, b) => M[a].n - M[b].n), seen = Object.keys(dex).filter(k => dex[k] === 1);
-    const grid = a => a.length ? `<div class="sgrid">${a.map(card).join('')}</div>` : '<p class="hint">없음</p>';
-    // 박스는 수백 마리라 박스별로 접어 두고, 펼칠 때 그 박스 카드만 그림
-    const boxes = []; pc.forEach(x => { const b = +(x.where.find(w => /^Box\d+$/.test(w)) || 'Box0').slice(3); (boxes.at(-1)?.[0] === b ? boxes.at(-1)[1] : (boxes.push([b, []]), boxes.at(-1)[1])).push(x); });
-    $view.innerHTML = `<h1 class="tab-head">내 포켓몬</h1><p class="tab-desc">친구 월드에서 받은 저장 파일 기준 · 마지막 갱신 ${new Date(MY.t).toLocaleString()} · 1분마다 다시 읽어요. 카드를 누르면 도감으로.</p>${pick}
-      <section><h2>${esc(names[who] || '')} 파티 ${party.length}</h2>${grid(party)}</section>
-      <section style="margin-top:32px"><h2>박스 ${pc.length}</h2>${pc.length ? boxes.map(([b, a], i) => `<details class="mybox" data-i="${i}" style="margin:0 0 8px"><summary>박스 ${b + 1} <span class="muted">${a.length}마리</span></summary><div class="sgrid" style="margin-top:8px"></div></details>`).join('') : '<p class="hint">없음 (PC 파일이 아직 안 왔거나 비어 있음)</p>'}</section>
+    // 목록은 가벼워서 전부 그림. 줄을 누르면 그 아래에 상세(육각형)를 펼침
+    const LIST = [...party, ...pc];
+    const rows = (a, off) => a.length ? `<div class="mlist">${a.map((x, i) => row(x, off + i)).join('')}</div>` : '<p class="hint">없음</p>';
+    const boxes = []; pc.forEach((x, i) => { const b = +(x.where.find(w => /^Box\d+$/.test(w)) || 'Box0').slice(3); if (boxes.at(-1)?.[0] !== b) boxes.push([b, []]); boxes.at(-1)[1].push([x, party.length + i]); });
+    $view.innerHTML = `<div class="my"><h1 class="tab-head">내 포켓몬</h1><p class="tab-desc">친구 월드에서 받은 저장 파일 기준 · 마지막 갱신 ${new Date(MY.t).toLocaleString()} · 1분마다 다시 읽어요. 줄을 누르면 상세.</p>${pick}
+      <section><h2>${esc(names[who] || '')} 파티 ${party.length}</h2>${rows(party, 0)}</section>
+      <section style="margin-top:32px"><h2>박스 ${pc.length}</h2>${pc.length ? boxes.map(([b, a]) => `<h3 class="mboxh">박스 ${b + 1} <span class="muted">${a.length}</span></h3><div class="mlist">${a.map(([x, i]) => row(x, i)).join('')}</div>`).join('') : '<p class="hint">없음 (PC 파일이 아직 안 왔거나 비어 있음)</p>'}</section>
       <section style="margin-top:32px"><h2>도감 · 잡음 ${caught.length} · 봄 ${seen.length}</h2>${caught.length ? `<details><summary>잡은 포켓몬 보기</summary><div class="mon-chips">${caught.map(monChip).join('')}</div></details>` : '<p class="hint">도감 파일을 아직 못 읽었어요</p>'}</section>
-      <details style="margin-top:32px"><summary class="muted">받은 파일 ${F.length}개 (확인용)</summary><ul class="desc">${F.map(([k]) => `<li><code>${esc(k)}</code></li>`).join('')}</ul></details>`;
-    $view.querySelectorAll('details.mybox').forEach(d => d.addEventListener('toggle', () => { const g = d.querySelector('.sgrid'); if (d.open && !g.childElementCount) g.innerHTML = boxes[+d.dataset.i][1].map(card).join(''); }));
+      <details style="margin-top:32px"><summary class="muted">받은 파일 ${F.length}개 (확인용)</summary><ul class="desc">${F.map(([k]) => `<li><code>${esc(k)}</code></li>`).join('')}</ul></details></div>`;
+    $view.querySelector('.my').addEventListener('click', e => {
+      const r = e.target.closest('.mrow'); if (!r) return;
+      const open = r.classList.toggle('on');
+      if (open) r.insertAdjacentHTML('afterend', detail(LIST[+r.dataset.r])); else if (r.nextElementSibling?.classList.contains('mdet')) r.nextElementSibling.remove();
+    });
     document.getElementById('mywho')?.addEventListener('click', e => { const c = e.target.closest('[data-u]'); if (!c) return; try { localStorage.setItem('dex-my', c.dataset.u); } catch {} draw(); });
   };
   const apply = async r => {

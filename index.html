@@ -1859,7 +1859,7 @@ async function nbtParse(u8) {
 const STAT_ID = [/^hp$/i, /^attack$/i, /^defen[cs]e$/i, /^special_?attack$/i, /^special_?defen[cs]e$/i, /^speed$/i];
 TABS.my = () => {
   const bare = s => String(s || '').replace(/^cobblemon:/, '');
-  const six = o => { o = o && (o.Base || o); return STAT_ID.map(r => { const k = o && Object.keys(o).find(x => r.test(x)); return k ? +o[k] : 0; }); };
+  const six = o => { o = o && (o.Base || o); return STAT_ID.map(r => { const k = o && Object.keys(o).find(x => r.test(bare(x))); return k ? +o[k] : 0; }); };
   const txt = s => { if (typeof s !== 'string') return ''; try { const j = JSON.parse(s); return typeof j === 'string' ? j : j.text || ''; } catch { return s; } };
   const itNm = id => { const k = bare(id); return D.items[k]?.[0] || D.items[id]?.[0] || id; };
   // 저장 파일 안에서 Species 키가 있는 객체 = 포켓몬 한 마리. where = 거쳐 온 키 (Box3 > Slot5 등)
@@ -1906,7 +1906,10 @@ TABS.my = () => {
     if (!ids.includes(who)) who = ids[0] || '';
     const F = ALL.filter(([k]) => k.toLowerCase().includes(who));
     const pick = ids.length > 1 ? `<div class="chips" id="mywho" style="margin:0 0 20px">${ids.map(u => `<span class="chip ${u === who ? 'cur' : ''}" data-u="${u}">${esc(names[u] || u.slice(0, 8))}</span>`).join('')}</div>` : '';
-    const party = F.filter(([k]) => /party/i.test(k)).flatMap(([, v]) => mons(v)), pc = F.filter(([k]) => /pcstore|[\\/]pc[\\/]/i.test(k)).flatMap(([, v]) => mons(v));
+    // 저장 파일의 키 순서는 Box4, Box40… 처럼 섞여 있어서 박스·칸 번호로 정렬
+    const pos = ({where}) => where.reduce((a, w) => { const m = /^(Box|Slot)(\d+)$/.exec(w); return m ? a * 1000 + +m[2] : a; }, 0);
+    const sorted = a => a.sort((x, y) => pos(x) - pos(y));
+    const party = sorted(F.filter(([k]) => /party/i.test(k)).flatMap(([, v]) => mons(v))), pc = sorted(F.filter(([k]) => /pcstore|[\\/]pc[\\/]/i.test(k)).flatMap(([, v]) => mons(v)));
     // 도감: pokedex 파일 안의 "cobblemon:종" 키. 그 아래 어딘가에 CAUGHT가 있으면 잡음, 없으면 봄
     const dex = {}; F.filter(([k]) => /pokedex/i.test(k)).forEach(([, v]) => { const w = o => { if (!o || typeof o !== 'object') return; for (const [k, x] of Object.entries(o)) { if (/^cobblemon:/.test(k) && M[bare(k)]) dex[bare(k)] = JSON.stringify(x).includes('CAUGHT') ? 2 : Math.max(dex[bare(k)] || 0, 1); else w(x); } }; w(v); });
     const caught = Object.keys(dex).filter(k => dex[k] === 2).sort((a, b) => M[a].n - M[b].n), seen = Object.keys(dex).filter(k => dex[k] === 1);
